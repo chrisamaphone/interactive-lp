@@ -1,0 +1,54 @@
+% A 2x2 proof-of-concept lightsout implementation.
+
+state : type.
+on : state.
+off : state.
+opp : state -> state -> type.
+#mode opp + -.
+opp/1 : opp on off.
+opp/2 : opp off on.
+
+id : type.
+l1 : id.
+l2 : id.
+l3 : id.
+l4 : id.
+
+lrnbr : id -> id -> type.
+#mode lrnbr + -.
+udnbr : id -> id -> type.
+#mode udnbr + -.
+l1l2 : lrnbr l1 l2.
+l2l1 : lrnbr l2 l1.
+l3l4 : lrnbr l3 l4.
+l4l3 : lrnbr l4 l3.
+l1l3 : udnbr l1 l3.
+l3l1 : udnbr l3 l1.
+l2l4 : udnbr l2 l4.
+l4l2 : udnbr l4 l2.
+
+% linear stuff
+
+light : id -> state -> type.
+#mode light - -.
+sighuman : id -> type.
+#mode sighuman -.
+sigin : id -> type.
+#mode sigin -.
+sigout : id -> type.
+#mode sigout -.
+
+handle_sighuman : sighuman N * lrnbr N N1 * udnbr N N2 
+                      -o {sigin N * sigin N1 * sigin N2}.
+
+handle_sigin : sigin N * light N S * opp S S'
+                      -o {light N S'}.
+
+#query * * * 3 
+  (light l1 on * light l2 on * light l3 on * light l4 on 
+      * sighuman l1 * sighuman l3 * sighuman l2 * sighuman l4)
+-o {light l1 X1 * light l2 X2 * light l3 X3 * light l4 X4}.
+
+% Fortunately, the game is commutative, so I don't have to worry about the
+% fact that the "sighuman" signals can get shuffled and happen at arbitrary
+% times!

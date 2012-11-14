@@ -1,0 +1,16 @@
+state : type.
+on : state.
+off : state.
+
+switch : state -> type.
+
+%% Asynchronous program
+sigtoggle : type.
+t1 : switch on * sigtoggle -o {switch off}.
+t2 : switch off * sigtoggle -o {switch on}.
+
+siginit : type.
+ext : sigtoggled -o {sigtoggle}.
+ext-first : siginit -o {sigtoggle * switch off}.
+
+#trace * {siginit}.

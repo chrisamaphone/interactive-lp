@@ -1,0 +1,10 @@
+from
+http://www2.informatik.hu-berlin.de/~hs/Aktivitaeten/2011_Vino/Talks/Morning/04_Henri-Debrat_Hennessy-Milner-Logic.pdf
+
+Clock = tick.Clock
+(accept a signal tick, then behave as Clock)
+in linear logic?:
+clock * tick -o {clock}
+satisfies
+[tick](<tick>tt ^ [tock]ﬀ )
+(i.e. a "tock" signal is stuck...)

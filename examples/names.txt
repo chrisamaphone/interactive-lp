@@ -1,0 +1,5 @@
+SLIP: specification language for interactive programs
+SIP: specifying interactive programs
+IPSL: interactive program specification language
+  (this has the advantage of an ambiguous parse!)
+SLI: specification language for interactivity
