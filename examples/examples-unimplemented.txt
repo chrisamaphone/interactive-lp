@@ -1,3 +1,7 @@
+toy/litmus test examples:
+
+thermostat
+
 from
 http://www2.informatik.hu-berlin.de/~hs/Aktivitaeten/2011_Vino/Talks/Morning/04_Henri-Debrat_Hennessy-Milner-Logic.pdf
 
@@ -8,3 +12,20 @@ clock * tick -o {clock}
 satisfies
 [tick](<tick>tt ^ [tock]ﬀ )
 (i.e. a "tock" signal is stuck...)
+
+medium examples:
+prime sieve
+repl or shell
+interactive fiction
+
+big examples:
+full-scale interactive game
+thread library/scheduler/context switcher
+unix pipes
+cell biology?
+human biosystem function?
+
+holy grail examples:
+operating system
+nuclear power plant
+human body

@@ -227,10 +227,6 @@ represent internal ``silent'' transitions. This system is a proof device,
 but as a stepping stone between linear logic and process calculi it seems
 compelling, particularly as I want to frame certain signals as external.
 
-
-% Umut Acar and Stefan Muller recently proposing dynamic/self-adjusting
-% computation approach
-
 Separately, also at CMU, Umut Acar and his student Stefan Muller submitted
 an NSF GRFP proposal to explore interactivity in the context of
 self-adjusting computation (cite). Their idea is that since SAC is a
@@ -240,11 +236,19 @@ interactively-changing inputs. I plan to pay close attention to their work
 along these lines to understand how it lines up with the proof-theoretical
 viewpoint.
 
+Andre Platzer's work on dynamic logic (cite) also seems relevant at least
+in the sense that dynamic systems receive external inputs, and dynamic
+logic seems related to Henessy-Milner, although his setting is further
+challenged by needing to deal with continuous signals and thus differential
+equations.
+
 \section{Proposed work}
 
 First, I intend to do further reading and investigation of FRP, SAC,
 puredata and other communication graph languages, while simultaneously
 encoding examples in CLF and imagined proto-syntax for a distinct language.
+I also intend to read about Bunched Implications (BI) and their proposal
+for linear operators that might be relevant to this setting.
 
 Then I plan to investigate what kind of metatheory or program-specific
 properties we desire about these programs, starting with standard process
