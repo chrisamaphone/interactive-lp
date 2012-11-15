@@ -1,0 +1,3 @@
+siginit : type.
+ext : sigtoggled -o {sigtoggle}.
+ext-first : siginit -o {sigtoggle}.

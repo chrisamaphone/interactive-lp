@@ -8,9 +8,3 @@ sigtoggle : type.
 sigtoggled : type.
 t1 : switch on * sigtoggle -o {switch off * sigtoggled}.
 t2 : switch off * sigtoggle -o {switch on * sigtoggled}.
-
-siginit : type.
-ext : sigtoggled -o {sigtoggle}.
-ext-first : siginit -o {sigtoggle}.
-
-#trace * {siginit * switch off}.
