@@ -24,8 +24,14 @@ thread library/scheduler/context switcher
 unix pipes
 cell biology?
 human biosystem function?
+irc client/server
 
 holy grail examples:
 operating system
 nuclear power plant
 human body
+
+
+---
+transducers (olin shivers? - also, scheme shell)
+"scripting via clf"
