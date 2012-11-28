@@ -42,7 +42,7 @@ closed program, containing all the information it needs to execute, and it
 derives (through the rules encoded in logic of the specification language)
 an evaluation of that program.
 
-CLF (cite) was given that name as the ``concurrent logical framework'', and
+CLF~\cite{CLF} was given that name as the ``concurrent logical framework'', and
 its proof theory is capable of expressing a wide range of concurrent
 systems, so long as we think of {\em concurrent} as a synonym for {\em
 nondeterministic}. What it fails to do is let us encapsulate a set of rules
@@ -155,7 +155,8 @@ interactivity: {\em separability}.
 \subsection{Contingent transitions}
 
 %% Add the document
-In a separate document in this directory, \verb|roar.pdf|, I demonstrate
+In a separate document~\footnote{http://www.cs.cmu.edu/~cmartens/roar.pdf}
+(also found in the github directory with this one), I demonstrate
 that linear logic does not adequately capture a notion of {\em contingent
 transition} or {\em read-only access to resources}. The idea is that you'd
 like to only fire a rule $A \lolli B$ under the condition $C$, where $C$ is
@@ -195,10 +196,52 @@ This in some sense just a special case of the Separability
 criterion, but one that particularly suggests some interesting proof
 theory.
 
+\section{Target examples}
+
+Here I will outline some target examples of interactive programs I would
+like to be able to account for. I would like to focus on one of these
+examples specifically for my thesis project, but I have not decided which
+one.
+
+\subsection{Human-computer interaction}
+
+Examples falling under this umbrella include REPLs, games, and GUIs. An
+example I have been thinking about a lot specifically is interactive
+fiction or ``text adventure'' games, since they eliminate the overhead of
+graphical rendering. A talk I gave at
+OBT'12~\footnote{http://www.cs.cmu.edu/~cmartens/obt-talk.pdf} outlines my thoughts
+toward using logic programming for this domain. To summarize, the
+high-level architecture of a game (text or otherwise) is an event loop with
+three steps:
+
+\begin{enumerate}
+\item Render the current state of the game.
+\item Accept input from the player.
+\item Process the input and use internal logic to modify the game state.
+\end{enumerate}
+
+This domain offers a trove of interesting questions about how to represent
+the game world, which is assembled in terms of spatial relationships --
+usually a network of rooms that the player moves between -- each having
+several independent interactive components, some of which can be carried
+and moved from place to place in addition to changing ``external'' state.
+Many player actions are contingent on certain properties of the state for
+success, which invokes the read-only access problem.
+
+Aside from those questions, the key thing missing from Celf is the ability
+to interrupt the automatic search procedure during forward-chaining to
+allow a user-selected rule to fire (from a specially designated subset).
+
+\subsection{Signal processing for audio and graphical visualizations}
+(TODO: fill these in)
+
+\subsection{Connecting web APIs}
+
+\subsection{Scripting processes on UNIX}
 
 \section{Related work}
 
-Puredata (Pd) (cite) is a language for declaratively describing signal
+Puredata (pd) (cite) is a language for declaratively describing signal
 interactions as a graph: nodes of various data types and edges between
 their output and input ports. It is commonly used for programming
 generative sound, music, and visualizations. Being able to encode, execute
@@ -212,8 +255,7 @@ attractive because of the ability to write and run it in a browser. The
 fundamental notion in FRP is {\em time-varying values}; functions over such
 values behave like stream transformers.
 
-% FRP, relating reasoning methodologies, Pd, other stuff i've been reading...
-A group at CMU (cite) recently explored the connection between the proof
+A group at CMU~\cite{RelatingReasoning} recently explored the connection between the proof
 theory of linear logic (context transitions) and the reasoning
 methodologies used in process calculi a la Milner. An intermediate
 semantics they give uses a relation
@@ -236,11 +278,12 @@ interactively-changing inputs. I plan to pay close attention to their work
 along these lines to understand how it lines up with the proof-theoretical
 viewpoint.
 
-Andre Platzer's work on dynamic logic (cite) also seems relevant at least
-in the sense that dynamic systems receive external inputs, and dynamic
-logic seems related to Henessy-Milner, although his setting is further
-challenged by needing to deal with continuous signals and thus differential
-equations.
+Andre Platzer's work on dynamic and hybrid logics (e.g. cite) also seems
+relevant at least in the sense that dynamic systems receive external
+inputs, and dynamic logic seems related to Henessy-Milner, although the
+hybrid setting is further challenged by needing to deal with continuous
+signals and thus differential equations. FRP has been studied as an account
+of programming hybrid systems.~\cite{Hudak2003}
 
 \section{Proposed work}
 
@@ -272,6 +315,8 @@ on current states with transitions between those states
 \item Broadcast, and other multi-channel communication patterns.
 \end{itemize}
 
-% Separability/composability, read-only access, and broadcast
+
+\bibliographystyle{plain}
+\bibliography{preproposal}
 
 \end{document}
