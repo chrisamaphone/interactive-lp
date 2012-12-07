@@ -32,6 +32,6 @@ nuclear power plant
 human body
 
 
----
+--- karl's suggestions
 transducers (olin shivers? - also, scheme shell)
 "scripting via clf"
