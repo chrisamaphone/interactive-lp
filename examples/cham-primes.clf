@@ -1,0 +1,55 @@
+nat : type.
+z : nat.
+s : nat -> nat.
+
+plus : nat -> nat -> nat -> type.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+          <- plus N M P.
+
+% mult : nat -> nat -> nat -> type.
+% mult/z : mult z N z.
+% mult/s : mult (s N) M P'
+%          <- mult N M P
+%          <- plus P M P'.
+
+mulof : nat -> nat -> type.
+mulof/z : mulof N N.
+mulof/s : mulof N P
+           <- mulof N M
+           <- plus M N P.
+
+% forward chaining
+num : nat -> type.
+
+
+% populate context with numbers 2..n
+populate : nat -> type.
+pop/s : populate (s (s (s N))) -o {num (s (s (s N))) * populate (s (s N))}.
+pop/2 : populate (s (s z)) -o {num (s (s z))}.
+
+
+% destroy multiples
+% destroy : num N * num M * num P * mult N M P -o {num N * num M}.
+% destroy-squares : num N * mult N N P * num P -o {num N}.
+% destroy : num N * num P * mult N _ P -o {num N}.
+destroy : num N * num P * mulof N P -o {num N}.
+
+
+two : nat = s (s z).
+three : nat = s two.
+four : nat = s three.
+five : nat = s four.
+six : nat = s five.
+seven : nat = s six.
+eight : nat = s seven.
+nine : nat = s eight.
+ten : nat = s nine.
+twenty : nat = s (s (s (s (s (s (s (s (s (s ten))))))))).
+
+% #query * * * 1 mult four five six.
+
+#query * * * 1 mulof four eight.
+
+% #trace * {populate four}.
+% #trace * {populate ten}.

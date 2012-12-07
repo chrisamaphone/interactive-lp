@@ -1,0 +1,29 @@
+debt : type.
+poison : type.
+rodolphe : type.
+suicide : type.
+
+start : type.
+
+choice1 : type.
+choice2 : type.
+rule : start -o {debt -o {debt * choice1}}.
+choose_poison : choice1 -o {poison -o {suicide}}.
+choose_rodolphe : choice1 -o {rodolphe -o {choice2}}.
+choose_poison2 : choice2 -o {poison -o {suicide}}.
+choose_nothing : choice2 -o {1}.
+
+#query * 1 * 10
+start
+  * debt
+  * (poison & {1})
+  * (rodolphe & {1})
+  -o {debt * suicide}.
+
+#query * 1 * 200
+start
+  * debt
+  * (poison & {1})
+  * (rodolphe & {1})
+  -o {debt}.
+
