@@ -1,0 +1,42 @@
+To-read:
+* Structural analysis of Narratives within Coq
+  Gwenn Bosser et al
+  http://cedric.cnam.fr/fichiers/art_2061.pdf
+
+* The Checmical Abstract Machine
+  Berry & Boudol
+  http://www.lix.polytechnique.fr/~fvalenci/papers/cham.pdf
+
+* Push-pull FRP
+  Conal Eliot
+  http://conal.net/papers/push-pull-frp/push-pull-frp.pdf
+
+* Simple and efficient higher-order reactive programming
+  Neel Krishnaswami
+  http://www.cs.cmu.edu/~neelk/simple-frp.pdf
+
+* The logic of bunched implications (O'hearn, Pym)
+  http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.44.5860&rep=rep1&type=pdf
+
+* LTL types FRP
+
+* The Elm Language (ph.d. thesis)
+
+Need to find/select papers for:
+* Hennessy-Milner properties
+* TCSS (De Nicola-Hennessy)
+* StageBuilder, Alice?
+* Meld (facts, sensing, action)
+* Cardelli cell bio modal logic
+
+Done:
+* Linear Logic for Nonlinear Storytelling
+  http://www.scm.tees.ac.uk/f.charles/publications/conferences/2010/ecai2010-bosser.pdf
+
+* A Semantic Model for GUIs
+  http://www.cs.cmu.edu/~neelk/icfp11-krishnaswami-benton.pdf
+
+* Relating reasoning methodologies in linear logic & process algebras
+  http://www.qatar.cmu.edu/~iliano/papers/linearity12.pdf
+
+* Stefan Muller's NSF GRFP proposal (not public)
