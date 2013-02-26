@@ -1,0 +1,11 @@
+% A toy example context {a, b, c, a * b -o d} to play around with what
+% traces look like.
+
+a : type.
+b : type.
+c : type.
+d : type.
+
+r : a * b -o {d}.
+
+#query * * * 1 (a * b * c -o {c * d}).

@@ -1,0 +1,21 @@
+process Prompt = { 
+  1 -o
+    (Pi x:object.{Game.take x}
+    &
+    {Game.look}
+    &
+    (Pi d:direction.{Game.go d})
+}
+
+process Game = {
+  take X * cur_room R * in_room R X * inventory I 
+-o {cur_room R * inventory (X::I) * Reply.success “taken”}.
+look * cur_room R * !description R D
+  -o {cur_room R * Reply.success D}.
+go Dir * cur_room R * !dir_of R Dir R’ * !description R’ D 
+-o {cur_room R’ * Reply.success D}.
+}
+
+process Reply = {
+  current_reply _ * success S -o {current_reply S}.
+}

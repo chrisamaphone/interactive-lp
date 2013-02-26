@@ -1,0 +1,81 @@
+:: a billion dollars
+The devil hands you the crusty black suitcase lined with hundred dollar bills,
+totalling one billion dollars.
+
+~end~
+
+:: you raise the billion
+After checking your bank account one rainy morning, you phone up the devil.
+<<set $billion = true>>
+
+"Okay," you say. "I've acquired the billion dollars -- now, at last... I
+believe you owe me whatever I want."
+
+The devil acknowledges you slyly and moments later appears at your door.
+
+You, eyebrow perked with anticipation, hastily hand over your crusty black
+suitcase lined with hundreds, totalling one billion dollars, to the devil.
+
+He accepts it by the handle and, without a word, touches your shoulder. The
+world wobbles around you and then suddenly seems [[very distantly familiar|time
+travel]].
+
+:: choice
+"On a whim, as I'm bored with the lack of chance as to the fate of my riches,"
+says the devil, "I'd like to offer you one of the following:
+(a) [[a billion dollars|no choice]], or
+(b) [[anything you want, provided you give me a billion dollars|no choice]]."
+
+:: Start
+<<silently>>
+<<set $billion = false>>
+<<endsilently>>[[A story about classical logic]], with credit due to <html><a
+href="http://homepages.inf.ed.ac.uk/wadler/papers/dual/dual.pdf">Phil
+Wadler</a></html>.
+
+:: no choice
+The devil laughs.
+
+"I'm sorry. Did I give you the impression the choice was yours? Of course
+that's preposterous -- I'm the devil! And today, I select <<if $billion eq
+false>>the second choice -- I'll give you [[anything you want, provided you
+give me a billion dollars]]."<<else>>the first choice -- [[a billion
+dollars]]."<<endif>>
+
+:: time travel
+You find yourself, and the devil, back on the street corner by the library
+where you first met.
+
+"Now," says the Devil, "where were we? Ah yes..."
+
+The memories of your life of crime and sin fade, and you find yourself
+displaced, then suddenly replaced as this once-distant-memory becomes your
+present self.
+
+<<display "choice">>
+
+
+
+:: StoryAuthor
+chrisamaphone
+
+:: A story about classical logic
+One ordinary day on a street corner by the library, the devil appears and
+offers you a [[choice]].
+
+:: StoryTitle
+The Devil of the Excluded Middle
+
+:: anything you want, provided you give me a billion dollars
+You scoff at the Devil's presumptousness -- of course this what he'd select,
+and it's hardly any favor. But as years wear on, the offer gnaws at you, and
+you imagine the possibilities of being granted that wish.
+
+With new resolve, you do everything you can - beg, steal, lie, cheat, lead a
+life of crime and then con your way into the control of major corporations,
+whittling your entire life away with the devil's voice at your back, ultimately
+doing his service. You hurt many people. You grow old.
+
+But, after all that time, [[you raise the billion]].
+
+

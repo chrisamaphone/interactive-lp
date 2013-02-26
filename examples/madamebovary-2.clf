@@ -1,0 +1,112 @@
+%% Encoding of the Madame Bovary story.
+
+% All atoms in the story
+covent : type.
+novels : type.
+grace : type.
+education : type.
+asp : type.
+cb : type.
+be : type.
+ball : type.
+lb : type.
+llove : type.
+eaware_llove : type.
+rint : type.
+rloveexp : type.
+re : type.
+br : type.
+eguilt : type.
+homais : type.
+hyp : type.
+ecest : type.
+erebel : type.
+lheur : type.
+debt : type.
+rgift : type.
+rhumiliated : type.
+laware : type.
+de : type.
+econcern : type.
+ellove : type.
+elrel : type.
+arsenic : type.
+inheritance : type.
+denounced : type.
+ruin : type.
+edead : type.
+
+init : type = {@covent * @lb * @cb * !rloveexp * !homais}.
+spendYearsInCovent : type = covent -o {!novels * !grace * !education}.
+readRomanticNovels : type = novels -o {@asp * @asp * @asp * @asp}.
+marryCharles  : type = asp * grace * cb -o {@be}.
+invitedToBall : type = grace -o {@ball}.
+goToBall : type = ball * asp -o {@asp * @asp * @asp * @asp}.
+dontGoToBall : type = ball -o {@be}.
+leonFallsInLove : type = grace * novels * lb -o {@llove}. % debanged
+emmaRealizesLove : type = llove * be -o {@eaware_llove * @llove}. % consume-repro
+pushLeonAway : type = llove * eaware_llove -o {@be}.
+rodolpheSeduce : type = grace -o {@rint}.
+acceptRodolphe : type = asp * asp * asp * asp * rint -o {@re}. % debanged
+rodolpheRelationshipFalters : type =  re -o {@br * @eguilt * @re}. % consume repro
+persuadeCharles : type = eguilt * homais -o {@hyp * @ecest}.
+amputateHypolyte : type = ecest * hyp -o {!erebel * !lheur}.
+purchaseGift : type = lheur -o {@debt * @rgift}.
+offerGift : type = rgift -o {@rhumiliated * @laware}.
+purchaseProstheticLeg : type = erebel * lheur -o {@debt * @debt * @debt}.
+rodolpheBreakUp : type = rhumiliated * rloveexp * re -o {@de}.
+getSick : type = de -o {debt * debt * debt * debt * !econcern}.
+meetLeonAgain : type = econcern * homais * grace * education -o {@llove * @ellove}.
+acceptLeonAdvances : type = llove * ellove * erebel -o {@elrel}.
+mrBovaryDeath : type = elrel * econcern * homais -o {@arsenic * @inheritance * @elrel}. % consume repro
+reimburseSomeDebt : type = inheritance * lheur * debt * debt * debt * debt -o {1}.
+leonReceivesLetter : type = elrel -o {@denounced * @elrel}.
+loveForLeonFalters : type = ellove -o {@be}.
+leonsBoss : type = llove * denounced -o {1}.
+contractDebts : type = be -o {@debt}.
+contractImportantDebts : type = be -o {@debt * @debt * @debt}.
+ruinByDebt : type = debt * debt * debt * debt * debt * debt * debt -o {@ruin}.
+suicide : type = ruin * arsenic * erebel -o {@edead}.
+
+
+story : type =
+ {init 
+        * @spendYearsInCovent
+        * @readRomanticNovels
+        * @invitedToBall 
+        * @marryCharles 
+        * @(goToBall & dontGoToBall)
+        * @leonFallsInLove
+        * @emmaRealizesLove
+        * @pushLeonAway
+        * @rodolpheSeduce
+        * @acceptRodolphe
+        * @rodolpheRelationshipFalters
+        * @persuadeCharles
+        * @amputateHypolyte
+        * @purchaseGift
+        * @offerGift
+        * @purchaseProstheticLeg
+        * @rodolpheBreakUp
+        * @getSick
+        * @meetLeonAgain
+        * @acceptLeonAdvances
+        * @mrBovaryDeath
+        * @reimburseSomeDebt
+        * @leonReceivesLetter
+        * @loveForLeonFalters
+        * @leonsBoss
+        * @contractDebts
+        * @contractImportantDebts
+        * @ruinByDebt
+        * @suicide
+}.
+
+% #trace * story.
+% #trace * story.
+% #trace * story.
+% #trace * story.
+% #trace * story.
+% #query * * * 500 (story -@ {edead}).
+#trace * story.
+#query * * * 50 (story -o {edead}).

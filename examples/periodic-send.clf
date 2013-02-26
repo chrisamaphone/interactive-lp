@@ -1,0 +1,27 @@
+
+tick : type.
+cotick : type.
+
+clock : cotick -o {tick}.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+lt : nat -> nat -> type.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+        <- lt N M.
+
+nmsgs : nat -> type.
+
+mu : nat = s (s (s z)).
+
+count : nat -> type.
+
+count/mu : tick * count mu * nmsgs N -o {count z * nmsgs (s N) * cotick}.
+
+count/lt : tick * count N * lt N mu -o {count (s N) * cotick}.
+
+#trace * {tick * count z * nmsgs z}.
+

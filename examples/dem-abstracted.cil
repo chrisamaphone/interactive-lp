@@ -1,0 +1,174 @@
+%{
+  Trying to encode a twine game in Cilia, specifically the Devil of the
+    Excluded Middle parable.
+}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Take 1: every passage is a process.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Boilerplate (type decls and global state)
+desc : type.  % Non-link text
+link : type.  % Link text
+
+click : link -> type.   
+  % Means the player has made this choice. XXX local to each passage?
+description : desc -> type.
+  % Means this description should be shown.
+
+% Game specific: global state
+bool : type. tt : bool. ff : bool.
+billion : bool -> type.
+
+% Boilerplate
+process Player {
+  choice : link -> type.  % Means this choice is available.
+
+  % XXX consume leftover choices?
+  % XXX "?" quantifier
+  % OR just generate a &
+  choice(C)@P * (?x.choice(x)) -o {P.click(C)}.
+}
+
+% XXX the actual game loop?
+
+process ABillionDollars = {
+  sig : type.
+  d : desc = "END".
+  sig -o {decription(d)}.
+}
+
+process YouRaiseTheBillion = {
+  sig : type.
+  d : desc = "You raise the billion dollars.".
+  veryDistantlyFamiliar : link.
+
+  sig * billion ff -o 
+    {description(d) * Player.choice(veryDistantlyFamilar) * billion(tt)}.
+  click(veryDistantlyFamiliar) -o {TimeTravel.sig}.
+}
+
+process Choice = {
+  sig : type.
+  d : desc = "Make a choice."
+  anythingYouWant : link.
+  billionDollars : link.
+
+  sig -o {description(d) * Player.choice(anythingYouWant) * Player.choice(billionDollars)}.
+  click(anythingYouWant) -o {NoChoice.sig}.
+  click(billionDollars} -o {NoChoice.sig}.
+}
+
+process Start = {
+  sig : type.
+  d : desc = "A story about classical logic".
+  story : link.
+
+  sig -o {billion(ff) * description(d) * Player.choice(story)}.
+  click(story) -o {AStoryAboutClassicalLogic.sig}.
+}
+
+process NoChoice = {
+  sig : type.
+  anythingYouWant : link.
+  billionDollars : link.
+  sig * billion(ff) -o 
+    {Player.choice(anythingYouWant)}
+  sig * billion(tt) -o
+    {Player.choice(billionDollars)}.
+  click(anythingYouWant) -o {AnythingYouWant.sig}.
+  click(billionDollars) -o {ABillionDollars.sig}.
+}
+
+process TimeTravel = {
+  sig : type.
+  d : desc = "You travel through time.".
+  sig -o {description(d) * Choice.sig}.
+}
+
+process StoryAuthor = {
+  sig : type.
+  d : desc = "Chris Martens".
+  sig -o {description(d)}.
+}
+
+process AStoryAboutClassicalLogic = {
+  sig : type.
+  devilChoice : link.
+  sig -o {Player.choice(devilChoice).
+  click(devilChoice) -o {Choice.sig}.
+}
+
+process StoryTitle = {
+  sig : type.
+  d : desc = "The devil of the excluded middle".
+  sig -o {description(d)}.
+}
+
+process AnythingYouWant = {
+  sig : type.
+  youRaiseTheBillion : link.
+  sig -o {Player.choice(youRaiseTheBillion)}.
+  click(youRaiseTheBillion) -o {YouRaiseTheBillion.sig}.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Take 2: 
+%% The choices generated are &'d together and made available to the player
+%% as a unit.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+process FightOrFlee = {
+  d : desc = "Do you fight or flee?".
+  sig -o {Player.(choice(fight) & choice(flee))}.
+  click(fight) -o {Fight.sig}.
+  click(flee) -o {Flee.sig}.
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Take 3: a passage is a functor over its out-edges.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+process Passage(d : desc, outlinks : (text, passage) list) = {
+  choices = fold (fn (t, acc) => choice(t) & acc) 1 (map #1 outlinks)
+  links = map (fn (t, p) => ! (click(t) -o {p.sig})) 
+  sig -o {description(d) * (fold * 1 links) * choices}.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Take 4: super abstracted, clf style (monolithic, single-process).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+start state: {start, nobillion}.
+
+start -o {story}.
+story -o {choice}.
+choice -o {nochoice}.
+
+nochoice * nobillion -o {anythingyouwant}.
+nochoice * havebillion -o {billion}.
+
+anythingyouwant -o {rasethebillion}.
+raisethebillion * nobillion -o {havebillion * timetravel}.
+timetravel -o {choice}.
+
+billion -o {end}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Take 5: Adding in actual player choice: now the player is the devil.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+start -o {story}.
+story -o {choice}.
+choice -o {anythingtheywant}.
+choice -o {billion}.
+anythingtheywant -o {raisethebillion}.
+raisethebillion * nobillion -o {havebillion * timetravel}.
+timetravel -o {choice}.
+billion -o {end}.
+
+(what is the game for not(A and not A)?)
+(A * (A => bot)) => bot
+

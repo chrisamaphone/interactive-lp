@@ -1,0 +1,39 @@
+bit : type..
+o : bit.
+i : bit.
+
+process Fifo(Instream) = {
+  % internal state
+  cell : bit -> type.
+  empty : type.
+
+  % external signal
+  sigout : bit -> type.
+
+  Instream.sigsend B * empty -o {cell B}.
+  Instream.sigsend B' * cell B -o {cell B' * sigout B}.
+  Instream.eom * cell B -o {sigout B * empty}.
+} {empty}
+%% Implied argument signature information:
+% Instream : {sigsend : bit -> type. eom : type.}.
+
+process SendRecv(BitList) = {
+  sigsend : bit -> type.
+  eom : type.
+  
+  bitlist : type.
+  nil : bitlist.
+  cons : bit -> bitlist -> bitlist.
+
+  send : bitlist -> type.
+
+  send nil -o {eom}.
+  send (B::Bs) -o {sigsend B * send Bs}.
+
+  recv : bitlist -> type.
+  Fifo.sigout B * recv L -o {recv (B::L)}.
+
+} {send BitList}
+
+%% Correctness property: SendRecv(BitList) and Fifo(SendRecv) run together
+%% should result in SendRecv.recv Bitlist

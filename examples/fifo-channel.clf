@@ -1,0 +1,22 @@
+bit : type.
+o : bit.
+i : bit.
+
+recv : bit -> type.
+send : bit -> type.
+cell : bit -> type.
+empty : type.
+
+%% 1 cell pipeline 
+%% >b  []  >-> [b]
+%% >b' [b] >-> [b'] b> 
+recv/empty : recv B * empty -o {cell B}.
+recv/cell : recv B' * cell B -o {cell B' * send B}.
+send/cell : cell B -o {send B * empty}.
+
+#trace * {empty * recv o * recv i * recv o}.
+
+% Note: this brings up an interesting point about the permutability of
+% types in traces. As a process dynamically executes, it can be
+% ordered/synchronized by signals it receives from other processes. As a
+% static trace, signals lose their "temporal" meaning.

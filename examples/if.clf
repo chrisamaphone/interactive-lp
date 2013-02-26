@@ -1,0 +1,71 @@
+
+% Base types
+object : type.
+room : type.
+dir : type.
+desc : type.
+rep : type.
+
+% Base type inhabitants
+success : rep.
+failure : rep.
+
+object_list : type.
+onil : object_list.
+ocons : object -> object_list -> object_list.
+
+north : dir.
+south : dir.
+east : dir.
+west : dir.
+
+%% Player actions
+take : object -> type.
+look : type.
+go : dir -> type.
+
+%% Interpreter actions
+reply : rep -> type.
+
+%% Game state
+dir_of : room -> dir -> room -> type.
+cur_room : room -> type.
+inventory : object_list -> type.
+description : room -> desc -> type.
+in_room : room -> object -> type.
+current_reply : rep -> type.
+
+%% Instantiation of game state
+% This is game-specific; the below is an example.
+r1 : room.
+r2 : room.
+flask : object.
+key : object.
+
+% Initial state.
+init_flask : in_room r1 flask.
+init_key : in_room r2 key.
+init_inventory : inventory onil.
+init_room : cur_room r1.
+
+r1-r2 : dir_of r1 north r2.
+r2-r2 : dir_of r2 south r1.
+
+prompt :
+  1 -o
+    (Pi x:object.{take x}
+    &
+    {look}
+    &
+    Pi d:dir.{go d}).
+
+player_take : take X * cur_room R * in_room R X * inventory I 
+  -o {cur_room R * inventory (ocons X I) * reply success}.
+player_look : look * cur_room R * !description R D
+  -o {cur_room R * reply success}.
+player_go : go Dir * cur_room R * !dir_of R Dir R' * !description R' D 
+  -o {cur_room R' * reply success}.
+
+game_reply : current_reply _ * reply S -o {current_reply S}.
+
+

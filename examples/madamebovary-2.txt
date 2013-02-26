@@ -1,0 +1,67 @@
+From Gwen Bosser:
+
+Hi Chris,
+
+Sorry for answering so late: January has been a time hole, I'm still
+recovering! Below is an example of specification of sequence of events in the
+novel Madame Bovary. 
+
+I would be interested to see what you can obtain from it in Celf: I have been
+reading a bit around mixing backtracking and forward chaining in LL in a
+language (LolliMon? How close to Celf is it?). 
+
+One thing I am particularly interested in is: Can you, by mixing forward
+chaining on "causal chain" and backward as needed to identify causal paths for
+creating "missing" resources for executing the next forward action. This would
+allow to naturally extract, from a verbose specification, causally structured
+"sub-stories". It's very interesting to be able to do this at runtime, and
+causality is a huge beast in AI research, even though narrative causality is a
+special case!
+
+(I have still to read some of the papers you recommended, but I'm on my way to
+have that stack destroyed.)
+
+The example below may not exactly match/illustrate what Celf has to give.
+Perhaps it is too "driven". Maybe we can have a short chat soon to discuss this
+further?
+
+Gwenn
+
+---------------------------------------------------
+Covent*LB*CB *!Rloveexp *!Homais
+
+Covent-@!Novels*!Grace*!Education   "Emma spends her young years in a Covent"
+Novels-@ Asp*Asp*Asp*Asp            "Emma reads romantic novels" 
+Asp*Grace*CB-@!BE                   "Emma maries Charles"
+Grace-@Ball                         "Emma is invited to an aristocrats ball"
+(Ball*Asp-@ Asp*Asp*Asp*Asp         "The Bovary go to the ball") & 
+(Ball-@ BE                          "The Bovary don't go to the ball")
+Grace*Novels*LB-@!Llove             "Leon falls in love with Emma"
+Llove*BE-@EAwareLlove               "Emma realises Leon's love"
+!Llove*EAwareLlove-@BE              "Emma pushes Leon away"
+Grace-@Rint                         "Rodolphe decides to seduce Emma"
+Asp*Asp*Asp*Asp*Rint*BE*Rloveexp-@ !RE 
+                                    "Emma accept Rodolphe advances"
+RE-@BR*EGuilt                       "Emma and Rodolphe relationship falters"
+EGuilt*Homais-@Hyp*ECest            "Homais and Emma persuade Charles to operate Hypolyte"
+ECest*Hyp-@!Erebel*!Lheur           "Hypolyte is amputated"
+Lheur -@Debt*Rgift                  "Emma purchases a gift for Rodolphe"
+Rgift -@Rhumiliated*Laware          "Emma offers a gift  to Rodolphe"
+Erebel *Lheur -@ Debt*Debt*Debt     "Emma purchases a prosthetic leg"
+Rhumiliated*Rloveexp*!RE-@DE        "Rodolphe breaks up"
+DE-@Debt*Debt*Debt*Debt*!ECconcern  "Emma gets sick"
+ECconcern*Homais*Grace*Education -@!Llove * !Ellove 
+                                    "Emma and Leon meet again"
+Llove*Ellove*Erebel -@ !ELrel       "Emma accepts Leon's advances"
+ELrel*ECconcern*Homais -@ Arsenic *Inheritance 
+                                    "Mr Homais informs Emma about Mr Bovary's death"
+Inheritance *Lheur *Debt*Debt*Debt*Debt-@1 
+                                    "Emma reimburses some of the debt"
+Elrel-@Denounced                    "Leon's mother receives an anonymous letter"
+!Ellove-@!BE                        "Emma's love for Leon falters"
+!Llove * Denounced-@1               "Leon's boss talks him out of his relationship"
+BE-@Debt                            "Bored, Emma contracts debts"
+BE-@Debt*Debt                       "Bored, Emma contracts important debts"
+Debt*Debt*Debt*Debt*Debt*Debt*Debt -@ Ruin 
+                                    "The tribunalpronounces the Bovary's ruin"
+Arsenic*Ruin*!Erebel-@Edead         "Emma swallows the arsenic and dies"

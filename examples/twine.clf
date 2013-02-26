@@ -1,0 +1,43 @@
+%% A translation of a simple twine game in CLF.
+% Graph:
+% Passage 1 {link a:2, link b:3}
+% Passage 2 {link a:4}
+% Passage 3 {link a:1, b:4}
+% Passage 4 {link a:5}
+% Passage 5 {}
+
+passage : type.
+p1 : passage.
+p2 : passage.
+p3 : passage.
+p4 : passage.
+p5 : passage.
+
+current : passage -> type.
+
+% hmm.. how to localize links? index by a passage?
+
+link : passage -> type.
+a1 : link p1. 
+b1 : link p1.
+a2 : link p2.
+a3 : link p3.
+b3 : link p3.
+a4 : link p4.
+
+choose : link P -> type.
+
+r1a : current p1 * choose a1 -o {current p2}.
+r1b : current p1 * choose b1 -o {current p3}.
+r2a : current p2 * choose a2 -o {current p4}.
+r3a : current p3 * choose a3 -o {current p1}.
+r3b : current p3 * choose b3 -o {current p4}.
+r4  : current p4 * choose a4 -o {current p5}.
+
+% desired property: if current P and we choose a link P, we can transition.
+player : current P -o {choose (L:link P) * current P}.
+
+% #trace * {current p1}.
+#query * * * 1 (current p1 -o {current p5}).
+
+
