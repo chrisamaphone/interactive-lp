@@ -1,4 +1,5 @@
 To-read:
+
 * Structural analysis of Narratives within Coq
   Gwenn Bosser et al
   http://cedric.cnam.fr/fichiers/art_2061.pdf
@@ -23,11 +24,24 @@ To-read:
 * The Elm Language (ph.d. thesis)
 
 Need to find/select papers for:
+Module theory:
+* Derek Dryer's thesis
+* What is a recursive module? (bob n karl)
+* A Type Theory for Higher-Order Modules
+* tslf/ mechanized module theory
+Process algebrae/calculi:
+* Bigraphs
+* Interaction networks (LaFont)
 * Hennessy-Milner properties
 * TCSS (De Nicola-Hennessy)
-* StageBuilder, Alice?
-* Meld (facts, sensing, action)
+Games & media stuff:
+* Coco/StageBuilder, Alice?
+* Kodu
+* Aftereffects
+Other:
 * Cardelli cell bio modal logic
+* Frank & Bernardo - ESOP session types paper
+* Henry - VOTEID and financial contracts
 
 Done:
 * Linear Logic for Nonlinear Storytelling
@@ -40,3 +54,9 @@ Done:
   http://www.qatar.cmu.edu/~iliano/papers/linearity12.pdf
 
 * Stefan Muller's NSF GRFP proposal (not public)
+
+* Derek's recursive module type theory paper
+
+* Florian's LF module system paper
+
+* Meld
