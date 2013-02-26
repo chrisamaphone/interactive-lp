@@ -1,0 +1,31 @@
+%{
+  A tag game in Cilia
+}%
+
+identifier : type.
+1 : identifier.
+2 : identifier.
+3 : identifier.
+
+process Player(id : identifier) = {
+
+  it : type.
+  notit : type. % These are mutually exclusive. "flag" instead of "type"?
+
+  %invariant notit => ~it and it => ~notit.
+
+  it -o {Pi p:identifier.chase p}. % pick a player to chase
+  
+  % either you tag them or you stay it. really these are "+" not "&"
+  chase X -o {(tag X) * notit}.
+  chase X -o {it}.
+
+  % if you're tagged, you become it.
+  tag id * notit -o {it}. 
+}
+
+process Player1 = Player(1){it}.
+process Player2 = Player(2){notit}.
+process Player3 = Player(3){notit}.
+
+%invariant forall P:PLAYER, P.it => forall P':PLAYER, P <> P' => P'.notit
