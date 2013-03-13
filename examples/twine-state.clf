@@ -1,0 +1,49 @@
+% A simple twine game with a few bits of state.
+
+% State
+gotkey : type.
+nokey : type. % complement of gotkey.
+gotlamp : type.
+nolamp : type. % complement of gotlamp.
+
+% Passages
+start : type.
+den : type.
+cellar : type.
+dark : type.
+lose : type.
+win : type.
+
+% Actions (functionally the same as passages)
+opendoor : type.
+getlamp : type.
+getkey : type.
+
+init : type = {nokey * nolamp * start}.
+
+% Connectors
+start_to_den_or_cellar : start -o {den & cellar}.
+
+den_to_cellar_lamp_or_key : den -o 
+        {cellar
+         & (nolamp -o {getlamp}) 
+         & (nokey -o {getkey})}.
+get_lamp : getlamp -o {gotlamp * den}.
+get_key : getkey -o {gotkey * den}.
+
+cellar_to_den_or_door : cellar -o {den & opendoor}.
+open_door_without_key : opendoor * nokey -o {cellar * nokey}.
+open_door_with_key : opendoor * gotkey -o {dark}.
+dark_with_lamp : dark * gotlamp -o {win}.
+dark_without_lamp : dark * nolamp -o {lose}.
+
+% Reporting
+ending : type.
+w : ending. l : ending.
+report : ending -> type.
+report_win : win -o {report w}.
+report_loss : lose -o {report l}.
+
+#trace * init.
+
+#query * * * 10 init -o {report X}.

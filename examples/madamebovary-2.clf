@@ -55,7 +55,7 @@ purchaseGift : type = lheur -o {@debt * @rgift}.
 offerGift : type = rgift -o {@rhumiliated * @laware}.
 purchaseProstheticLeg : type = erebel * lheur -o {@debt * @debt * @debt}.
 rodolpheBreakUp : type = rhumiliated * rloveexp * re -o {@de}.
-getSick : type = de -o {debt * debt * debt * debt * !econcern}.
+getSick : type = de -o {@debt * @debt * @debt * @debt * !econcern}.
 meetLeonAgain : type = econcern * homais * grace * education -o {@llove * @ellove}.
 acceptLeonAdvances : type = llove * ellove * erebel -o {@elrel}.
 mrBovaryDeath : type = elrel * econcern * homais -o {@arsenic * @inheritance * @elrel}. % consume repro
@@ -108,5 +108,10 @@ story : type =
 % #trace * story.
 % #trace * story.
 % #query * * * 500 (story -@ {edead}).
-#trace * story.
+% #trace * story.
 #query * * * 50 (story -o {edead}).
+
+
+
+
+
