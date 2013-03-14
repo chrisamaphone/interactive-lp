@@ -1,0 +1,97 @@
+% A simple twine game with a few bits of state.
+%
+% This is distinct from twine-state.clf first in that it makes no use of the
+% "&" connectives for postponing choice - it makes each choice available as
+% a distinct rule.
+%
+% The more significant change is the distinction between player actions
+% (denoted with a ') and internal game processes.
+
+% State
+gotkey : type.
+nokey : type. % complement of gotkey.
+gotlamp : type.
+nolamp : type. % complement of gotlamp.
+
+% Passages
+start : type.
+den : type.
+cellar : type.
+dark : type.
+lose : type.
+win : type.
+
+% Internal actions (interpreted from player commands; functionally the same
+% as passages)
+getlamp : type.
+getkey : type.
+opendoor : type.
+
+
+%  These are all the player controls, including motion.
+action : type.
+'start : action.
+'opendoor : action.
+'getlamp : action.
+'getkey : action.
+'starttoden : action.
+'starttocellar : action.
+'dentocellar : action.
+'cellartodoor : action.
+'cellartoden : action.
+
+% To specify an order on actions
+nat : type.
+z : nat.
+s : nat -> nat.
+nth_act : nat -> action -> type.
+% A specific test case for player action.
+% 'starttoden, 'getlamp, 'getkey, 'dentocellar, 'cellartodoor.
+act0 : nth_act z 'starttoden.
+act1 : nth_act (s z) 'getlamp.
+act2 : nth_act (s (s z)) 'getkey.
+act3 : nth_act (s (s (s z))) 'dentocellar.
+act4 : nth_act (s (s (s (s z)))) 'cellartodoor.
+
+% current action
+cur : nat -> type.
+cur_act : action -> type.
+
+% Transition rules. Every rule from the previous version has an additional
+% cur_act premise, and outputs a "tick" whenever we want to return control
+% to the player.
+
+tick : type.
+next_act : tick * cur N * nth_act N A -o {cur_act A * cur (s N)}.
+
+start_to_den : cur_act 'starttoden * start -o {den * tick}.
+start_to_cellar : cur_act 'starttocellar * start -o {cellar * tick}.
+
+den_to_cellar : cur_act 'dentocellar * den -o {cellar * tick}.
+den_to_lamp : cur_act 'getlamp * den * nolamp -o {getlamp}.
+den_to_key : cur_act 'getkey * den * nokey -o {getkey}.
+get_lamp : getlamp -o {gotlamp * den * tick}.
+get_key : getkey -o {gotkey * den * tick}.
+
+cellar_to_den : cur_act 'cellartoden * cellar -o {den * tick}.
+cellar_to_door : cur_act 'cellartodoor * cellar -o {opendoor}.
+
+open_door_without_key : opendoor * nokey -o {cellar * nokey * tick}.
+open_door_with_key : opendoor * gotkey -o {dark}.
+
+dark_with_lamp : dark * gotlamp -o {win}.
+dark_without_lamp : dark * nolamp -o {lose}.
+
+% Reporting
+ending : type.
+w : ending. l : ending.
+report : ending -> nat -> type. % the nat is the # of steps.
+report_win : win * cur N -o {report w N}.
+report_loss : lose * cur N -o {report l N}.
+
+% Initial state
+init : type = {nokey * nolamp * start * cur z * tick}.
+
+#trace * init.
+
+#query * * * 1 init -o {report END NSTEPS}.
