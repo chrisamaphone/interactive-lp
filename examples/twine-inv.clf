@@ -1,19 +1,6 @@
 % A simple twine game with a few bits of state.
 % This version has an inventory. It also plays with the representation of
 % choices by writing rules as room -o {room1} & {room2}.
-%
-% This doesn't work for some reason! The trace gets to
-%
-%  Trace * init
-% -- init lin
-% -- start lin, inventory onil lin
-% -- inventory onil lin, cellar lin
-% -- inventory onil lin, den lin
-% -- getlamp lin, inventory onil lin
-% -- inventory (ocons !lamp !onil) lin, den lin
-%
-% ...and stops for some reason, even though a transition from "den lin" to 
-% "cellar lin" (e.g. is possible).
 
 
 % Objects
@@ -21,36 +8,13 @@ obj : type.
 key : obj.
 lamp : obj.
 
-% ugh hack - impose an arbitrary ordering to tell things apart. this at
-% least saves us from having n! relationships.
-ord : obj -> obj -> type.
-- : ord key lamp.
 
-% transitive, symmetric closure of ord
-diseq : obj -> obj -> type.
-diseq/ord : diseq O O'
-             <- ord O O'.
-diseq/sym : diseq O O'
-             <- diseq O' O.
-diseq/trans : diseq O1 O3
-               <- diseq O1 O2
-               <- diseq O2 O3.
+% Inventories as bitmaps
+bool : type.
+tt : bool.
+ff : bool.
 
-% Inventories
-objlist : type.
-onil : objlist.
-ocons : obj -> objlist -> objlist.
-
-isin : obj -> objlist -> type.
-in/hit : isin O (ocons O Os).
-in/miss : isin O (ocons O' Os)
-               <- isin O Os.
-
-notin : obj -> objlist -> type.
-notin/nil : notin O onil.
-notin/cons : notin O (ocons O' Os)
-                  <- diseq O O'
-                  <- notin O Os.
+has : obj -> bool -> type.
 
 % linear, instantiated as part of init.
 inventory : objlist -> type.
@@ -68,7 +32,7 @@ opendoor : type.
 getlamp : type.
 getkey : type.
 
-init : type = {start * (inventory onil)}.
+init : type = {start * has key ff * has lamp ff}.
 
 % Connectors
 start_to_den : start -o {den} & {cellar}.
