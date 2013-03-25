@@ -1,0 +1,96 @@
+% Building on prior Twine-based example to construct a full command
+% language available to the player. Extend the game to include several
+% actions that can happen (and fail) when combinatory commands are issued.
+
+
+% Nouns
+object : type.
+room : type.
+
+% State
+got : object -> type.
+~got : object -> type. % complement of got.
+
+% Passages/locations/state machine positions
+at_start : type.
+at_den : type.
+at_cellar : type.
+at_dark : type.
+at_lose : type.
+at_win : type.
+at_lamp : type.
+at_key : type.
+at_door : type.
+
+% Noun instantiations
+door : object.
+key : object.
+lamp : object.
+den : room.
+cellar : room.
+
+%  These are all the player controls, including motion.
+action : type.
+'startat : room -> action.
+'open : object -> action.
+'get : object -> action.
+'moveto : room -> action.
+
+% To specify an order on actions
+nat : type.
+z : nat.
+s : nat -> nat.
+nth_act : nat -> action -> type.
+
+% current action
+cur : nat -> type.
+cur_act : action -> type.
+
+% Transition rules. Every rule from the previous version has an additional
+% cur_act premise, and outputs a "tick" whenever we want to return control
+% to the player.
+
+tick : type.
+%% Randomized player
+player : tick * cur N -o {cur (s N) * (Pi a:action.cur_act a)}.
+
+%% A specific test case for player action.
+% player : tick * cur N * nth_act N A -o {cur_act A * cur (s N)}.
+% 'starttoden, 'getlamp, 'getkey, 'dentocellar, 'cellartodoor.
+% act0 : nth_act z ('startat den).
+% act1 : nth_act (s z) ('get lamp).
+% act2 : nth_act (s (s z)) ('get key).
+% act3 : nth_act (s (s (s z))) ('moveto cellar).
+% act4 : nth_act (s (s (s (s z)))) ('open door).
+
+start_to_den    : cur_act ('startat den) * at_start  -o {at_den * tick}.
+start_to_cellar : cur_act ('startat cellar) * at_start -o {at_cellar * tick}.
+
+den_to_cellar : at_den * cur_act ('moveto cellar) -o {at_cellar * tick}.
+den_to_lamp   : at_den * cur_act ('get key) * ~got key -o {at_key}.
+den_to_key    : at_den * cur_act ('get lamp) * ~got lamp -o {at_lamp}.
+get_key       : at_key -o {got key * at_den * tick}.
+get_lamp      : at_lamp -o {got lamp * at_den * tick}.
+
+cellar_to_den  : at_cellar * cur_act ('moveto den) -o {at_den * tick}.
+cellar_to_door : at_cellar * cur_act ('open door) -o {at_door}.
+
+open_door_without_key : at_door * ~got key -o {at_cellar * ~got key * tick}.
+open_door_with_key    : at_door * got key -o {at_dark}.
+
+dark_with_lamp    : at_dark * got lamp -o {at_win}.
+dark_without_lamp : at_dark * ~got lamp -o {at_lose}.
+
+% Reporting
+ending : type.
+w : ending. l : ending.
+report : ending -> nat -> type. % the nat is the # of steps.
+report_win : at_win * cur N -o {report w N}.
+report_loss : at_lose * cur N -o {report l N}.
+
+% Initial state
+init : type = {~got key * ~got lamp * at_start * cur z * tick}.
+
+#trace * init.
+
+#query * * * 50 init -o {report END NSTEPS}.
