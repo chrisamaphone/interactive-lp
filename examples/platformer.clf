@@ -1,0 +1,85 @@
+%% An abstractified platformer.
+% Rules:
+% - 2d tile grid, player and platform each occupy one cell each.
+% - Player is either supported or unsupported.
+% - From supported position, we can:
+%   - jump
+%   - move left/right
+
+ent_type : type.
+pc : ent_type.
+platform : ent_type.
+
+ent : ent_type -> type.
+player : ent pc. % "the player is a pc entity".
+
+% nats and finite nats for board positions.
+nat : type.
+z : nat.
+s : nat -> nat.
+fin : nat -> type.
+fz : fin N.
+fs : fin N -> fin (s N).
+
+four : nat = s (s (s (s z))).
+six : nat = s (s four).
+xmax-1 : nat = six.
+ymax-1 : nat = four.
+xmax : nat = s (xmax-1). % x range = 0-7.
+ymax : nat = s (ymax-1). % y range = 0-5.
+
+jump_height : nat = s (s z).
+
+fplus : Pi ceil:nat. fin ceil -> nat -> fin ceil -> type.
+
+- : fplus _ fz _ fz.
+- : fplus (s N) (fs (F : fin N)) M (fs F')
+     <- fplus N F M (F' : fin N).
+
+coerce : fin N -> fin (s N) -> type.
+coerce/z : coerce (fz : fin N) (fz : fin (s N)).
+coerce/s : coerce (fs (F : fin N)) (fs F')
+            <- coerce F (F' : fin (s N)).
+
+xpos : ent _ -> fin xmax -> type.
+ypos : ent _ -> fin ymax -> type.
+
+empty : fin xmax -> fin ymax -> type.
+
+fall : ypos player (fs Y) * coerce Y Y' * xpos player X
+            * empty X Y'
+        -o {ypos player Y' * xpos player X * empty X Y'}.
+
++jump : ypos player (fs Y) * coerce Y Y' * ypos (P:ent platform) Y'
+            * xpos player X * xpos P X * fplus ymax Y' jump_height Y''
+         -o {ypos player Y'' * ypos (P:ent platform) Y'
+             * xpos player X * xpos P X}.
+
+% TODO: moveleft, moveright
+
+% ffff why don't these abbrevs work
+% coordinates
+%abbrev y0 : fin ymax = fz.
+y1 : fin ymax = fs fz.
+%abbrev y2 : fin ymax = fs y1.
+%abbrev y3 : fin ymax = fs y2.
+%abbrev y4 : fin ymax = fs y3.
+%abbrev y5 : fin ymax = fs y4.
+%abbrev x0 : fin xmax = fz.
+%abbrev x1 : fin xmax = fs fz.
+%abbrev x2 : fin xmax = fs x1.
+%abbrev x3 : fin xmax = fs (fs (fs fz)).
+%abbrev x4 : fin xmax = fs x3.
+%abbrev x5 : fin xmax = fs x4.
+%abbrev x6 : fin xmax = fs x5.
+%abbrev x7 : fin xmax = fs x6.
+- : empty (fs (fs (fs fz))) Y.
+
+% platforms
+plat1 : ent platform.
+
+init : type = 
+  {xpos player x3 * ypos player y1 * xpos plat1 x3 * ypos plat1 y0}.
+
+#trace * init.
+

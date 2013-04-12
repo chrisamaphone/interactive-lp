@@ -1,0 +1,83 @@
+%% Simple combat mechanic.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+% truncated subtraction
+sub : nat -> nat -> nat -> type.
+sub/z1 : sub z N z.
+sub/z2 : sub N z N.
+sub/s  : sub (s N) (s M) P
+         <- sub N M P.
+
+plus : nat -> nat -> nat -> type.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+          <- plus N M P.
+
+% a few tests
+
+two : nat = s (s z).
+three : nat = s (s (s z)).
+six : nat = s (s (s three)).
+ten : nat = s (s (s (s six))).
+
+#query * * * 1 plus ten X three.
+#query * * * 1 plus three X ten.
+#query * * * 1 sub ten three X.
+#query * * * 1 sub three ten X.
+
+starting_hp : nat = ten.
+
+pc : type.
+player1 : pc.
+player2 : pc.
+
+opp : pc -> pc -> type.
+- : opp player1 player2.
+- : opp player2 player1.
+
+hp : pc -> nat -> type.
+
+action : type.
+punch : action.
+kick : action.
+block_punch : action.
+block_kick : action.
+
+act : pc -> action -> type.
+
+punch_hit : act P1 punch * opp P1 P2 * hp P2 HP
+                * sub HP three HP' -o {hp P2 HP'}.
+
+punch_block : act P1 punch * opp P1 P2 * act P2 block_punch
+                  -o {1}.
+
+kick_hit : act P1 kick * opp P1 P2 * hp P2 HP
+               * sub HP two HP' -o {hp P2 HP'}.
+
+kick_block : act P1 kick * opp P1 P2 * act P2 block_kick
+                 -o {1}.
+
+block_punch_fail : act P block_punch -o {1}.
+block_kick_fail : act P block_kick -o {1}.
+
+% win condition
+winner : pc -> type.
+none : pc.
+gameon : type.
+
+win : gameon * hp P1 z * opp P1 P2 * hp P2 (s N) -o {winner P2}.
+tie : gameon * hp P1 z * opp P1 P2 * hp P2 z -o {winner none}.
+
+% interaction
+player1_act : gameon -o {act player1 A * gameon}.
+player2_act : gameon -o {act player2 A * gameon}.
+% "none" cannot act
+
+init : type = {hp player1 starting_hp * hp player2 starting_hp * gameon}.
+
+#trace * init.
+
+#query * * * 5 init -o {winner P}.
