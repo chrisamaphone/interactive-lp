@@ -11,23 +11,6 @@ sub/z2 : sub N z N.
 sub/s  : sub (s N) (s M) P
          <- sub N M P.
 
-plus : nat -> nat -> nat -> type.
-plus/z : plus z N N.
-plus/s : plus (s N) M (s P)
-          <- plus N M P.
-
-% a few tests
-
-two : nat = s (s z).
-three : nat = s (s (s z)).
-six : nat = s (s (s three)).
-ten : nat = s (s (s (s six))).
-
-#query * * * 1 plus ten X three.
-#query * * * 1 plus three X ten.
-#query * * * 1 sub ten three X.
-#query * * * 1 sub three ten X.
-
 starting_hp : nat = ten.
 
 pc : type.
