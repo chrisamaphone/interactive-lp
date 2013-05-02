@@ -1,0 +1,169 @@
+\documentclass{article}
+
+\usepackage{amsmath, amssymb}
+\usepackage{verbatim}
+\usepackage{url}
+
+% XXX add fp-macros or sth
+\newcommand{\lolli}{\multimap}
+\newcommand{\tensor}{\otimes}
+\newcommand{\process}{\mathsf{process}}
+\newcommand{\with}{\mathsf{\&}}
+\newcommand{\subord}{\prec}
+\newcommand{\inits}{\mathsf{initials}}
+\newcommand{\interms}{\mathsf{intermediates}}
+\newcommand{\terms}{\mathsf{terminals}}
+\newcommand{\eps}{\epsilon}
+\newcommand{\bang}{!}
+\newcommand{\mon}[1]{\{#1\}}
+\newcommand{\stepsto}{\rightsquigarrow}
+%"proofs in the standard sequent calculus"
+\newcommand{\proves}{\longrightarrow}
+%"proves in the focusing system"
+\newcommand{\fproves}{\Longrightarrow}
+\newcommand{\atm}[1]{\mathsf{#1}}
+\newcommand{\up}{\uparrow}
+\newcommand{\down}{\downarrow}
+\newcommand{\stable}[1]{#1\mathsf{\ stable}}
+\newcommand{\aff}{@}
+\newcommand{\one}{\mathrm{1}}
+
+% epsilons
+\newcommand{\nileps}{\langle\rangle}
+% \newcommand{\gets}{\leftarrow}
+
+\title{Subordination for linear, forward-chaining logic programs}
+\author{Chris Martens}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Language}
+
+\subsection{The logic programming language}
+
+Basically lollimon or linear datalog.
+
+Terms and types that classify them
+\[ t ::= ... \]
+\[ \tau ::= ... \]
+
+Predicate kinds
+\[ K ::= \mathsf{rel} \mid \vec{\tau} \to K \]
+
+Synchronous resources
+\[ S ::= a(t_1, ..., t_n) \mid S \tensor S \mid \one \]
+
+Forward-chaining, asynchronous rules
+\[ A ::= \Pi \overline{x{:}\tau}. S \lolli \{S\} \]
+
+Signatures, collections of rules
+\[ \Sigma 
+::= \cdot \mid \Sigma, t : \tau \mid \Sigma, a : K \mid \Sigma, r : A \]
+
+States (linear contexts)
+\[
+\Delta ::= \cdot \mid \Delta, x : S
+\]
+
+Programs
+\[
+prog ::= (\Sigma, \Delta_0) \mid (\Sigma, \Delta_0) \proves^{?} A
+\]
+
+
+\subsection{The trace language}
+
+The above describes how to populate a signature; this section should
+describe how proof search is executed and traces are built.
+
+Patterns
+\[ p ::= \langle x_1, \dots, x_n \rangle \]
+
+Rule applications
+\[ R ::= r(N_1,...,N_n) \]
+
+Traces (sequences of bindings)
+\[
+\eps ::= \nileps \mid \{ p \} \gets R ; \eps'
+\]
+
+
+Operational judgment
+
+\[
+\Sigma \vdash \eps : \Delta \stepsto \Delta'
+\]
+% XXX define
+
+Pre- and post-sets of variables in a binding
+% XXX define
+
+Concurrent equality judgment
+\[
+\eps_1 = \eps_2
+\]
+% XXX define
+
+\section{Definition of subordination}
+
+An atomic resource $a(e)$ is {\em initial} in $\Sigma$ if it occurs in
+$\Sigma$, but only to the left of an implication 
+$... \tensor a(e) \tensor ... \lolli {A}$ ($a(e) \notin A$).
+
+An atom is {\em intermediate} in $\Sigma$ if it occurs to the left of
+the $\lolli$ in some rules and to the right in others.
+
+An atom is {\em terminal} in $\Sigma$ if it occurs in $\Sigma$ and only
+occurs to the right.
+
+$\Sigma_1 \subord \Sigma_2$ iff
+
+\begin{itemize}
+\item $\interms(\Sigma_1) \cap \Sigma_2 = \emptyset$
+\item $\interms(\Sigma_2) \cap \Sigma_1 = \emptyset$
+\item $\inits(\Sigma_1) \cap \terms(\Sigma_2) = \emptyset$
+\end{itemize}
+
+
+
+\section{Example}
+
+Consider the following signature.
+
+\verbatiminput{subord-example.clf}
+
+\section{Theorem statement and proof}
+
+If $\Sigma_1, \Sigma_2 \vdash \eps : \Delta \stepsto \Delta'$
+and $\Sigma_1 \subord \Sigma_2$, then
+$\eps = \eps_1 ; \eps_2$ where
+$\Sigma_1 \vdash \eps_1 : \Delta \stepsto \Delta''$
+and
+$\Sigma_2 \vdash \eps_2 : \Delta'' \stepsto \Delta'$.
+
+By induction on the structure of the trace $\eps$.
+
+\begin{itemize}
+\item Case: $\eps = \nileps$. $\eps_1 = \eps_2 = \nileps$. Done.
+\item Case: $\eps = \{p\}\gets R; \eps'$\\
+  By Lemma (below), either 
+  \[ \Delta \vdash_{\Sigma_1} R : A \]
+    (where $A$ is a wf type in $\Delta, \Sigma_1$)
+  or
+  \[ \Delta \vdash_{\Sigma_2} R : A \]
+    (where $A$ is a wf type in $\Delta, \Sigma_2$).\\
+  \begin{itemize}
+  \item Subcase 1:
+  \item Subcase 2:
+  \end{itemize}
+\end{itemize}
+
+\subsection{Lemma}
+
+% \bibliographystyle{plain}
+% \bibliography{preproposal}
+
+\end{document}

@@ -1,0 +1,14 @@
+% Toy example for the sake of examining subordination.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+a : type.
+b : type.
+c : nat -> type.
+
+r1 : c z -o {a}.
+r2 : c (s N) -o {c N * b}.
+
+#trace * {c (s (s (s z)))}.

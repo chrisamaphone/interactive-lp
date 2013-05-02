@@ -1,0 +1,59 @@
+player_num : type.
+one : player_num.
+two : player_num.
+tick : type. % clock tick.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+ball_pos : nat -> nat -> type.
+paddle_pos : player_num -> nat -> type.
+vel : type.
+ball_vel : vel -> type.
+lt : nat -> nat -> type.
+
+dir : type.
+up : dir.
+dn : dir.
+
+% update function & velocity computations
+upd : nat -> nat -> vel -> nat -> nat -> type.
+reflect_left : vel -> vel -> type.
+reflect_right : vel -> vel -> type.
+reflect_down : vel -> vel -> type.
+reflect_up : vel -> vel -> type.
+
+xmax : nat.
+xmin : nat.
+ymax : nat.
+ymin : nat.
+
+% player reactions: changes paddle_pos
+player_action : player_num -> dir -> type.
+player_up
+ : player_action N up * paddle_pos N Y * lt Y ymax -o {paddle_pos N (s Y)}.
+player_dn
+ : player_action N dn * paddle_pos N (s Y) -o {paddle_pos N Y}. 
+
+% time reaction - changes ball_pos
+time_reaction 
+  : tick * ball_pos X Y * ball_vel V * upd X Y V X' Y'
+      -o {ball_pos X' Y' * ball_vel V}. 
+
+% collision reaction - changes ball_vel
+collide_paddle2
+  : ball_pos xmax Y * paddle_pos two Y * ball_vel V * reflect_left V V' -o
+  {ball_vel V' * ball_pos xmax Y * paddle_pos two Y}.
+
+collide_paddle1
+  : ball_pos xmin Y * paddle_pos one Y * ball_vel V * reflect_right V V' -o
+  {ball_vel V' * ball_pos xmin Y * paddle_pos one Y}.
+
+% collide with floor and ceiling
+collide_ceil
+  : ball_pos X ymax * ball_vel V * reflect_down V V' -o
+  {ball_vel V' * ball_pos X ymax}.
+
+collide_floor
+  : ball_pos X ymin * ball_vel V * reflect_down V V' -o
+  {ball_vel V' * ball_pos X ymin}.

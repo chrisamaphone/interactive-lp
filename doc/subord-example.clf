@@ -1,0 +1,27 @@
+data : type.
+a : data.
+b : data.
+
+% model
+model_initial : data -> type.
+model_terminal : type.
+act_on : data -> type. % internal.
+
+model_receive : model_initial X -o {act_on X}.
+model_process : act_on X -o {model_terminal}.
+
+% mediating
+model-control : model_terminal -o {control_initial}.
+control-model : control_terminal X -o {model_initial X}.
+
+% control
+control_initial : type.
+control_terminal : data -> type.
+
+control_pickb : control_initial -o {control_terminal b}.
+control_stop  : control_initial -o {1}.
+
+
+init : type = {model_terminal}.
+
+#query * * * 10 init -o {1}.
