@@ -163,14 +163,12 @@ one), then we only need to consider rules from $\Sigma_c$.
 Proof: By induction on the structure of the trace $\eps$.
 
 \begin{itemize}
-\item Case: $\eps = \nileps$. $\eps_1 = \eps_2 = \nileps$. Done.
+\item Case: $\eps = \nileps$. $\eps_1 = \eps_2 = \nileps$. \checkmark
 \item Case: $\eps = \{p\}\gets R; \eps'$\\
   By Lemma (below), either 
   \[ \Delta \vdash_{\Sigma_1} R : A \]
-    (where $A$ is a wf type in $\Delta, \Sigma_1$)
   or
   \[ \Delta \vdash_{\Sigma_2} R : A \]
-    (where $A$ is a wf type in $\Delta, \Sigma_2$).\\
   \begin{itemize}
   \item Subcase 1:
   \item Subcase 2:
@@ -178,6 +176,14 @@ Proof: By induction on the structure of the trace $\eps$.
 \end{itemize}
 
 \subsection{Lemma}
+
+If $\Sigma_1 \subord \Sigma_2$ and $\Sigma_1, \Sigma_2 \vdash p \gets
+R;\eps :
+\Delta \stepsto \Delta'$
+then either
+$\Sigma_1; \Delta \vdash R : A$
+or
+$\Sigma_2; \Delta \vdash R : A$.
 
 % \bibliographystyle{plain}
 % \bibliography{preproposal}
