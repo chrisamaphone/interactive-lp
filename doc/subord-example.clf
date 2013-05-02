@@ -21,7 +21,7 @@ control_stop  : control_initial -o {1}.
 
 
 % mediating
-% model-control : model_terminal -o {control_initial}.
+model-control : model_terminal -o {control_initial}.
 control-model : control_terminal X -o {model_initial X}.
 
 

@@ -170,8 +170,28 @@ Proof: By induction on the structure of the trace $\eps$.
   or
   \[ \Delta \vdash_{\Sigma_2} R : A \]
   \begin{itemize}
-  \item Subcase 1:
-  \item Subcase 2:
+  \item Subcase 1: 
+    \[
+      \Sigma_1 \vdash \{p\}\gets R 
+        : \Delta^{o}, fv(R) \stepsto \Delta^{o}, bv(p)
+    \]
+    (and $\eps' : \Delta^o, bv(p) \stepsto \Delta'$).\\
+    By IH, $\eps' = \eps_1'; \eps_2'$.\\
+    Let $\eps_1$ be $\{p\} \gets R; \eps_1'$ and
+    $\eps_2$ be $\eps_2'$. $\eps =\eps_1;\eps_2$ as needed.
+  \item Subcase 2: $\{p\}\gets R$ is wf in $\Sigma_2$\\
+    By IH, $\eps = \{p\}\gets R; \eps_1'; \eps_2'$.\\
+    By definition of subordination, $bv(p)$'s types are intermediates or
+    terminals of $\Sigma_2$ (because, for $R = r(e)$, initials can't appear
+    on the right of the $\lolli$ in $r$'s type).\\
+    Since $\eps_1'$ is well-formed in $\Sigma_1$ (also from IH),
+    $bv(p) \notin \eps_1'$.\\
+    Thus we can rewrite
+    \[ \{p\}\gets R; \eps_1'; \eps_2' \]
+    as
+    \[ \eps_1'; \{p\}\gets R; \eps_2' \]
+    So letting $\eps_1$ be $\eps_1'$ and $\eps_2$ be $\{p\}\gets R;
+    \eps_2'$ gives us $\eps =\eps_1;\eps_2$ as needed.
   \end{itemize}
 \end{itemize}
 
