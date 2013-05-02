@@ -135,6 +135,15 @@ Consider the following signature.
 
 \verbatiminput{subord-example.clf}
 
+If we consider the signature to be divided by the comments into $\Sigma_m$,
+$\Sigma_c$, and $\Sigma_i$ (for the model signature, control signature, and
+mediating signature), then $\Sigma_m \subord \Sigma_c$ and $\Sigma_c
+\subord \Sigma_m$. If we add in just one of the rules from $\Sigma_i$, we
+get an asymmetric subordination relation. For example, let's consider
+removing \verb|model-control| but keeping \verb|control-model|. This now
+means that $\Sigma_c \subord \Sigma_m$.
+
+
 \section{Theorem statement and proof}
 
 If $\Sigma_1, \Sigma_2 \vdash \eps : \Delta \stepsto \Delta'$
@@ -144,7 +153,14 @@ $\Sigma_1 \vdash \eps_1 : \Delta \stepsto \Delta''$
 and
 $\Sigma_2 \vdash \eps_2 : \Delta'' \stepsto \Delta'$.
 
-By induction on the structure of the trace $\eps$.
+In other words, any trace run in a signature that can be divided into a
+subordination relation has a prefix that can be run in only the subordinate
+signature, and does not need to consider rules from the later signature. In
+our example above, this means that as long as we haven't produced a
+terminal atom from the control (\verb|control_terminal| being the only
+one), then we only need to consider rules from $\Sigma_c$.
+
+Proof: By induction on the structure of the trace $\eps$.
 
 \begin{itemize}
 \item Case: $\eps = \nileps$. $\eps_1 = \eps_2 = \nileps$. Done.
