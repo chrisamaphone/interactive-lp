@@ -1,0 +1,39 @@
+nat : type.
+z : nat.
+s : nat -> nat.
+
+% bwd chaining mul by 2 for now
+dbl : nat -> nat -> type.
+dbl/z : dbl z z.
+dbl/s : dbl (s N) (s (s N'))
+         <- dbl N N'.
+
+chan : type.
+add5 : chan.
+mul2 : chan.
+threes : chan.
+
+inp : chan -> nat -> type.
+out : chan -> nat -> type.
+
+repeat : nat -> type.
+
+do_threes : repeat (s X) -o {out threes (s (s (s z))) * repeat X}.
+do_add5 : inp add5 N -o {out add5 (s (s (s (s (s N)))))}.
+do_mul2 : inp mul2 N * dbl N N2 -o {out mul2 N2}.
+stop : repeat z -o {1}.
+
+three : nat = s (s (s z)).
+
+% compose channels
+threes_add : out threes X -o {inp add5 X}.
+add_mul : out add5 X -o {inp mul2 X}.
+
+#trace * {repeat (s (s (s (s (s z)))))}.
+
+%% another possible way of doing it that i haven't explored fully
+% comp : chan -> chan -> chan.
+% do_comp : inp (comp C1 C2) X -o {inp C1 X * (out C1 X' -o {inp C2 X'})}.
+% #query * * * 1
+%    inp (comp add5 mul2) three -o {out C X}.
+
