@@ -1,0 +1,34 @@
+% Another transducer example.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+plus : nat -> nat -> nat -> type.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+          <- plus N M P.
+
+chan : type.
+integrator : chan.
+
+inp : chan -> nat -> type.
+out : chan -> nat -> type.
+
+integrator_sum : nat -> type.
+
+do_integrator : inp integrator X * integrator_sum S * plus S X S'
+                    -o {integrator_sum S' * out integrator S'}.
+
+% source
+repeat : nat -> type.
+repeat/z : repeat z -o {1}.
+repeat/s : repeat (s X) -o {inp integrator (s X) * repeat X}.
+
+% sink
+sink : out integrator X -o {1}.
+
+% test
+#trace * {repeat (s (s (s (s z)))) * integrator_sum z}.
+#query * * * 1 
+  repeat (s (s (s (s z)))) * integrator_sum z -o {integrator_sum X}.
