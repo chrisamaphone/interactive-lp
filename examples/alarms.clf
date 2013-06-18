@@ -1,4 +1,7 @@
-% Coding up alarms
+% Coding up "alarms" as a mechanism for locally handling global time.
+% Processes that refer to time at time T set alarms for time (T+N), where N
+% is the amount of time, and release a new atom into the context when time
+% has advanced to match that time.
 
 nat : type.
 z : nat.
@@ -21,7 +24,7 @@ time : nat -> type.
 % example:
 % - 2 ticks to make a widget
 % - 3 ticks to make a gadget
-% - time can be observed globally, but alarm clocks are locally consumed
+% - manufacturing should be able to occur simultaneously
 
 item : type.
 widget : item.
@@ -36,7 +39,9 @@ alarm : item -> state -> type.
 
 tick : type.
 
-% hack. these are a "phase tokens."
+% hack. these are "phase tokens" to separate the "time advancing", or
+% clock, phase, from the "what happens within a single timestep", or
+% interphase.
 interphase : type.
 clockphase : type.
 
@@ -56,7 +61,6 @@ switch_phases : interphase -o {clockphase}.
 
 % this is the "clock phase", which advances time.
 clock : clockphase * time T -o {time (s T) * interphase}.
-
 stop : time (add16 !(add16 !z)) -o {1}.
 
 init : type = {time z * alarm gadget off * alarm widget off * interphase}.
