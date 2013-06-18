@@ -1,0 +1,14 @@
+% An attempt to encode the situational environment of the play "Sure Thing"
+% by David Ives.
+% Chris Martens
+% Script here:
+% http://www.pageout.net/user/www/m/j/mjknndy/sure%20thing%20david%20ives%20script%20101%20fall%202007.pdf
+
+question : type.
+chairtaken : question.
+
+answer : question -> type.
+yes : answer chairtaken.
+no : answer chairtaken.
+
+

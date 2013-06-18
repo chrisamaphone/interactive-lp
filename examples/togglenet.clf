@@ -1,0 +1,26 @@
+% Attempt to encode parameterized modules as lambdas over &'d decls.
+% XXX this doesn't work... not sure why
+
+st : type.
+on : st.
+off : st.
+state : st -> type.
+opp : st -> st -> type.
+- : opp on off.
+- : opp off on.
+chan : type.
+sig : chan -> type.
+signbr : chan -> type.
+
+toggle : type = Pi inp:chan. Pi out:chan. {!(
+  (sig inp * state S * opp S S' -o {state S' * signbr out})
+  &
+  (signbr inp * state S * opp S S' -o {state S'}))}.
+  
+x1 : chan.
+x2 : chan.
+
+t1 : toggle x1 x2.
+t2 : toggle x2 x1.
+
+#trace * {sig x1 * sig x2}.

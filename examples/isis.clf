@@ -1,0 +1,48 @@
+%% original myth:
+% iphis, ianthe, isis
+% iphis falls in love with ianthe, both are girls
+% iphis prays to isis
+% isis turns ianthe into a boy
+% iphis and ianthe get married
+
+character : type.
+iphis : character.
+ianthe : character.
+isis : character.
+
+deity : character -> type.
+mortal : character -> type.
+
+gen : type.
+male : gen.
+female : gen.
+canmarry : gen -> gen -> type.
+- : canmarry male female.
+- : canmarry female male.
+
+gender : character -> gen -> type.
+inlove : character -> character -> type.
+pray : character -> character -> type.
+married : character -> character -> type.
+
+% This rule generates an instance of the "pray" action
+prayToIsis : inlove X Y * gender X G * gender Y G -o 
+              {@pray X isis * @inlove X Y * @gender X G * @gender Y G}.
+
+sexChange : pray X I * deity I * inlove X Y 
+                * gender X G * gender Y G * canmarry G G' 
+                -o {@gender Y G' * @gender X G * @inlove X Y}.
+
+% This is a source - a sort of "from nowhere" happenstance.
+cupid : mortal X * mortal Y
+            -o {@inlove X Y}.
+
+marry : inlove X Y * gender X Gx * gender Y Gy * canmarry Gx Gy -o 
+            {@married X Y * gender X Gx * gender Y Gy}.
+
+init : type = {!deity isis * @mortal iphis * @mortal ianthe * @gender iphis female
+* @gender ianthe female}.
+
+#trace * init.
+#query * * * 10 
+  init -o {gender iphis IphisGender * gender ianthe IantheGender}. 

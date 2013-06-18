@@ -1,0 +1,33 @@
+% Cilia program giving several small examples of how stream
+% transformers/transducers/reactive programs can be encoded.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+data : type.
+dnat : nat -> data.
+dunit : data.
+
+in : data -> type.
+out : data -> type.
+
+% Constant stream
+module Const (N:nat) = {
+  - : in dunit -o {out (dnat N)}.
+}.
+
+module Const2 = Const (s (s z)).
+
+% Identity stream
+module Id = {
+  - : in D -o {out D}.
+}.
+
+% Simple counter. (sink)
+module Count = {
+  count : nat -> type.
+  - : in D * count N -o {count (s N)}.
+} {count z}.
+
+

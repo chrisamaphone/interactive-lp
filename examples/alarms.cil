@@ -1,0 +1,54 @@
+% Coding up alarms
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+add2 : nat -> nat = \!x. s (s !x).
+add3 : nat -> nat = \!x. s (s (s !x)).
+twice : (nat -> nat) -> nat -> nat = \!f.\!x.f !(f !x).
+add4 : nat -> nat = twice !add2.
+add8 : nat -> nat = twice !add4.
+add16 : nat -> nat = twice !add8.
+
+
+% example:
+% - 2 ticks to make a widget
+% - 3 ticks to make a gadget
+% - time can be observed globally, but alarm clocks are locally consumed
+
+
+tick : type.
+time : nat -> type.
+
+phase Factory(time(T), tick) = {
+
+  item : type.
+  widget : item.
+  gadget : item.
+
+  productionTime : item -> nat -> type.
+
+  made : item -> type.
+
+  state : type.
+  on : nat -> state.
+  off : state.
+  alarm : item -> state -> type.
+
+  alarmGoOff : alarm W (on T) -o {made W * alarm W off}.
+
+  startWProd : alarm widget off
+                  -o {alarm widget (on (add2 !T))}.
+
+  startGProd : time T * alarm gadget off
+                  -o {alarm gadget (on (add3 !T))}.
+
+} {alarm widget off * alarm gadget off}.
+
+process Clock(tick, time) = {
+  advance : tick * time T -o {time (s T)}.
+  stop : time (add16 !(add16 !z)) -o {1}.
+} {time z}.
+
+#trace * {Factory(time, tick), Clock(tick, time)}.

@@ -1,0 +1,64 @@
+% Coding up alarms
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+add2 : nat -> nat = \!x. s (s !x).
+add3 : nat -> nat = \!x. s (s (s !x)).
+twice : (nat -> nat) -> nat -> nat = \!f.\!x.f !(f !x).
+add4 : nat -> nat = twice !add2.
+add8 : nat -> nat = twice !add4.
+add16 : nat -> nat = twice !add8.
+
+leq : nat -> nat -> type.
+leq/eq : leq N N.
+leq/lt : leq N (s M)
+          <- leq N M.
+
+time : nat -> type.
+
+% example:
+% - 2 ticks to make a widget
+% - 3 ticks to make a gadget
+% - time can be observed globally, but alarm clocks are locally consumed
+
+item : type.
+widget : item.
+gadget : item.
+
+made : item -> type.
+
+state : type.
+on : nat -> state.
+off : state.
+alarm : item -> state -> type.
+
+tick : type.
+
+% hack. these are a "phase tokens."
+interphase : type.
+clockphase : type.
+
+% this is the "interphase" - it's what may happen between timesteps.
+alarmGoOff : time T * alarm W (on T') * leq T T' * interphase -o
+                 {time T * made W * alarm W off * interphase}.
+
+startWProd : time T * alarm widget off * interphase
+                 -o {time T * alarm widget (on (add2 !T)) * interphase}.
+
+startGProd : time T * alarm gadget off * interphase
+                 -o {time T * alarm gadget (on (add3 !T)) * interphase}.
+
+% really this rule should *only* be allowed to fire if the other rules have
+% reached quiescence.
+switch_phases : interphase -o {clockphase}.
+
+% this is the "clock phase", which advances time.
+clock : clockphase * time T -o {time (s T) * interphase}.
+
+stop : time (add16 !(add16 !z)) -o {1}.
+
+init : type = {time z * alarm gadget off * alarm widget off * interphase}.
+
+#trace * init.

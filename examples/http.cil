@@ -1,0 +1,27 @@
+% A little http request handler in cilia.
+
+entity: type.
+uri : type.
+request : type.
+get : uri -> request.
+post : uri -> entity -> request.
+
+status : type.
+hdr : type.
+body : type.
+
+msg : type.
+mreq : request -> msg.
+mstat : status -> msg.
+mbody : body -> msg.
+
+in : msg -> type.
+out : msg -> type.
+
+url : type.
+module Host(u:url) {
+  content : uri -> body -> type.
+  content/i : content "index.html" "<html></html".
+
+  in (mreq (get URI)) * content URI Data -o {out (mbody Data)}.
+}.
