@@ -15,7 +15,7 @@ add16 : nat -> nat = twice !add8.
 tick : type.
 time : nat -> type.
 
-phase Factory (tick) = {
+phase Factory (in : nat -> type, out : type) = {
 
   item : type.
   widget : item.
@@ -30,17 +30,17 @@ phase Factory (tick) = {
   off : state.
   alarm : item -> state -> type.
 
-  alarmGoOff : time T * alarm W (on T) -o {made W * alarm W off}.
-  startWProd : time T * alarm widget off
+  alarmGoOff : in T * alarm W (on T) -o {made W * alarm W off}.
+  startWProd : in T * alarm widget off
                   -o {alarm widget (on (add2 !T))}.
-  startGProd : time T * alarm gadget off
+  startGProd : in T * alarm gadget off
                   -o {alarm gadget (on (add3 !T))}.
 
-} {alarm widget off * alarm gadget off} {tick}.
+} {alarm widget off * alarm gadget off} {out}. % ???
 
-process Clock (time) = {
-  advance : tick * time T -o {time (s T)}.
+process Clock (in : type, out : nat -> type) = {
+  advance : in * time T -o {time (s T)}.
   stop : time (add16 !(add16 !z)) -o {1}.
-} {time z}.
+} {time z} {time T -o out T}. % ???
 
 #trace * {Factory(time, tick), Clock(tick, time)}.
