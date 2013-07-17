@@ -1,0 +1,46 @@
+item : type.
+widget : item.
+gadget : item.
+
+alarm : type.
+alarm/off : alarm.
+alarm/on : alarm -> alarm.
+
+alarm_state : item -> alarm -> type.
+nat : type.
+z : nat.
+s : nat -> nat.
+made : item -> nat -> type.
+
+add2 : nat -> nat = \!x. s (s !x).
+add3 : nat -> nat = \!x. s (s (s !x)).
+twice : (nat -> nat) -> nat -> nat = \!f.\!x.f !(f !x).
+add4 : nat -> nat = twice !add2.
+add8 : nat -> nat = twice !add4.
+add16 : nat -> nat = twice !add8.
+add32 : nat -> nat = twice !add16.
+add64 : nat -> nat = twice !add32.
+
+n64 : nat = add64 !z.
+
+
+makeWidget : alarm_state widget alarm/off  * made widget N
+                 -o {made widget (s N) 
+                    * alarm_state widget (alarm/on (alarm/on alarm/off))}.
+makeGadget : alarm_state gadget alarm/off * made gadget N
+                 -o {made gadget (s N) 
+                    * alarm_state gadget (alarm/on (alarm/on (alarm/on alarm/off)))}.
+
+time : alarm_state I (alarm/on A) -o {alarm_state I A}.
+
+stop : made widget n64 * alarm_state X Y * alarm_state Z W -o {1}.
+
+init : type = {alarm_state gadget alarm/off * alarm_state widget
+           alarm/off * made widget z * made gadget z}.
+#trace * init.
+
+foo : nat -> type.
+q : foo G
+     <- (init -o {made gadget G}).
+
+#query * * * 1 (foo X).

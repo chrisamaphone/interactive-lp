@@ -1,0 +1,63 @@
+%% A cardgame template.
+
+rank : type.
+r2 : rank.
+r3 : rank.
+r4 : rank.
+r5 : rank.
+r6 : rank.
+r7 : rank.
+r8 : rank.
+r9 : rank.
+r10 : rank.
+jack : rank.
+queen : rank.
+king : rank.
+ace : rank.
+
+face : rank -> type.
+face/jack : face jack.
+face/queen : face queen.
+face/king : face king.
+face/ace : face ace. % ?.
+
+suit : type.
+hearts : suit.
+clubs : suit.
+diamonds : suit.
+spades : suit.
+
+card : type.
+c : rank -> suit -> card.
+
+indeck : card -> type.
+% Q: is there a programmatic way to do this?.
+
+ha : type = indeck (c ace hearts).
+ca : type = indeck (c ace clubs).
+sa : type = indeck (c ace spades).
+da : type = indeck (c ace diamonds).
+h2 : type = indeck (c r2 hearts).
+c2 : type = indeck (c r2 clubs).
+s2 : type = indeck (c r2 spades).
+d2 : type = indeck (c r2 diamonds).
+% ..etc...
+
+init_deck : type =
+{ ha * ca * sa * da * h2 * c2 * s2 * d2 }. % etc.
+
+player : type.
+p1 : player.
+p2 : player.
+next : player -> player -> type.
+- : next p1 p2.
+- : next p2 p1.
+needscard : player -> type.
+dealt : player -> card -> type.
+dealerphase : type.
+deal : dealerphase * needscard P * indeck C * next P P' 
+           -o {dealt P C * needscard P' * dealerphase}.
+
+init : type = {init_deck * needscard p1 * dealerphase}.
+
+#trace * init.

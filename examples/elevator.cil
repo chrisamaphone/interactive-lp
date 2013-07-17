@@ -1,0 +1,9 @@
+
+phase call (type, floor -> type) = {
+  in -o {out F}.
+}
+
+phase elevator (floor -> type, type) = {
+  in F -o {call F}.
+
+}

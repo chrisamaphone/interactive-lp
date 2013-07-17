@@ -1,0 +1,28 @@
+nat : type.
+move : type.
+movelist : type.
+
+phase RollDie(type, nat -> type) = {
+  rolled : nat -> type.
+  in -o {rolled 1}.
+  in -o {rolled 2}.
+  in -o {rolled 3}.
+  in -o {rolled 4}.
+  in -o {rolled 5}.
+  rolled X -o {out X}.
+}.
+
+phase RollTwoDice(nat -> type, nat -> nat -> type) = {
+  in X * in Y -o {out X Y}.
+}.
+
+phase MovePieces(nat -> nat -> type, type) = {
+  in X X -o doubles X.
+  in X Y * neq X Y * plus X Y Z -o {can_move Z}.
+  pawnPos Pawn Pos * can_move N * plus Pos N Pos'
+    -o {pawnPos Pos'}.
+}.
+
+RollDie.out -o RollTwoDice.in.
+
+

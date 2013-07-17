@@ -1,36 +1,51 @@
 \documentclass{article}
 
 \usepackage{amsmath, amssymb}
+\usepackage{proof}
 \usepackage{verbatim}
 \usepackage{url}
 
-% XXX add fp-macros or sth
+% XXX add to macros file
 \newcommand{\lolli}{\multimap}
 \newcommand{\tensor}{\otimes}
-\newcommand{\process}{\mathsf{process}}
+\newcommand{\process}{\mathsf{phase}}
 \newcommand{\with}{\mathsf{\&}}
-\newcommand{\subord}{\prec}
-\newcommand{\inits}{\mathsf{initials}}
-\newcommand{\interms}{\mathsf{intermediates}}
-\newcommand{\terms}{\mathsf{terminals}}
-\newcommand{\eps}{\epsilon}
 \newcommand{\bang}{!}
 \newcommand{\mon}[1]{\{#1\}}
+\newcommand{\atm}[1]{\mathsf{#1}}
+\newcommand{\up}{\uparrow}
+\newcommand{\down}{\downarrow}
+\newcommand{\aff}{@}
+\newcommand{\one}{\mathrm{1}}
+
+% judgments
+\newcommand{\stable}[1]{#1\mathsf{\ stable}}
+\newcommand{\prop}{\mathsf{prop}}
+\newcommand{\ok}{\mathsf{ok}}
 \newcommand{\stepsto}{\rightsquigarrow}
 %"proofs in the standard sequent calculus"
 \newcommand{\proves}{\longrightarrow}
 %"proves in the focusing system"
 \newcommand{\fproves}{\Longrightarrow}
-\newcommand{\atm}[1]{\mathsf{#1}}
-\newcommand{\up}{\uparrow}
-\newcommand{\down}{\downarrow}
-\newcommand{\stable}[1]{#1\mathsf{\ stable}}
-\newcommand{\aff}{@}
-\newcommand{\one}{\mathrm{1}}
+
+% subord
+\newcommand{\subord}{\prec}
+\newcommand{\inits}{\mathsf{initials}}
+\newcommand{\interms}{\mathsf{intermediates}}
+\newcommand{\terms}{\mathsf{terminals}}
 
 % epsilons
+\newcommand{\eps}{\epsilon}
+\newcommand{\bnd}{\mathit{bnd}}
 \newcommand{\nileps}{\langle\rangle}
-% \newcommand{\gets}{\leftarrow}
+% \newcommand{\gets}{\leftarrow} % already defined
+% \newcommand{\gets}{=}
+\newcommand{\preset}[1]{\circ{(#1)}}
+\newcommand{\postset}[1]{(#1){\circ}}
+\newcommand{\fv}[1]{\mathsf{fv}(#1)}
+\newcommand{\bv}[1]{\mathsf{bv}(#1)}
+\newcommand{\union}{\cup}
+\newcommand{\intersect}{\cap}
 
 \title{Subordination for linear, forward-chaining logic programs}
 \author{Chris Martens}
@@ -47,8 +62,10 @@
 Basically lollimon or linear datalog.
 
 Terms and types that classify them
-\[ t ::= ... \]
-\[ \tau ::= ... \]
+\begin{eqnarray*}
+t &::=& ... \\
+\tau &::=& ...
+\end{eqnarray*}
 
 Predicate kinds
 \[ K ::= \mathsf{rel} \mid \vec{\tau} \to K \]
@@ -70,9 +87,8 @@ States (linear contexts)
 
 Programs
 \[
-prog ::= (\Sigma, \Delta_0) \mid (\Sigma, \Delta_0) \proves^{?} A
+prog ::= (\Sigma, \Delta_0)
 \]
-
 
 \subsection{The trace language}
 
@@ -83,29 +99,108 @@ Patterns
 \[ p ::= \langle x_1, \dots, x_n \rangle \]
 
 Rule applications
-\[ R ::= r(N_1,...,N_n) \]
+\begin{eqnarray*}
+R &::=& r\ N \\
+N &::=& () \mid x \mid N\tensor N
+\end{eqnarray*}
 
-Traces (sequences of bindings)
+Bindings and traces
+\begin{eqnarray*}
+\bnd &::=&  \{ p \} \gets R  \\
+\eps &::=& \nileps \mid bnd \mid \eps;\eps
+\end{eqnarray*}
+
+Typing judgments
 \[
-\eps ::= \nileps \mid \{ p \} \gets R ; \eps'
+\Delta \vdash_{\Sigma} N : S
+\]
+\[
+\Delta \vdash_{\Sigma} R : S
+\]
+\[
+\Sigma \vdash r : A
+\]
+\[
+\Sigma \vdash S : \prop
 \]
 
+\[
+\infer
+{ \cdot \vdash () : \one }
+{}
+\qquad
+\infer
+{ \Delta_1, \Delta_2 \vdash_{\Sigma} N_1\tensor N_2 : S_1 \tensor S_2 }
+{ \Delta_1 \vdash_{\Sigma} N_1 : S_1
+  &
+  \Delta_2 \vdash_{\Sigma} N_2 : S_2
+}
+\qquad
+\infer
+{ x{:}S \vdash_{\Sigma} x : S }
+{ \Sigma \vdash S : \prop}
+\]
+
+\[
+\infer
+{ \Delta \vdash_{\Sigma} r\ N : S' }
+{ \Sigma \vdash r : S \lolli S' 
+  &
+  \Delta \vdash_{\Sigma} N : S
+}
+\]
+
+\[
+\infer
+{ \Sigma \vdash a(t_1\dots t_n) : \prop }
+{ \Sigma \vdash a : \tau_1 \to \dots \to \tau_n \to \prop 
+  &
+  \Sigma \vdash t_1 : \tau_1
+  \dots
+  \Sigma \vdash t_n : \tau_n
+}
+\]
 
 Operational judgment
 
 \[
-\Sigma \vdash \eps : \Delta \stepsto \Delta'
+\Delta \vdash_{\Sigma} \eps : \Delta'
 \]
 % XXX define
 
-Pre- and post-sets of variables in a binding
-% XXX define
-
-Concurrent equality judgment
+Pattern binding judgment
+(note: $\Delta$ is an output)
 \[
-\eps_1 = \eps_2
+\Delta \Vdash p : S
+\]
+
+
+Pre- and post-sets of variables in an $\eps$:
+\begin{eqnarray*}
+\preset{\nileps} &=& \emptyset\\
+\postset{\nileps} &=& \emptyset\\
+\preset{\{p\}\gets R} &=& \fv{R}\\
+\postset{\{p\}\gets R} &=& \bv{p}\\
+\preset{\eps_1;\eps_2} &=& 
+  \preset{\eps_1} \union (\postset{\eps_1} - \preset{\eps_2})\\
+\postset{\eps_1;\eps_2} &=& 
+  \postset{\eps_2} \union (\preset{\eps_2} - \postset{\eps_1})
+\end{eqnarray*}
+
+Concurrent preorder:
+\[
+\eps_1 \leq \eps_2
+\]
+when
+\[
+\postset{\eps_2} \intersect \preset{\eps_1} = \emptyset
 \]
 % XXX define
+
+Concurrent equality:
+$\eps_1;\eps_2 = \eps_2;\eps_1$ when $\eps_1\leq \eps_2$ and $\eps_2 \leq
+\eps_1$ (Q: can we say $\eps_1 = \eps_2$ instead and does this give us
+the same notion of equality?)
 
 \section{Definition of subordination}
 
@@ -128,7 +223,6 @@ $\Sigma_1 \subord \Sigma_2$ iff
 \end{itemize}
 
 
-
 \section{Example}
 
 Consider the following signature.
@@ -146,12 +240,12 @@ means that $\Sigma_c \subord \Sigma_m$.
 
 \section{Theorem statement and proof}
 
-If $\Sigma_1, \Sigma_2 \vdash \eps : \Delta \stepsto \Delta'$
+If $\Delta \vdash_{ \Sigma_1, \Sigma_2} \eps : \Delta'$
 and $\Sigma_1 \subord \Sigma_2$, then
 $\eps = \eps_1 ; \eps_2$ where
-$\Sigma_1 \vdash \eps_1 : \Delta \stepsto \Delta''$
+$\Delta \vdash_{\Sigma_1} \eps_1 : \Delta''$
 and
-$\Sigma_2 \vdash \eps_2 : \Delta'' \stepsto \Delta'$.
+$\Delta'' \vdash_{\Sigma_2} \eps_2 : \Delta'$.
 
 In other words, any trace run in a signature that can be divided into a
 subordination relation has a prefix that can be run in only the subordinate
@@ -160,17 +254,29 @@ our example above, this means that as long as we haven't produced a
 terminal atom from the control (\verb|control_terminal| being the only
 one), then we only need to consider rules from $\Sigma_c$.
 
-Proof: By induction on the structure of the trace $\eps$.
+Proof: By induction on the linearized structure of the trace $\eps$.
 
 \begin{itemize}
 \item Case: $\eps = \nileps$. $\eps_1 = \eps_2 = \nileps$. \checkmark
 % XXX more details below about well-formedness of epsilons in their
 % respective signatures
 \item Case: $\eps = \{p\}\gets R; \eps'$\\
+
+  By typing rule, $\Delta = \Delta_1, \Delta_2$ where
+
+  \[
+  \infer
+  { \Delta_1, \Delta_2 \vdash_{\Sigma_1,\Sigma_2} \{p\} \gets R : \Delta_1', \Delta_2 }
+  { \Delta_1 \vdash_{\Sigma_1,\Sigma_2} R : S
+  &
+  \Delta_1' \Vdash p : S
+  }
+  \]
+
   By Lemma (below), either 
-  \[ \Delta \vdash_{\Sigma_1} R : A \]
+  \[ \Delta_1 \vdash_{\Sigma_1} R : S \]
   or
-  \[ \Delta \vdash_{\Sigma_2} R : A \]
+  \[ \Delta_1 \vdash_{\Sigma_2} R : S \]
   \begin{itemize}
   \item Subcase 1: 
     \[
@@ -199,13 +305,62 @@ Proof: By induction on the structure of the trace $\eps$.
 
 \subsection{Lemma}
 
-If $\Sigma_1 \subord \Sigma_2$ and $\Sigma_1, \Sigma_2 \vdash p \gets
-R;\eps :
-\Delta \stepsto \Delta'$
+If $\Sigma_1 \subord \Sigma_2$ and 
+$\Delta \vdash_{\Sigma_1, \Sigma_2} R : S$
 then either
-$\Sigma_1; \Delta \vdash R : A$
+$\Delta \vdash_{\Sigma_1} R : S$
 or
-$\Sigma_2; \Delta \vdash R : A$.
+$\Delta \vdash_{\Sigma_2} R : S$.
+
+Typing rule ($R = r\ N$): (n.b. this is more complicated w/instantiation at
+different LF terms, but ignoring for now)
+
+% XXX ugh can't get this right
+% \[
+% \infer
+% { \Delta \vdash_{\Sigma_1,\Sigma_2} r\ N(t_1\dots t_n) : S' }
+% { \Sigma_1, \Sigma_2 \vdash r : \Pi x_1:t_1\dots\Pi x_n:t_n.S\lolli S'
+%   &
+%   (\Sigma_1,\Sigma_2)_{LF} \vdash t_1\dots t_n : \tau_1\dots \tau_n
+%   &
+%   \Delta \vdash_{\Sigma_1, \Sigma_2} N : S
+% }
+% \]
+
+\[
+\infer
+{ \Delta \vdash_{\Sigma_1, \Sigma_2} r\ N : S' }
+{ \Sigma_1, \Sigma_2 \vdash r : S \lolli S' 
+  &
+  \Delta \vdash_{\Sigma_1,\Sigma_2} N : S
+}
+\]
+
+Left premise: a rule can only live in one part of the signature, so either
+$\Sigma_1 \vdash r : S \lolli S'$ or $\Sigma_2 \vdash r : S \lolli S'$.
+
+In either case, we need to show $\Delta \vdash_{\Sigma_i} N : S$.
+
+Subcase: $N = x, \Delta = x{:}S$
+\[
+\infer
+{ x:{S} \vdash x : S }
+{ \Sigma_i \vdash S : \prop }
+\]
+
+It remains to show we can derive $\Sigma_i \vdash S : \prop$. 
+
+If we can show that $\Sigma_i$ is a well-formed signature on its own then
+we are done: $\Sigma_i \vdash r : S \lolli S'$ and $\Sigma_i\ \ok$ (XXX
+define this judgment) mean that $\Sigma_i \vdash S \lolli S' : \prop$, so
+by inversion $\Sigma_i \vdash S : \prop$.
+
+XXX stuck here: in the case where $i = 1$, we should be able to do this by
+the definition of subordination, except that the given definition says
+nothing about type declarations. This is the spot where I suspect we need
+to have a separate ``LF signature'' and ``transition rule signature'',
+where the LF signature has its own (standard) notion of subordination that
+will factor into this proof.
 
 % \bibliographystyle{plain}
 % \bibliography{preproposal}

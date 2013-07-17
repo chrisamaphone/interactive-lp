@@ -55,6 +55,7 @@ startWProd : time T * alarm widget off * interphase
 startGProd : time T * alarm gadget off * interphase
                  -o {time T * alarm gadget (on (add3 !T)) * interphase}.
 
+
 % really this rule should *only* be allowed to fire if the other rules have
 % reached quiescence.
 switch_phases : interphase -o {clockphase}.

@@ -1,0 +1,62 @@
+floor : type.
+f0 : floor.
+f1 : floor.
+f2 : floor.
+f3 : floor.
+
+adj : floor -> floor -> type.
+f01 : adj f0 f1.
+f12 : adj f1 f2.
+f23 : adj f2 f3.
+
+above : floor -> floor -> type.
+f32 : above f3 f2.
+f31 : above f3 f1.
+f30 : above f3 f0.
+f21 : above f2 f1.
+f20 : above f2 f0.
+f10 : above f1 f0.
+
+el_state : type.
+doors_open : el_state.
+stopped : el_state.
+moving_down : el_state.
+moving_up : el_state.
+
+elevator : floor -> el_state -> type.
+
+% actions
+call : floor -> type.
+% the buttons inside the elevator are basically just "long distance call
+% buttons", duplicating the functionality of the call buttons on each
+% floor.
+open_stopped
+  : call F * elevator F' doors_open -o {call F * elevator F' stopped}.
+stopped_up
+  : call F * elevator F' stopped * above F F' -o 
+    {call F * elevator F' moving_up}.
+stopped_down
+  : call F * elevator F' stopped * above F' F -o
+    {call F * elevator F' moving_down}.
+stopped_open
+  : call F * elevator F stopped -o {elevator F doors_open}.
+% movement.
+up_up
+  : call F * elevator F' moving_up * above F F' * adj F' F''
+    -o {call F * elevator F'' moving_up}.
+down_down
+  : call F * elevator F' moving_down * above F' F * adj F'' F'
+    -o {call F * elevator F'' moving_down}.
+up_stopped
+  : call F * elevator F moving_up
+    -o {call F * elevator F stopped}.
+down_stopped
+  : call F * elevator F moving_down
+    -o {call F * elevator F stopped}.
+
+elev_init : type = {elevator f0 stopped}.
+caller_init : type = {call f1 * call f2 * call f0}.
+
+#trace * {elev_init * caller_init}.
+#query * * * 1 elev_init * caller_init -o {elevator F S}.
+

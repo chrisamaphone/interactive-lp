@@ -1,0 +1,64 @@
+% Alarms example, now attempting to use backward chaining to induce a phase
+% separation.
+% I can't get it to make any sense so far, 6/18/2013
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+add2 : nat -> nat = \!x. s (s !x).
+add3 : nat -> nat = \!x. s (s (s !x)).
+twice : (nat -> nat) -> nat -> nat = \!f.\!x.f !(f !x).
+add4 : nat -> nat = twice !add2.
+add8 : nat -> nat = twice !add4.
+add16 : nat -> nat = twice !add8.
+
+leq : nat -> nat -> type.
+leq/eq : leq N N.
+leq/lt : leq N (s M)
+          <- leq N M.
+
+time : nat -> type.
+
+% example:
+% - 2 ticks to make a widget
+% - 3 ticks to make a gadget
+% - time can be observed globally, but alarm clocks are locally consumed
+
+item : type.
+widget : item.
+gadget : item.
+
+made : nat -> item -> type.
+
+state : type.
+on : nat -> state.
+off : state.
+alarm : item -> state -> type.
+
+% Factory phase
+alarmGoOff : time T * alarm W (on T') * leq T T' * made N W -o
+                 {time T * made (s N) W * alarm W off}.
+
+startWProd : time T * alarm widget off 
+                 -o {time T * alarm widget (on (add2 !T))}.
+
+startGProd : time T * alarm gadget off
+                 -o {time T * alarm gadget (on (add3 !T))}.
+
+% this is the "clock phase", which advances time.
+% clock : clockphase * time T -o {time (s T) * interphase}.
+% stop : time (add16 !(add16 !z)) -o {1}.
+
+foo : nat -> type.
+
+- : foo T G W
+     <- (time T -o 
+            {alarm gadget G * alarm widget W * time (s T) * made G gadget * made W widget})
+     <- foo (s T) G W.
+
+- : foo (add16 !(add16 !z)) G W.
+
+init : type = {time z * alarm gadget off * alarm widget off * interphase}.
+
+#trace * init.

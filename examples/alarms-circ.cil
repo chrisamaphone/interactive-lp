@@ -1,0 +1,19 @@
+
+
+"O" as "one quiesaturation cycle from now"
+
+alarm widget -o {OO(made widget * alarm widget)}.
+alarm gadget -o {OOO(made gadget * alarm gadget)}.
+
+
+init = {alarm widget,alarm gadget}
+
+#trace init
+---------
+alarm widget, alarm gadget
+OO(made widget * alarm widget), OOO(made gadget * alarm gadget)
+O(made widget * alarm widget), OO(made gadget * alarm gadget)
+made widget, alarm widget, O(made gadget * alarm gadget)
+made widget, OO(made widget * alarm widget), made gadget, alarm gadget
+made widget, made gadget, OOO(g), O(w)
+...
