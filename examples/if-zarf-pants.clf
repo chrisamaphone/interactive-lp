@@ -1,0 +1,84 @@
+%% from Andrew Plotkin's example:
+% http://eblong.com/zarf/plotex/index.html
+
+% # Our actions
+% FindSword = Set(sword=True)
+% FindLamp = Set(lamp=True)
+% EnterCave = Chain(Has(lamp=True), Set(underground=True))
+% FeedSelf = Lose('food')
+% FeedCyclops = Chain(Has(underground=True), Lose('food'), Set(kitchen=True))
+% FeedOrc = Chain(Lose('food'), Set(pants=True))
+% KitchenCook = Chain(Has(kitchen=True), Set(food=True))
+% 
+% # Our (sole) starting state
+% Start = State(food=True)
+
+bool : type.
+true : bool.
+false : bool.
+
+sword : bool -> type.
+lamp : bool -> type.
+kitchen : bool -> type.
+underground : bool -> type.
+food : bool -> type.
+pants : bool -> type.
+
+findsword : sword false -o {@sword true}.
+findlamp : lamp false -o {@lamp true}.
+enterCave : lamp true * underground false -o {@lamp true * @underground true}.
+feedSelf : food true -o {@food false}.
+feedCyclops : underground true * food true * kitchen false -o 
+              {@underground true * @food false * @kitchen true}.
+feedOrc : food true * pants false -o {@food false * @pants true}.
+kitchenCook : kitchen true * food false -o {@kitchen true * @food true}.
+
+% without this, we can just alternate feedSelf/kitchenCook forever, so Celf
+% won't terminate.
+stop : bool -> type.
+win : kitchen true -o {stop true}.
+
+% start state
+init : type =
+{ @food true
+ * @sword false 
+ * @lamp false 
+ * @kitchen false 
+ * @underground false 
+ * @pants false
+ * @stop false}.
+
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+
+#query * * * 33 init -o {@pants HasPants * @stop InKitchen}.
