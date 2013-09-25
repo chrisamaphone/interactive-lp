@@ -49,36 +49,5 @@ init : type =
  * @stop false}.
 
 #trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
-#trace * init.
 
-#query * * * 33 init -o {@pants HasPants * @stop InKitchen}.
+#query * * * 30 init -o {@pants HasPants * @stop InKitchen}.
