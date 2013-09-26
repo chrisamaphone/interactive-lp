@@ -38,7 +38,7 @@ sword : object.
 ~sword : object.
 % bow : object.
 % ~bow : object.
-arrows : nat -> object.
+% arrows : nat -> object.
 
 inventory : object -> type.
 
@@ -82,7 +82,6 @@ enemy_dmg : enemy -> nat -> type.
 - : enemy_dmg wolf (s (s (s z))).
 - : enemy_dmg wraith (s (s z)).
 
-% ?
 enemy_hp : enemy -> nat -> type.
 
 damage : object -> enemy -> nat -> type.
