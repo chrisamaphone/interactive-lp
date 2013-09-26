@@ -1,0 +1,151 @@
+% roguelikelike.
+
+% data: numbers
+nat : type.
+z : nat.
+s : nat -> nat.
+
+n4 : nat = s (s (s (s z))).
+n8 : nat = s (s (s (s (s (s (s (s z))))))).
+
+% lt, plus
+lt : nat -> nat -> type.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+        <- lt N M.
+
+plus : nat -> nat -> nat -> type.
+plus/z : plus z N N .
+plus/s : plus (s N) M (s P)
+          <- plus N M P.
+
+% truncated substraction
+tsub : nat -> nat -> nat -> type.
+tsub/eq : tsub N N z.
+tsub/lt : tsub N M z
+          <- lt N M.
+tsub/gt : tsub N M P
+          <- plus M P N.
+
+% data: inventories.
+scroll : type.
+fire : scroll.
+light : scroll.
+
+object : type.
+scrl : scroll -> object.
+sword : object.
+~sword : object.
+% bow : object.
+% ~bow : object.
+arrows : nat -> object.
+
+inventory : object -> type.
+
+% player state.
+coins : nat -> type.
+health : nat -> type.
+energy : nat -> type.
+
+startcoins : type = {@coins n8}.
+starthealth : type = {@health n8}.
+startenergy : type = {energy n8}.
+startinv : type = {@inventory ~sword}. % * @inventory ~bow}.
+
+%% item drops
+drop : type.
+droproll : nat -> type.
+- : droproll z * inventory ~sword -o {@inventory sword}.
+- : droproll z * inventory sword -o {@inventory sword * @inventory (scrl fire)}.
+- : droproll (s z) -o {@inventory (scrl light)}.
+% - : droproll (s (s z)) * inventory ~bow -o {@inventory bow * @inventory (arrows n8)}.
+% - : droproll (s (s z)) * inventory (arrows N) -o {@inventory (arrows (s N))}.
+- : droproll (s (s z)) * coins N -o {@coins (s (s N))}.
+
+drop_0 : drop -o {droproll z}.
+drop_1 : drop -o {droproll (s z)}.
+drop_2 : drop -o {droproll (s (s z))}.
+
+%% combat.
+enemy : type.
+wolf : enemy.
+rat : enemy.
+wraith : enemy.
+
+starting_hp : enemy -> nat -> type.
+- : starting_hp rat (s z).
+- : starting_hp wolf (s (s z)).
+- : starting_hp wraith (s (s (s (s z)))).
+
+enemy_dmg : enemy -> nat -> type.
+- : enemy_dmg rat (s z).
+- : enemy_dmg wolf (s (s (s z))).
+- : enemy_dmg wraith (s (s z)).
+
+% ?
+enemy_hp : enemy -> nat -> type.
+
+damage : object -> enemy -> nat -> type.
+% wraith
+- : damage (scrl light) wraith (s (s (s z))).
+- : damage (scrl fire) wraith (s z).
+- : damage sword wraith z.
+% - : damage bow wraith z.
+% light does nothing on anyone except the wraith.
+- : damage (scrl light) rat z.
+- : damage (scrl light) wolf z.
+% fire especially hurts the wolf
+- : damage (scrl fire) wolf (s (s z)).
+- : damage sword wolf (s z).
+% - : damage bow wolf (s z).
+% rats are easy.
+% - : damage bow rat (s z).
+- : damage sword rat (s z).
+- : damage (scrl fire) rat (s z).
+
+buySword : inventory ~sword * coins (s (s (s (s N)))) -o {@coins N * @inventory sword}.
+% buyBow : inventory ~bow * coins (s (s (s N))) -o {coins N * inventory bow *
+%             inventory (arrows z)}.
+% buyArrow : coins (s N) * inventory (arrows A) -o {@inventory (arrows (s A))
+%               * coins N}.
+buylight : coins (s (s N)) -o {@coins N * @inventory (scrl light)}.
+buyfire : coins (s N) -o {@coins N * @inventory (scrl fire)}.
+buyhealth : coins (s (s (s N))) * health HP -o {@coins N * @health (s HP)}.
+
+
+outcome : type.
+alive : outcome.
+dead : outcome.
+
+status : outcome -> type.
+
+attack : status alive * inventory Weapon * damage Weapon Enemy Dmg * enemy_hp Enemy HP
+            * tsub HP Dmg HP'
+          -o {@enemy_hp Enemy HP' * @inventory Weapon * status alive}.
+
+
+get_attacked : enemy_hp Enemy _ * enemy_dmg Enemy Dmg * @health HP
+                * tsub HP Dmg HP' -o {@health HP'}.
+
+%% dropping items.
+roll : nat -> type.
+killMonster : enemy_hp X z * lt N n8 -o {roll N}.
+- : roll (s N) -o {drop * roll N}.
+- : roll z -o {1}.
+
+% monster spawn.
+countdown : nat -> type.
+spawns_left : nat -> type.
+spawn : spawns_left (s N) * countdown z * starting_hp Enemy HP 
+            -o {@enemy_hp Enemy HP * spawns_left N * countdown n4}.
+tick : countdown (s N) -o {countdown N}.
+startspawns : type = { spawns_left n4 * countdown n4}.
+donespawning : spawns_left z * countdown z -o {1}.
+
+die : health z * status alive -o {status dead}.
+
+init : type = {startspawns * starthealth * startcoins * startinv * status alive}.
+
+#trace * init.
+
+#query * * * 20 init -o {status Outcome}.
