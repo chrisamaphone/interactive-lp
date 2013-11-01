@@ -1,0 +1,64 @@
+% Backward chaining version for final-config search. Hmm, the query doesn't
+% terminate, though.
+
+block : type.
+a : block.
+b : block.
+c : block.
+
+on : block -> block -> type.
+on_table : block -> type.
+clear : block -> type.
+arm_holding : block -> type.
+arm_free : type.
+
+goal : type.
+% - : goal
+%         o- on_table c * on b c * on a b * clear a * arm_free.
+
+goal-condition
+  : goal
+    o- arm_holding a.
+
+pickup_from_block
+  : goal
+    o- on X Y
+    o- clear X
+    o- arm_free
+    o- (clear Y * arm_holding X -o goal).
+
+pickup_from_table
+  : goal
+    o- on_table X
+    o- clear X
+    o- (arm_holding X -o goal).
+
+put_on_block
+  : goal
+    o- arm_holding X
+    o- clear Y
+    o- (on X Y * clear X * arm_free -o goal).
+
+put_on_table
+  : goal
+    o- arm_holding X
+    o- (on_table X * clear X * arm_free -o goal).
+
+init : type.
+% init_rule
+%   : goal
+%     o- init
+%     o- (on_table a * on c a * clear c
+%            * on_table b * clear b 
+%            * arm_free
+%            -o goal).
+
+init-rule
+  : goal
+    o- init
+    o- (on_table a * clear a * arm_free -o goal).
+
+
+% #trace * init.
+#query * * * 1 init -o goal.
+

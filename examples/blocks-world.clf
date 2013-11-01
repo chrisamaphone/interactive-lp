@@ -1,0 +1,71 @@
+% Invariants in comments.
+
+block : type.
+a : block.
+b : block.
+c : block.
+
+on : block -> block -> type.
+on_table : block -> type.
+clear : block -> type.
+arm_holding : block -> type.
+arm_free : type.
+
+% phase blocks = {
+pickup_from_block
+  : on X Y * clear X * arm_free -o {clear Y * arm_holding X}.
+
+pickup_from_table
+  : on_table X * clear X * arm_free -o {arm_holding X}.
+
+put_on_block
+  : arm_holding X * clear Y -o {on X Y * clear X * arm_free}.
+
+put_on_table
+  : arm_holding X -o {on_table X * clear X * arm_free}.
+
+
+win_condition
+  : on_table c * on b c * on a b * clear a * arm_free
+    -o {1}.
+
+init : type.
+- : init 
+    -o {on_table a * on_table b * on c a * clear c * clear b * arm_free}.
+% }
+
+% gen blocks = {
+% % no floating blocks rule:
+% % for all blocks x, either on_table x or exists y s.t. on x y.
+%   init -o {gen_robot * gen_blocks}.
+% 
+%   gen_blocks -o {1}.
+%   gen_blocks -o {gen_blocks * Exists x. gen_block x * gen_top x}.
+% 
+%   gen_block X -o {on_table X}.
+%   gen_block X * gen_top Y -o {on X Y}.
+%   gen_top Y -o {clear Y}.
+% 
+%   gen_robot -o {arm_free}.
+%   gen_robot -o {Exists x.arm_holding x}.
+% }
+
+% qui blocks = {
+% qui -o {1}.
+% }
+
+% act blocks = {
+%  act -o {arm_free * clear X * on X Y}.
+%  act -o {arm_free * clear X * on_table X}.
+%  act -o {arm_holding X}.
+% }
+% what about statements of the form:
+% for every B:block, either on_table B or exists B' s.t. on B B'?
+% the generative invariant captures this. but can we rely on the gen.
+% invar. for the activity invariant?
+
+%%
+
+% #trace * init.
+#query * * * 1 init -o {1}.
+
