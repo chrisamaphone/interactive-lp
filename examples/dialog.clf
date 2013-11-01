@@ -1,0 +1,260 @@
+% exploring the question: what are the effects of conversation?
+
+% you might ask a question.
+% or: what would an improv theater AI look like?
+
+agent : type.
+message : type.
+value : type.
+topic : type.
+
+sentiment : type.
+pos : sentiment.
+neg : sentiment.
+opp : sentiment -> sentiment -> type.
+- : opp pos neg.
+- : opp neg pos.
+
+person : agent -> topic.
+feels : agent -> topic -> sentiment -> type.
+- : feels A (person A) pos. % we like ourselves here.
+
+% types of speech act.
+% in a play these might be very specific lines.
+hello : message.
+hello_reply : message.
+nothing : message.
+observation : topic -> message.
+opinion : topic -> sentiment -> message.
+curiosity : topic -> message.
+agreement : message.
+argument : message.
+goodbye : message.
+%% let's say questions are an advanced second stage.
+% yes : message.
+% no : message.
+% question : (value -> message) -> message.
+% answer : value -> message.
+
+log : type.
+nil : log.
+snoc : log -> agent -> message -> log.
+
+message_log : log -> type.
+
+terminal : message -> type.
+- : terminal agreement.
+% - : terminal argument.
+- : terminal hello_reply.
+- : terminal nothing.
+
+say : agent -> agent -> message -> type.
+hear : agent -> agent -> message -> type.
+respond_to : agent -> agent -> message -> type.
+knows_about : agent -> topic -> type.
+
+% speech actions. responses with effects.
+
+say/hear : say I You M * message_log Log
+               -o {hear You I M 
+                  * @knows_about You (person I)
+                  * message_log (snoc Log I M)}.
+
+hear/respond :
+  hear I You M
+  -o {respond_to I You M}.
+
+% adding this rule tends to introduce a lot of needless beats.
+% which can be funny, tbh.
+hear/ignore :
+  hear I You M * terminal M
+  -o {say I You nothing}.
+
+respond_to_goodbye :
+  respond_to I You goodbye -o {1}.
+
+% respond/...
+respond_to_hello :
+  respond_to I You hello
+  -o {say I You hello_reply}.
+
+respond_to_observation/opine :
+  respond_to I You (observation T)
+    * feels I T S
+  -o {say I You (opinion T S)}.
+
+respond_to_observation/learn :
+  respond_to I You (observation T)
+  -o {@knows_about I T * say I You (curiosity T)}.
+
+respond_to_observation/nothing :
+  respond_to I You (observation T)
+  -o {say I You nothing}.
+
+respond_to_opinion/agree :
+  respond_to I You (opinion T S)
+     * feels I T S
+  -o {say I You agreement * @feels I (person You) pos}.
+
+respond_to_opinion/argue :
+  respond_to I You (opinion T S)
+      * feels I T S' * opp S S'
+  -o {say I You argument * @feels I (person You) neg}.
+
+respond_to_opinion/curiosity :
+  respond_to I You (opinion T S)
+  -o {say I You (curiosity T) * @feels I T S}.
+
+respond_to_argue/argue :
+  respond_to I You argument
+  -o {say I You argument}.
+
+respond_to_argue/change_subject :
+  respond_to I You argument
+  * knows_about I T
+  -o {say I You (observation T)}.
+
+respond_to_argument/terminate :
+  respond_to I You argument
+  -o {say I You goodbye}.
+
+respond_to_curiosity/more :
+  respond_to I You (curiosity T)
+  * knows_about I T
+  -o {say I You (observation T)}.
+respond_to_curiosity/opine :
+  respond_to I You (curiosity T)
+  * feels I T S
+  -o {say I You (opinion T S)}.
+respond_to_curiosity/nothing :
+  respond_to I You (curiosity T)
+  -o {say I You nothing}.
+
+% responding to terminal messages.
+respond_with_observation :
+  respond_to I You M * terminal M
+    * knows_about I T
+  -o {say I You (observation T)}.
+
+respond_with_curiosity :
+  respond_to I You M * terminal M
+  % * curious_about I T ??
+    * knows_about I T
+  -o {say I You (curiosity T)}.
+
+respond_with_opinion :
+  respond_to I You M * terminal M
+  * feels I T S
+  -o {say I You (opinion T S)}.
+
+respond_goodbye :
+  respond_to I You M * terminal M
+  -o {say I You goodbye}.
+
+% Example topics, values, questions, and answers.
+% knows A Foo, knows_about A V, etc
+
+alice : agent.
+wendy : agent.
+
+weather : topic.
+news : topic.
+math : topic.
+art : topic.
+
+% - : knows_about alice weather.
+% - : knows_about alice news.
+% - : knows_about wendy weather.
+% - : knows_about wendy math.
+% - : knows_about wendy news.
+- : knows_about A (person A).
+
+mtopic : message -> topic -> type.
+% topic/said1 : mtopic (said A M) (person A).
+% topic/said2 : mtopic (said A M) T
+%            <- mtopic M T.
+% XXX introduce compliments/insults for more reflection/personal sentiment?
+topic/obs   : mtopic (observation T) T.
+topic/opin  : mtopic (opinion T S) T.
+
+
+%% in response to terminal messages...
+% you might say something that you know (start a new topic).
+% - : response A M (observation T)
+%      <- terminal M
+%      <- knows_about A T.
+% - : response A M (opinion T S)
+%      <- terminal M
+%      <- knows_about A T
+%      <- feels A T S.
+% % you might say goodbye.
+% - : response A M goodbye
+%      <- terminal M.
+% 
+% % in response to nonterminal messages...
+% % you might answer a greeting.
+% - : response A hello hello_reply.
+% % you might respond to an observation with an opinion.
+% - : response A (observation T) (opinion T S)
+%      <- feels A T S.
+% % you might agree with an opinion.
+% - : response A (opinion T S) agreement
+%      <- feels A T S.
+% % you might argue with an opinion.
+% - : response A (opinion T S) argument
+%      <- feels A T S'
+%      <- opp S S'.
+% 
+
+% you migth answer a question.
+% - : response A (question (\!v. M !v)) (answer !V)
+%     <- knows A (M !V). % not well-moded...
+
+% you might ask a question.
+
+% initial character states.
+init_alice : type = {@feels alice weather pos *
+                     @feels alice news neg *
+                     @feels alice art pos *
+                     @feels alice art pos *
+
+                     @knows_about alice weather *
+                     !knows_about alice art *
+                     !knows_about alice news}.
+
+init_wendy : type = {@feels wendy math pos *
+                     @feels wendy news neg *
+                     @feels wendy weather neg *
+                     @feels wendy art pos *
+                     @feels wendy art neg *
+
+                     !knows_about wendy math *
+                     @knows_about wendy art *
+                     @knows_about wendy news *
+                     @knows_about wendy news *
+                     @knows_about wendy weather}.
+
+% personality traits, like curiosity, self-esteem, rudeness, etc?
+
+init : type.
+- : init -o {message_log nil * say alice wendy hello * init_alice * init_wendy}.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+#trace * init.
+
+#query * * * 7 init -o {message_log L}.
+% #query * * * 100 init -o {message_log L}.
+
+%% future:
+% - update sentiments
+% - update knowledge
+
+%% Summary: our model of the state of a dialogue includes knowledge and
+%% sentiments. Knowledge & sentiment influence the discussion and also
+%% change as a result of the discussion, creating a feedback loop.

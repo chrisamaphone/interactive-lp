@@ -22,16 +22,16 @@ getkey : type.
 init : type = {nokey * nolamp * start}.
 
 % Connectors
-start_to_den_or_cellar : start -o {den & cellar}.
+start_choices : start -o {den & cellar}.
 
-den_to_cellar_lamp_or_key : den -o 
+den_choices : den -o 
         {cellar
          & (nolamp -o {getlamp}) 
          & (nokey -o {getkey})}.
 get_lamp : getlamp -o {gotlamp * den}.
 get_key : getkey -o {gotkey * den}.
 
-cellar_to_den_or_door : cellar -o {den & opendoor}.
+cellar_choices : cellar -o {den & opendoor}.
 open_door_without_key : opendoor * nokey -o {cellar * nokey}.
 open_door_with_key : opendoor * gotkey -o {dark}.
 dark_with_lamp : dark * gotlamp -o {win}.
