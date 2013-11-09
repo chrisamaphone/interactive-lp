@@ -249,6 +249,8 @@ init : type.
 #trace * init.
 
 #query * * * 7 init -o {message_log L}.
+
+
 % #query * * * 100 init -o {message_log L}.
 
 %% future:
