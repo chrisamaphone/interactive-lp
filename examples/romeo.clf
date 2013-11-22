@@ -1,0 +1,303 @@
+
+nat : type. z : nat. s : nat -> nat.
+leq : nat -> nat -> type.
+leq/z : leq z N.
+leq/s : leq (s N) (s M)
+         <- leq N M.
+time : nat -> type.
+nchars : nat -> type.
+
+character : type.
+romeo : character.
+juliet : character.
+montague : character.
+capulet : character.
+mercutio : character.
+nurse : character.
+tybalt : character.
+apothecary : character.
+
+location : type.
+mon_house : location.
+cap_house : location.
+town : location.
+% church?
+
+object : type.
+weapon : object.
+
+% states
+dead : character -> type.
+murdered : character -> character -> type.
+at : character -> location -> type.
+has : character -> object -> type.
+wants : character -> object -> type.
+married : character -> character -> type.
+unmarried : character -> type.
+anger : character -> character -> type.
+% storge : character -> character -> type.
+eros : character -> character -> type.
+philia : character -> character -> type.
+neutral : character -> character -> type.
+depressed : character -> type.
+suicidal : character -> type.
+% bored : character -> type.
+boredom : type.
+
+% permastates
+accessible : location -> location -> type.
+mon/town : accessible mon_house town.
+town/mon : accessible town mon_house.
+cap/town : accessible cap_house town.
+town/cap : accessible town cap_house.
+
+
+actor : character -> type.
+a-romeo : actor romeo.
+a-juliet : actor juliet.
+a-montague : actor montague.
+a-capulet : actor capulet.
+a-mercutio : actor mercutio.
+a-nurse : actor nurse.
+a-tybalt : actor tybalt.
+a-apothecary : actor apothecary.
+
+% actions
+
+action : type.
+travel : location -> action.
+flirt : character -> action.
+marry : character -> action.
+murder : character -> action.
+take : object -> action.
+mourn : character -> action.
+
+% do : character -> action -> type.
+
+% C travels to be near C'.
+do/travelTo
+: actor C * actor C' *
+  philia C C' * at C' L' *
+  at C L * accessible L L'
+  -o {@philia C C' * @at C' L' * @at C L'}.
+
+% do/travelFrom
+% : actor C *
+%   at C L * at C' L * hates C C'
+%  accessible L L'
+%  -o  {@at C L' * @at C' L * @hates C C'}.
+
+% do/getbored
+% : actor C *
+%  boredom *
+%  at C L -o {@bored C}.
+
+do/travelBored
+: actor C *
+  at C L * accessible L L' * boredom * boredom
+  -o {@at C L'}.
+
+% eros to philia
+do/fallInLove
+: actor C * actor C' *
+  at C L * at C' L' *
+  eros C C'
+  -o {@at C L * @at C' L' * @eros C C' * @philia C C'}.
+
+% philia to eros
+do/eroticize
+: actor C * actor C' *
+  at C L * at C' L' *
+  philia C C' * philia C C' * philia C C' * philia C C'
+  -o {@at C L * @at C' L' * @philia C C' * @eros C C'}.
+
+do/flirt/ok
+: actor C * actor C' *
+  at C L * at C' L * eros C C' * unmarried C * unmarried C'
+               -o {@eros C C' * @eros C' C * 
+                    @unmarried C * @unmarried C' *
+                    @at C L * @at C' L}.
+do/flirt/discrete
+: actor C * actor C' *
+  at C L * at C' L * eros C C'
+  -o {@eros C C' * @eros C' C * @at C L * @at C' L}.
+
+do/flirt/conflict 
+: actor C * actor C' *
+  at C L * at C' L * at C'' L *
+  eros C C' * eros C'' C
+                -o {@eros C C' * @eros C' C * @eros C' C'' 
+                    * @anger C'' C' * @anger C'' C
+                    * @at C L * @at C' L * @at C'' L}.
+do/divorce
+: actor C * actor C' *
+  at C L * at C' L' *
+  married C C' * married C' C * anger C C' * anger C C'
+  -o {@anger C C' * @anger C' C * @unmarried C * @unmarried C'
+      * @at C L * @at C' L'}.
+
+do/widdow
+: actor C * actor C' *
+  married C C' * at C L * dead C'
+  -o {@unmarried C * @at C L}.
+
+do/marry 
+: actor C * actor C' *
+  % at C temple * at C' temple * 
+  at C L * at C' L * 
+  eros C C' * philia C C' * 
+  eros C' C * philia C' C * 
+  unmarried C * unmarried C'
+             % * has C money
+               -o {@married C C' * @married C' C * @at C L * @at C' L *
+                    @eros C C' * @eros C' C *
+                    @philia C C' * @philia C' C }.
+% do/famtalk/like
+% : actor C * actor C' *
+%   at C L * at C' L *
+%   family C C'
+%   -o {@at C L * @at C' L * @philia C C'}.
+% 
+% do/famtalk/hate
+% : actor C * actor C' *
+%   at C L * at C' L *
+%   family C C'
+%   -o {@at C L * @at C' L * @anger C C'}.
+
+do/formOpinion/like
+: actor C * actor C' *
+  at C L * at C' L *
+  neutral C C'
+  -o {@at C L * @at C' L * @philia C C'}.
+
+do/formOpinion/dislike
+: actor C * actor C' *
+  at C L * at C' L *
+  neutral C C'
+  -o {@at C L * @at C' L * @anger C C'}.
+
+do/murder 
+: actor C * actor C' *
+  anger C C' * anger C C' * anger C C' * @anger C C' *
+  at C L * at C' L  * nchars (s N) * has C weapon
+                -o {@at C L * !dead C' * !murdered C C' * @nchars N *
+                      @has C weapon}.
+
+do/becomeSuicidal
+: actor C *
+  at C L *
+  depressed C * depressed C * depressed C * depressed C
+  -o {@at C L * @suicidal C * @wants C weapon}.
+
+do/comfort
+: actor C * actor C' *
+  at C L * at C' L *
+  suicidal C' * philia C C' * @philia C' C
+  -o {@at C L * @at C' L * 
+      @philia C C' * @philia C' C * @philia C' C}.
+
+do/suicide
+: actor C * 
+  at C L * 
+  suicidal C *
+  has C weapon *
+  nchars (s N)
+ -o {@nchars N * !dead C}. 
+
+do/give
+ : actor C * actor C' *
+   at C L * at C' L * has C O * wants C' O * philia C C'
+         -o {@at C L * @at C' L * @has C' O * @philia C C'}.
+
+do/steal
+  : actor C' * actor C * 
+    at C L * at C' L * has C O * wants C' O
+         -o {@at C L * @at C' L * @has C' O * @anger C C'}.
+
+do/loot
+  : actor C * actor C' *
+    at C L * dead C' * has C' O * wants C O
+    -o {@at C L * @has C O}.
+
+do/compliment/private
+: actor C * actor C' *
+  at C L * at C' L * @philia C C' -o
+          {@at C L * @at C' L * @philia C C' * @philia C' C}.
+
+do/compliment/witnessed
+: actor C * actor C' * actor Witness *
+  at C L * at C' L * at Witness L * @philia C C' *
+  anger Witness C' -o
+          {@at C L * @at C' L * @at Witness L * @philia C C' * @anger Witness C'  
+            * @philia C' C * @anger Witness C}.
+
+do/insult/private
+: actor C * actor C' *
+  at C L * at C' L * @anger C C' -o
+          {@at C L * @at C' L * @anger C C' * @anger C' C * @depressed C'}.
+
+do/insult/witnessed
+: actor C * actor C' * actor Witness *
+  at C L * at C' L * at Witness L * @anger C C' * philia Witness C' -o
+          {@at C L * @at C' L * @at Witness L * @anger C C' * 
+            @philia Witness C' * @anger C' C * @depressed C' * @anger Witness C}.
+
+do/mourn 
+: actor C * actor C' *
+  at C L * philia C C' * dead C' 
+  -o {@at C L * @depressed C * @depressed C}. % * @remembered C'}.
+
+do/thinkVengefully
+: actor C * actor Killer * actor Dead *
+  at C L * at Killer L' * 
+  philia C Dead * murdered Killer Dead
+  -o {@at C L * @at Killer L' * @philia C Dead *
+      @anger C Killer * @anger C Killer}.
+
+mixed_feelings 
+: actor C * actor C' * at C L * 
+  anger C C' * philia C C' -o {@at C L * @neutral C C'}.
+
+%% stuff to force quiescence
+maxtime : nat =
+  s (s (s (s (s (s z))))).
+time_passes 
+  : time T * nchars (s N)
+    -o {@time (s T) * @nchars (s N) * @boredom}.
+story_over : nchars z * time z -o {1}.
+die_of_old_age 
+: actor C *
+  at C L * time T * nchars (s N) * leq maxtime T 
+  -o {!dead C * @time z * @nchars N}.
+
+init : type
+= { @at romeo town * @at montague mon_house * @at capulet cap_house
+  * @at mercutio town * @at nurse cap_house * @at juliet town
+  * @at tybalt town * @at apothecary town
+
+  * @unmarried romeo * @unmarried juliet 
+  * @unmarried nurse * @unmarried mercutio * @unmarried tybalt
+  * @unmarried apothecary
+
+  * @anger montague capulet * @anger capulet montague
+  * @anger tybalt romeo * @anger capulet romeo * @anger montague tybalt
+
+  * @philia mercutio romeo * @philia romeo mercutio
+  * @philia montague romeo * @philia capulet juliet
+  % "lust at first sight"
+  * {@(Pi L. at romeo L * at juliet L 
+        -o {@eros romeo juliet * @at romeo L * @at juliet L})}
+
+  * @has tybalt weapon * @has romeo weapon * @has apothecary weapon
+
+  * @philia juliet nurse * @philia nurse juliet
+  * @neutral nurse romeo * !family juliet tybalt
+  * @neutral mercutio juliet * @neutral juliet mercutio
+  * @neutral apothecary nurse * @neutral nurse apothecary
+
+  * @time z * @nchars (s (s (s (s (s (s (s (s z))))))))}.
+
+% #trace * init.
+
+#query * * * 5 init -o {1}.
+
