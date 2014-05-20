@@ -65,7 +65,7 @@ do/flirt/ok
                -o {@eros C C' * @eros C' C * 
                     @unmarried C * @unmarried C' *
                     @at C L * @at C' L}.
-do/flirt/discrete
+do/flirt/discreet
 : actor C * actor C' *
   at C L * at C' L * eros C C'
   -o {@eros C C' * @eros C' C * @at C L * @at C' L}.
@@ -74,7 +74,7 @@ do/flirt/conflict
 : actor C * actor C' *
   at C L * at C' L * at C'' L *
   eros C C' * eros C'' C
-                -o {@eros C C' * @eros C' C * @eros C' C'' 
+                -o {@eros C C' * @eros C' C * @eros C'' C 
                     * @anger C'' C' * @anger C'' C
                     * @at C L * @at C' L * @at C'' L}.
 do/divorce
