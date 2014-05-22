@@ -1,0 +1,99 @@
+%% Simplified event calculus.
+
+fluent : type.
+not : fluent -> fluent.
+
+event : type.
+timepoint : type.
+
+flist : type.
+fnil : flist.
+fcons : fluent -> flist -> flist.
+
+% specified at the domain level.
+causes : event -> flist -> type.
+% specified wrt the domain, at the query level.
+initially : flist -> type.
+happens : event -> timepoint -> type.
+
+% internal predicates.
+init : flist -> type.
+int : fluent -> timepoint -> timepoint -> type.
+record : flist -> timepoint -> type.
+insert : fluent -> timepoint -> type.
+holds : fluent -> timepoint -> type.
+
+exclusive : fluent -> fluent -> type.
+- : exclusive F F.
+- : exclusive (not F) F.
+- : exclusive F (not F).
+
+between : timepoint -> timepoint -> timepoint -> type.
+less : timepoint -> timepoint -> type.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+t : nat -> timepoint.
+infty : timepoint.
+
+lt : nat -> nat -> type.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+        <- lt N M.
+
+less/nat : less (t I) (t J)
+           <- lt I J.
+less/infty : less _ infty.
+between/i : between T1 T2 T3
+             <- less T1 T2
+             <- less T2 T3.
+
+start : type.
+start/i : start * initially Fs -o {init Fs}.
+
+% - : init fnil. % o- {1}.
+% - : init (fcons F Fs)
+%        o- (int F (t z) infty -o init Fs).
+
+init/nil : init fnil -o {1}.
+init/cons : init (fcons F Fs) -o {int F (t z) infty * init Fs}.
+
+happens/causes 
+: happens E T * causes E Fs -o {record Fs T}.
+
+record/nil 
+: record fnil T -o {1}.
+record/cons 
+: record (fcons F Fs) T -o {insert F T * record Fs T}.
+
+split
+: insert F2 T * exclusive F1 F2 * int F1 T1 T2 * between T1 T T2
+        -o {int F1 T1 T * int F2 T T2}.
+
+% - : int F T1 T2 * between T1 T T2 -o {holds F T G}.
+
+%% domain: yale
+load : event.
+unload : event.
+shoot : event.
+wait : event.
+
+loaded : fluent.
+dead : fluent.
+
+- : causes load (fcons loaded fnil).
+- : causes unload (fcons (not loaded) fnil).
+- : causes shoot (fcons (not loaded) (fcons dead fnil)).
+- : causes wait fnil.
+
+- : initially (fcons (not loaded) (fcons (not dead) fnil)).
+
+initial_state : type
+= {start * happens wait (t (s (s z))) * happens shoot (t (s (s (s z)))) *
+happens load (t (s z))}.
+
+#trace * initial_state.
+#trace * initial_state.
+#trace * initial_state.
