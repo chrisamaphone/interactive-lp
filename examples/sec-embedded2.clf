@@ -1,0 +1,66 @@
+%% 3nd take: Explicitly model "happens".
+% goal: get it so that a trace actually simulates the progression of time?
+
+event : type.
+
+time : type.
+z : time.
+s : time -> time.
+% infty : time.
+
+leq : time -> time -> type.
+leq/z : leq z N.
+leq/s : leq (s N) (s M)
+        <- leq N M.
+
+clock : time -> type.
+
+fluent : type.
+
+happens : event -> time -> type.
+holds : fluent -> type.
+
+elist : type.
+nil : elist.
+cons : event -> time -> elist -> elist.
+
+queue : elist -> type.
+
+% domain things
+load : event.
+unload : event.
+wait : event.
+shoot : event.
+
+loaded : fluent.
+dead : fluent.
+
+tick : clock T -o {clock (s T)}.
+
+stop : queue nil * clock _ -o {1}.
+
+happen : clock T * queue (cons E T' Es) * leq T' T
+             -o {queue Es * happens E T}.
+
+happens/load : happens load T -o {holds loaded * clock T}.
+
+happens/unload : happens unload T * holds loaded -o {clock T}.
+
+happens/shoot : happens shoot T * holds loaded -o {holds dead * clock T}.
+
+happens/wait : happens wait T -o {clock T}.
+
+init : type.
+- : init -o {clock z
+* queue (cons load z (cons wait (s (s z)) (cons shoot (s (s (s z))) nil)))
+}.
+
+#trace * {init}.
+
+%% Results:
+%% Hooray, this works basically as I want it to. The clock still increments
+%% asynchronously, so events aren't "on the nose" synchronized (see the
+%% "leq" check on time), but they definitely happen in order due to
+%% queueing, and some synch threaded through the "happens/*" rules that
+%% makes sure the clock can't tick before an action's effects have taken
+%% place.

@@ -1,0 +1,87 @@
+%%%% Class 1 of experiments: 
+%%%% model domain directly in LL.
+
+%% first take: fluents as types; events as rules.
+%% "terminates E Ts" & "initiates E Is" --> ruleE : Ts -o {Is}. 
+
+% fluents as types.
+% loaded : type.
+% empty : type.
+% dead : type.
+% alive : type.
+% 
+% % events as rules.
+% load : empty -o {loaded}.
+% unload : loaded -o {empty}.
+% shoot : loaded * alive -o {empty * dead}.
+% wait : {1}.
+% 
+% #trace * {empty * alive}.
+
+%% Results of first approx:
+%% A nonterminating trace. No way to control when things happen.
+
+%% 2nd take: Explicitly model "happens."
+% 
+event : type.
+load : event.
+unload : event.
+wait : event.
+shoot : event.
+  
+% happens : event -> type.
+  
+% happens/load : happens load * empty -o {loaded}.
+% happens/unload : happens unload * loaded -o {empty}.
+% happens/shoot : happens shoot * loaded * alive -o {empty * dead}.
+% happens/wait : happens wait -o {1}.
+% 
+% #trace * {empty * alive * happens wait * happens shoot * happens load}.
+% 
+%% Results of second take:
+%% Can't control order of events.
+%% Also can't do query b/c of nonuniformity in using fluents as types.
+%% Changes to make next:
+%% - Index stuff by time
+%% - make fluents first-order, or have "state" of exclusive things.
+
+time : type.
+z : time.
+s : time -> time.
+infty : time.
+
+happens : event -> time -> type.
+clock : time -> type.
+
+bool : type.
+tt : bool.
+ff : bool.
+loaded : bool -> type.
+dead : bool -> type.
+
+
+happens/load : clock T * happens load T * loaded ff 
+                   -o {loaded tt * clock (s T)}.
+happens/unload : clock T * happens unload T * loaded tt 
+                   -o {loaded ff * clock (s T)}.
+happens/shoot : clock T * happens shoot T * loaded tt * dead ff 
+                    -o {clock (s T) * loaded ff * dead tt}.
+happens/wait : clock T * happens wait T -o {clock (s T)}.
+
+init : type.
+- : init -o {loaded ff * dead ff}.
+
+#trace * {init
+* clock z * happens wait z * happens wait (s (s z)) * happens shoot
+(s (s (s z))) * happens load (s z)}.
+
+%% Results:
+%  This works but isn't as good as EC because I have to specify something
+%  to "happen" every timestep -- I can't "fill in the gaps" logically.
+
+%%%% Future work:
+%% maybe specify "time ordering" of events as partial order rather than
+%% with specific time indices.
+
+% also maybe we want to *independently* specify causality,
+% e.g. have "foo causes bar", "foo causes baz"
