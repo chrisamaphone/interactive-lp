@@ -1,3 +1,5 @@
+Initial prototype for automatic generative invariant checking.
+
 Run
 $ sml
 Standard ML of New Jersey v110.76 [built: Mon Aug 19 10:38:12 2013]
@@ -21,3 +23,6 @@ val it =
   [([0],[~1,0]),([~1],[3,3,3]),([~1],[~2,0]),([~2,2],[3,3]),([~2,2],[~3,0]),
    ([~3,2],[3]),([~3,2],[~4,0]),([~4,2],[]),([~3,2],[~4,5]),([~4,5],[]),
    ([~2,2],[~3,5]),([~3,5],[3]),...] : trace list
+
+Or use SML/NJ's builtin settings to print deeper data structure, e.g.
+- Control.Print.printDepth := 100;
