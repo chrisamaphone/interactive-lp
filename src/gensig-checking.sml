@@ -1,4 +1,4 @@
-structure Check : GENSIGS =
+structure Check = (* : GENSIGS = *)
 struct
 
   type atom = int
@@ -108,6 +108,69 @@ struct
     !sym before sym := !sym - 1
 
 
+  type trace = atom list * atom list
+
+  datatype invTree = Leaf | Node of (trace * trace * invTree) list
+
+  fun showTree Leaf = []
+    | showTree (Node children) =
+      let
+        fun showNode (l, r, child) = l::r::(showTree child)
+      in
+        List.concat (map showNode children)
+      end
+
+  (* invs : gensig -> trace -> invTree option *)
+  fun invs S (lhs, nil) = SOME Leaf
+    | invs S (lhs, a::D) =
+        let
+          val rules = List.filter (fn (bs, ays) => member a ays) S
+        in
+          case rules of
+               nil => NONE
+             | _ =>
+                 let
+                   val theta = gensym()
+                   fun split (bs, ays) = 
+                     ((lhs, theta::bs), 
+                      (theta::(deleteFirst a ays), D))
+                   fun child r =
+                      let
+                        val (ltrace, rtrace) = split r
+                        val result = invs S rtrace
+                      in
+                        case result of
+                            NONE => NONE
+                          | SOME tree => SOME (ltrace, rtrace, tree)
+                      end
+                   fun filterNones (NONE::l) = filterNones l
+                     | filterNones ((SOME x)::l) = x::(filterNones l)
+                     | filterNones [] = []
+                   val children = filterNones (map child rules)
+                 in
+                   case children of
+                        [] => NONE
+                      | _ => SOME (Node children)
+                 end
+        end
+
+
+  (*
+  fun invertR gensig (inits, finals) acc_local acc_global
+    = case finals of
+           [] => acc_local::acc_global
+        | (f::fs) =>
+            let
+              val rules = lookup f gensig
+              fun split_along (ays, bs) = ((inits, ays), (minus bs f, fs))
+              val subtraces = map split_along rules
+            in
+            end
+  and invertL gensig (inits, finals) _ _ = [[(inits, finals)]]
+  *)
+
+
+  (*
   fun invert_rules (_,   [])           t acc = acc
     | invert_rules (gen, (ays,bs)::rs) t acc =
       let
@@ -125,11 +188,11 @@ struct
       end
 
   fun invert1 gen G t = invert_rules (gen, G) t []
-
+  *)
 
   (* invert : (atom * gensig) -> context -> multistep list *)
-  fun invert (gen, G) ts =
-    List.concat (map (invert1 gen G) ts)
+  fun invert (gen, G) ts = raise Match
+   (*  List.concat (map (invert1 gen G) ts) *)
 
 end
 
@@ -166,13 +229,22 @@ struct
      ([cs], [c, cs]),
      ([cs], [])]
 
+  val gensig2 : gensig =
+    [([gen], [b, c]),
+     ([gen], [a]),
+     ([gen], [a, cs]),
+     ([cs], [c, cs]),
+     ([cs], [])]
+
+  fun invs_test () = case (invs gensig2 ([gen], [a,c,c,c]))
+    of SOME t => t
+
   val genpair = (gen, gensig)
 
   (* Current status of invert:
   * - invert genpair [a];
   * val it = [([0],[999,4]),([999],[])] : multistep list
   *)
-
 
   (* testing produces *)
   val machine1 =
