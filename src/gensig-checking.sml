@@ -234,7 +234,7 @@ struct
      ([gen], [a]),
      ([gen], [a, cs]),
      ([cs], [c, cs]),
-     ([cs], [])]
+     ([cs], [c])]
 
   fun invs_test () = case (invs gensig2 ([gen], [a,c,c,c]))
     of SOME t => t
