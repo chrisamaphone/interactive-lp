@@ -1,0 +1,123 @@
+%% resourcy social game example.
+%% turn-based "sims."
+
+sim : type.
+
+%% sim needs
+% XXX doing anything with these?
+fed : sim -> type.
+fun : sim -> type.
+social : sim -> type.
+awake : sim -> type.
+clean : sim -> type.
+
+%% sim stats: age, job, relationships, etc
+age : type.
+infant : age.
+toddler : age.
+preteen : age.
+adult : age.
+senior : age.
+is_age : sim -> age -> type.
+
+job : type.
+unemployed : job.
+artist : job.
+politician : job.
+scientist : job.
+has_job : sim -> job -> type.
+
+rel : type.
+sibling : rel.
+spouse : rel.
+friend : rel.
+stranger : rel.
+acquaintaince : rel.
+dating : rel.
+partner : rel.
+goodfriend : rel.
+bestfriend : rel.
+enemy : rel.
+nemesis : rel.
+in_rel : sim -> sim -> rel -> type.
+
+%% global stats
+nat : type.
+z : nat.
+s : nat -> nat.
+simoleons : nat -> type.
+nsims : nat -> type.
+sim_id : sim -> nat -> type.
+
+% how much each job makes per turn.
+earns : job -> nat -> type.
+- : earns artist (s (s z)).
+- : earns politician (s (s (s (s (s (s z)))))).
+- : earns scientist (s (s (s (s z)))).
+
+%% actions
+
+create
+: nsims N -o {nsims (s N) * Exists ss:sim. is_age ss adult * sim_id ss N}.
+
+assign_job
+: has_job S unemployed -o {has_job S J}.
+
+% have birthday
+birthday1
+: is_age S infant -o {is_age S toddler}.
+
+birthday2
+: is_age S toddler -o {is_age S preteen}.
+
+birthday3
+: is_age S preteen -o {is_age S adult}.
+
+birthday4
+: is_age S adult -o {is_age S senior}.
+
+% work
+% eat
+% sleep
+% dance
+% coffee
+
+% interact (nice)
+
+% interact (mean)
+
+% interact (romantic)
+
+% get married
+get_married
+: in_rel S S' partner
+  -o {in_rel S S' married * social S * social S'}.
+
+% have baby
+have_baby
+: is_age S1 adult * is_age S2 adult * in_rel S1 S2 spouse
+    * nsims N
+  -o {is_age S1 adult * is_age S2 adult * rel S1 S2 spouse
+      * Exists ss. is_age ss infant * !sim_id ss N * nsims (s N)}.
+
+%% seed relationships
+seed/z : seed_relationships S z -o {1}.
+seed/cons : seed_relationships S (s N) * sim_id S' N
+                -o {seed_relationships N * in_rel S S' stranger}.
+
+%% initial configuration
+init : type.
+- : init -o
+{ Exists s0. Exists s1. Exists s2. Exists s3.
+    nsims (s (s (s (s z)))) *
+    !sim_id s0 z * is_age s0 adult * has_job s0 unemployed *
+      seed_relationships s0 z *
+    !sim_id s1 (s z) * is_age s1 adult * has_job s1 unemployed *
+      seed_relationships s1 (s z) *
+    !sim_id s2 (s (s z)) * is_age s2 adult * has_job s2 unemployed *
+      seed_relationships s2 (s (s z)) *
+    !sim_id s3 (s (s (s z))) * is_age s3 adult * has_job s3 unemployed * 
+      seed_relationships s3 (s (s (s z)))
+}.
+
+#trace * {init}.
