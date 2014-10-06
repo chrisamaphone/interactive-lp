@@ -1,0 +1,13 @@
+blue : type.
+red : type.
+nat : type.
+z : nat.
+s : nat -> nat.
+bluecount : nat -> type.
+redcount : nat -> type.
+
+change_color : blue -o {red}.
+count_red : red * redcount N -o {redcount (s N)}.
+count_blue : blue * bluecount N -o {bluecount (s N)}.
+
+

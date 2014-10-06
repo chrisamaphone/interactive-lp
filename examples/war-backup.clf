@@ -1,0 +1,191 @@
+% Encoding of the game of War, based on cards.clf
+
+nat : type.
+z : nat.
+s : nat -> nat.
+four : nat = s (s (s (s z))).
+eight : nat = s (s (s (s four))).
+twelve : nat = s (s (s (s (eight)))).
+
+lt : nat -> nat -> type.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+         <- lt N M.
+
+rank : type.
+r2 : rank.
+r3 : rank.
+r4 : rank.
+r5 : rank.
+r6 : rank.
+r7 : rank.
+r8 : rank.
+r9 : rank.
+r10 : rank.
+jack : rank.
+queen : rank.
+king : rank.
+ace : rank.
+
+nat-rank : nat -> rank -> type.
+- : nat-rank z r2.
+- : nat-rank (s z) r3.
+- : nat-rank (s (s z)) r4.
+- : nat-rank (s (s (s z))) r5.
+- : nat-rank four r6.
+- : nat-rank (s four) r7.
+- : nat-rank (s (s four)) r8.
+- : nat-rank (s (s (s four))) r9.
+- : nat-rank eight r10.
+- : nat-rank (s eight) jack.
+- : nat-rank (s (s eight)) queen.
+- : nat-rank (s (s (s eight))) king.
+- : nat-rank twelve ace.
+
+face : rank -> type.
+face/jack : face jack.
+face/queen : face queen.
+face/king : face king.
+face/ace : face ace. % ?.
+
+suit : type.
+hearts : suit.
+clubs : suit.
+diamonds : suit.
+spades : suit.
+
+card : type.
+c : rank -> suit -> card.
+
+indeck : card -> type.
+gen : nat -> type.
+count : nat -> type.
+deal_phase : nat -> type.
+
+generate : gen (s N) * nat-rank N R * count C -o 
+              {indeck (c R hearts) *
+               indeck (c R clubs) *
+               indeck (c R diamonds) *
+               indeck (c R spades) *
+               gen N * count (s (s (s (s C))))}.
+
+gen-to-deal : gen z * count C -o {deal_phase C}.
+
+init_deck : type =
+{ gen (s twelve) * count z }.
+
+% #trace * init_deck.
+
+%% -- Deal Phase -- %%
+
+player : type.
+p1 : player.
+p2 : player.
+next : player -> player -> type.
+- : next p1 p2.
+- : next p2 p1.
+play_phase : type.
+
+cardloc : type.
+top : cardloc.
+bottom : cardloc.
+u : card -> cardloc. % unique location of a card.
+hand : player -> cardloc -> cardloc -> type.
+needscard : player -> type.
+
+deal : deal_phase (s N) * needscard P * hand P L bottom * indeck C * next P P' 
+           -o 
+           {hand P L (u C) * hand P (u C) bottom * needscard P' *
+            deal_phase N}.
+
+deal-to-play : deal_phase z * needscard P -o {play_phase}.
+
+init_deal : type = { needscard p1 * hand p1 top bottom * hand p2 top bottom}.
+
+%% -- Play phase -- %%
+outcome : type.
+win : player -> outcome.
+war : outcome.
+cmp : card -> card -> outcome -> type.
+cmp/p1 : cmp (c R1 _) (c R2 _) (win p1)
+         <- nat-rank N1 R1
+         <- nat-rank N2 R2
+         <- lt N2 N1.
+cmp/p2 : cmp (c R1 _) (c R2 _) (win p2)
+         <- nat-rank N1 R1
+         <- nat-rank N2 R2
+         <- lt N1 N2.
+cmp/war : cmp (c R1 _) (c R2 _) war
+           <- nat-rank N R1
+           <- nat-rank N R2.
+
+war_phase : cardloc -> cardloc -> type.
+winner : player -> type.
+
+normal_turn : 
+        play_phase 
+         * hand p1 top (u C1) 
+         * hand p2 top (u C2)
+         * hand p1 (u C1) C1' 
+         * hand p2 (u C2) C2'
+         * cmp C1 C2 (win Winner)
+         * hand Winner X bottom
+         -o 
+         {play_phase 
+          * hand Winner X (u C1)
+          * hand Winner (u C1) (u C2)
+          * hand Winner (u C2) bottom
+          * hand p1 top C1' * hand p2 top C2'}.
+
+start_war : 
+        play_phase 
+         * hand p1 top (u C1) 
+         * hand p2 top (u C2)
+         * hand p1 (u C1) C1' 
+         * hand p2 (u C2) C2'
+         * cmp C1 C2 war
+         -o 
+         {war_phase (u C1) (u C2)
+          * hand p1 top C1' * hand p2 top C2'}.
+
+
+game_over : 
+          play_phase
+          * hand P top bottom
+          * hand P' X Y
+        -o {winner P'}.
+
+init_play : type = {1}.
+
+
+%% War phase %%
+pile : cardloc -> cardloc -> type.
+war_war : 
+        war_phase (u C1) (u C2) 
+        * cmp C1 C2 war
+        * pile X bottom 
+        * hand p1 top C1'
+        * hand p1 C1' C1''
+        * hand p2 top C2'
+        * hand p2 C2' C2''
+        -o
+        {pile X (u C1) * pile (u C1) (u C2) 
+        * pile (u C2) C1' * pile C1' C2' 
+        * pile C2' bottom
+        * war_phase C1'' C2''}.
+
+war_end :
+        war_phase (u C1) (u C2)
+      * cmp C1 C2 (win Winner)
+      * hand Winner X bottom
+      * pile top P
+      -o
+      {hand Winner X P
+        * play_phase
+        * @pile top bottom}.
+
+init_war : type = {@pile top bottom}.
+
+init : type = {init_deck * init_deal * init_play * init_war}.
+
+#trace * init.

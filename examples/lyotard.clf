@@ -1,0 +1,89 @@
+% Inspired by the Lyotard the Cat example from Oz.
+% An attempt at encoding characters with goals.
+
+emotion : type.
+afraid : emotion.
+happy : emotion.
+sad : emotion.
+angry : emotion.
+curious : emotion.
+content : emotion.
+energetic : emotion.
+% grateful : emotion.
+% lonely : emotion.
+% loving : emotion.
+% hating : emotion.
+% from "features".
+% aggressive : emotion.
+% friendly : emotion.
+
+% feels : agent -> emotion -> type.
+% feels_toward : agent -> emotion -> agent -> type.
+
+behavior : type.
+meow : bheavior.
+purr : behavior.
+nap : behavior.
+cleanSelf : behavior.
+eat : behavior.
+useLitterBox : behavior.
+hiss : behavior.
+swat : behavior.
+bite : behavior.
+% runAway : behavior.
+% chaseToy : behavior.
+% rubAgainst : behavior.
+% watch : behavior.
+
+% objects.
+object : type.
+
+cat : object.
+agent : object -> type.
+agent/cat : agent cat.
+
+superball : object.
+kittyBowl : object.
+can : object.
+sardine : object.
+chair : object.
+litterBox : object.
+
+% 6-room house.
+bedroom : object.
+sunroom : object.
+spareRoom : object.
+kitchen : object.
+diningRoom : object.
+
+room : object -> type.
+room/bedroom : room bedroom.
+room/sunroom : room sunroom.
+room/spareRoom : room spareRoom.
+room/kitchen : room kitchen.
+room/diningRoom : room diningRoom.
+
+container : object -> type.
+container/room : room X -> container X.
+container/kittybowl : container kittyBowl.
+container/can : container can.
+
+supporter : object -> type.
+supporter/chair : supporter chair.
+supporter/litterbox : supporter litterbox.
+
+mobile : object -> type.
+on : object -> object -> type.
+in_ : object -> object -> type.
+
+% actions.
+go-to : agent A * room R * loc A R' * mobile A -o {loc A R'}.
+jump-on : agent A * supporter S * loc A R * loc S R * mobile A
+              -o {loc A R * loc S R * on A S}.
+jump-off : agent A * supporter S * on A S
+               -o {mobile A}.
+
+
+
+init : type = 
+  {mobile cat * in_ cat bedroom * in_ can kitchen * in_ sardines can}.

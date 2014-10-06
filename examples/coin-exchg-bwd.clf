@@ -1,0 +1,16 @@
+d : type.
+n : type.
+q : type.
+goal : type.
+
+qd : goal o- q * d.
+
+ddn-q : goal
+        o- d * d * n
+        o- (q -o goal).
+
+nn-d : goal
+        o- n * n
+        o- (d -o goal).
+
+#query * * * 1 d * n * n * n * d -o goal.

@@ -1,0 +1,99 @@
+% calculator specification
+
+button : type.
+b1 : button.
+b2 : button.
+b3 : button.
+b4 : button.
+b5 : button.
+b6 : button.
+b7 : button.
+b8 : button.
+b9 : button.
+b0 : button.
+b+ : button.
+b- : button.
+b= : button.
+bclear : button.
+
+digit : type.
+d1 : digit.
+d2 : digit.
+d3 : digit.
+d4 : digit.
+d5 : digit.
+d6 : digit.
+d7 : digit.
+d8 : digit.
+d9 : digit.
+d0 : digit.
+
+op : type.
+oplus : op.
+ominus : op.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+blanksFilled : nat -> type.
+blanksLeft : nat -> type.
+nthDigit : nat -> digit -> type.
+press : button -> type.
+
+digits : type.
+dnil : digits.
+dcons : digit -> digits -> digits.
+
+num : digits -> type.
+num= : digits -> type.
+mem : digits -> type.
+
+do_op : op -> type.
+
+add : digits -> digits -> digits -> type.
+sub : digits -> digits -> digits -> type.
+dummyAdd : add N1 N2 (dcons d1 (dcons d2 (dcons d3 (dcons d4 dnil)))).
+dummySub : sub N1 N2 (dcons d4 (dcons d3 (dcons d2 (dcons d1 dnil)))).
+display : digits -> type.
+
+four : nat = s (s (s (s z))).
+initialBlanksLeft : nat = four.
+
+- : press b0 * blanksLeft (s N) * num (dcons D Ds)
+        -o {blanksLeft N * num (dcons d0 (dcons D Ds))}.
+- : press b1 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d1 Digits)}.
+- : press b2 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d2 Digits)}.
+- : press b3 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d3 Digits)}.
+- : press b4 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d4 Digits)}.
+- : press b5 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d5 Digits)}.
+- : press b6 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d6 Digits)}.
+- : press b7 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d7 Digits)}.
+- : press b8 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d8 Digits)}.
+- : press b9 * blanksLeft (s N) * num Digits
+        -o {blanksLeft N * num (dcons d9 Digits)}.
+
+- : press b+ * num N -o {do_op oplus * mem N * num dnil * blanksLeft four}.
+- : press b- * num N -o {do_op ominus * mem N * num dnil * blanksLeft four}.
+- : press b= * num N -o {num= N * num dnil * blanksLeft four}.
+- : press bclear * num N -o {num dnil * blanksLeft four}.
+
+- : do_op oplus * mem N1 * num= N2 * add N1 N2 N3 -o {mem N3}.
+- : do_op ominus * mem N1 * num= N2 * sub N1 N2 N3 -o {mem N3}.
+
+interact : type.
+push : interact -o {press B * interact}.
+stop : interact -o {1}.
+
+init : type = {num dnil * blanksLeft four * interact}.
+
+#trace * init.
+#query * * * 10 (init -o {mem N * num _ * blanksLeft _}).

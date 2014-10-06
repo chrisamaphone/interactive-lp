@@ -1,0 +1,38 @@
+% dining philosophers
+
+philosopher : type.
+p1 : philosopher.
+p2 : philosopher.
+p3 : philosopher.
+p4 : philosopher.
+p5 : philosopher.
+
+fork : type.
+f1 : fork.
+f2 : fork.
+f3 : fork.
+f4 : fork.
+f5 : fork.
+
+inreach : philosopher -> fork -> type.
+p1f5 : inreach p1 f5.
+p1f1 : inreach p1 f1.
+p2f1 : inreach p2 f1.
+p2f2 : inreach p2 f2.
+p3f2 : inreach p3 f2.
+p3f3 : inreach p3 f3.
+p4f3 : inreach p4 f3.
+p4f4 : inreach p4 f4.
+p5f4 : inreach p5 f4.
+p5f5 : inreach p5 f5.
+
+ontable : fork -> type.
+has : philosopher -> fork -> type.
+eating : philosopher -> fork -> fork -> type.
+
+pickup : inreach P F * ontable F -o {has P F}.
+eat : has P F1 * has P F2 -o {eating P F1 F2}.
+putdown : eating P F1 F2 -o {ontable F1 * ontable F2}.
+
+init : type = {ontable f1 * ontable f2 * ontable f3 * ontable f4 * ontable f5}.
+#trace * init.

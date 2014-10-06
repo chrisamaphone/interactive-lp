@@ -1,0 +1,49 @@
+
+% Most runners move automatically;
+% "It" is controlled by the player;
+% Arrow keys move;
+% Enter tags.
+
+player : type.
+
+it : player -> type.
+
+% 2D grid.
+direction : type.
+north : direction.
+south : direction.
+east : direction.
+west : direction.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+pos : type.
+xy : nat -> nat -> pos.
+
+adjacent : pos -> direction -> pos -> type.
+to_n : adjacent (xy X Y) north (xy X (s Y)).
+to_s : adjacent (xy X (s Y)) south (xy X Y).
+to_e : adjacent (xy X Y) east (xy (s X) Y).
+to_w : adjacent (xy (s X) Y) west (xy X Y).
+
+empty : pos -> type.
+contains : pos -> player -> type.
+
+tag : key_pressed enter * it It * contains ItCell It 
+           * adjacent ItCell _ AnotherCell 
+           * contains AnotherCell AnotherPlayer
+        -o {it AnotherPlayer * contains ItCell It 
+           * contains AnotherCell AnotherPlayer}.
+
+move : key_pressed (arrow Dir) * it It * contains ItCell It 
+           * adjacent ItCell Dir AnotherCell
+           * empty AnotherCell
+        -o {it It * empty ItCell * contains AnotherCell It}.
+
+other_move
+    : contains Cell Player * adjacent Cell _ AnotherCell
+      * empty AnotherCell
+    -o {contains AnotherCell Player * empty Cell}.
+

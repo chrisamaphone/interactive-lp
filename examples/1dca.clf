@@ -1,0 +1,66 @@
+% 1d cellular automata.
+
+loc : type.
+l1 : loc.
+l2 : loc.
+l3 : loc.
+l4 : loc.
+l5 : loc.
+l6 : loc.
+l7 : loc.
+l8 : loc.
+
+adj : loc -> loc -> type.
+l12 : adj l1 l2.
+l23 : adj l2 l3.
+l34 : adj l3 l4.
+l45 : adj l4 l5.
+l56 : adj l5 l6.
+l67 : adj l6 l7.
+l78 : adj l7 l8.
+l81 : adj l8 l1.
+
+color : type.
+b : color.
+w : color.
+
+cell : loc -> color -> type.
+
+die/underpop
+: cell L0 w * adj L0 L1 *
+  cell L1 b * adj L1 L2 *
+  cell L2 w
+  -o {cell L0 w * cell L1 w * cell L2 w}.
+
+die/overpop
+: cell L0 b * adj L0 L1 *
+  cell L1 b * adj L1 L2 *
+  cell L2 b
+  -o {cell L0 b * cell L1 w * cell L2 b}.
+
+spawn/left
+: cell L0 b * adj L0 L1 *
+  cell L1 w * adj L1 L2 *
+  cell L2 w
+  -o {cell L0 b * cell L1 b * cell L2 w}.
+
+spawn/right
+: cell L0 w * adj L0 L1 *
+  cell L1 w * adj L1 L2 *
+  cell L2 b
+  -o {cell L0 w * cell L1 b * cell L2 b}.
+
+% initial state.
+init : type.
+initialize
+: init -o
+{cell l1 b
+* cell l2 w
+* cell l3 b
+* cell l4 w
+* cell l5 b
+* cell l6 w
+* cell l7 b
+* cell l8 w}.
+
+#trace * init.

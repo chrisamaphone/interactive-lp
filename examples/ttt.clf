@@ -1,0 +1,70 @@
+% tic tac toe
+% based on http://games.stanford.edu/gdl.html
+
+role : type.
+xplayer : role.
+oplayer : role.
+
+index : type.
+i1 : index.
+i2 : index.
+i3 : index.
+
+marking : type.
+b : marking.
+x : marking.
+o : marking.
+
+makes_mark : role -> marking -> type.
+- : makes_mark xplayer x.
+- : makes_mark oplayer o.
+
+action : type.
+mark : index -> index -> action.
+
+control : role -> type.
+does : role -> action -> type.
+legal : role -> action -> type.
+cell : index -> index -> marking -> type.
+
+init : type.
+initialize
+  : init -o {cell i1 i1 b *
+             cell i1 i2 b *
+             cell i1 i3 b *
+             cell i2 i1 b *
+             cell i2 i2 b *
+             cell i2 i3 b *
+             cell i3 i1 b *
+             cell i3 i2 b *
+             cell i3 i3 b }.
+
+% legal actions.
+% - : control W * cell X Y b -o {legal W (mark X Y)}.
+legal/mark
+: legal W (mark X Y)
+  o- control W
+  o- cell X Y b.
+
+% state change.
+% - : does R (mark X Y) * cell M N b * makes_mark R XO
+do/mark 
+: does R (mark X Y) * makes_mark R XO
+          -o {cell M N XO}.
+
+% XXX define lines
+% terminal states (full board or line)
+
+% choice simulator
+- : legal R M -o {does R M}.
+
+#query * * * 1 init * control xplayer 
+  -o { cell i1 i1 X11 *
+       cell i1 i2 X12 *
+       cell i1 i3 X13 *
+       cell i2 i1 X21 *
+       cell i2 i2 X22 *
+       cell i2 i3 X23 *
+       cell i3 i1 X31 *
+       cell i3 i2 X32 *
+       cell i3 i3 X33 }.

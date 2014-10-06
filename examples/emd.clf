@@ -1,0 +1,10 @@
+
+agent : type.
+message : type.
+implies : message -> message -> message.
+
+knows : agent -> message -> type.
+% "knows A M" is a resource rep. that A knows M.
+
+% knows A (M -o M') -o knows A M'
+knows A (implies M M') * knows A M -o {knows A M'}.

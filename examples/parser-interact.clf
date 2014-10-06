@@ -1,0 +1,100 @@
+% A simple parser IF games based on twine-interact.clf
+%
+% The idea here is to represent a general "language of actions" for IF.
+
+object : type.
+key : object.
+lamp : object.
+door : object.
+
+%% State %%
+
+got : object -> type.
+~got : object -> type. % complement.
+
+% Passages
+passage : type.
+start : passage.
+den : passage.
+cellar : passage.
+dark : passage.
+location : passage -> type.
+% intermediate (game) action.
+opendoor : type.
+lose : type.
+win : type.
+
+% Externally available (controller) actions.
+action : type.
+'get : object -> action.
+'open : object -> action.
+% 'quit : action.
+'move : passage -> action.
+
+% To specify an order on actions
+nat : type.
+z : nat.
+s : nat -> nat.
+nth_act : nat -> action -> type.
+% A specific test case for player action.
+% 'starttoden, 'getlamp, 'getkey, 'dentocellar, 'cellartodoor.
+act0 : nth_act z ('move den).
+act1 : nth_act (s z) ('get lamp).
+act2 : nth_act (s (s z)) ('get key).
+act3 : nth_act (s (s (s z))) ('move cellar).
+act4 : nth_act (s (s (s (s z)))) ('open door).
+
+% current action
+cur : nat -> type.
+cur_act : action -> type.
+
+% Transition rules. Every rule from the previous version has an additional
+% cur_act premise, and outputs a "tick" whenever we want to return control
+% to the player.
+
+tick : type.
+next_act : tick * cur N * nth_act N A -o {cur_act A * cur (s N)}.
+
+start_to_den : cur_act ('move den) * location start 
+                   -o {location den * tick}.
+start_to_cellar : cur_act ('move cellar) * location start 
+                   -o {location cellar * tick}.
+
+den_to_cellar : cur_act ('move cellar) * location den 
+                    -o {location cellar * tick}.
+den_to_lamp : cur_act ('get lamp) * location den * ~got lamp 
+                  -o {got lamp * location den * tick}.
+den_to_key : cur_act ('get key) * location den * ~got key 
+                 -o {got key * location den * tick}.
+
+cellar_to_den : cur_act ('move den) * location cellar -o 
+                    {location den * tick}.
+cellar_to_door : cur_act ('open door) * location cellar -o {opendoor}.
+
+open_door_without_key : opendoor * ~got key 
+                            -o {location cellar * ~got key * tick}.
+open_door_with_key : opendoor * got key 
+                            -o {location dark}.
+
+dark_with_lamp : location dark * got lamp -o {win}.
+dark_without_lamp : location dark * ~got lamp -o {lose}.
+
+% failures?
+- : cur_act ('open lamp) -o {tick}.
+- : cur_act ('open key) -o {tick}.
+- : cur_act ('get door) -o {tick}.
+% what about when conditions don't apply?
+
+% Reporting
+ending : type.
+w : ending. l : ending.
+report : ending -> nat -> type. % the nat is the # of steps.
+report_win : win * cur N -o {report w N}.
+report_loss : lose * cur N -o {report l N}.
+
+% Initial state
+init : type = {~got key * ~got lamp * location start * cur z * tick}.
+
+#trace * init.
+
+#query * * * 1 init -o {report END NSTEPS}.
