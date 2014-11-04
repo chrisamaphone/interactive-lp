@@ -1,7 +1,8 @@
 signature GENSIGS =
 sig
   type atom = int
-  type genrule = (atom list) * (atom list)
+  type rname = string
+  type genrule = rname * (atom list) * (atom list)
   (* could be just atom * (atom list) ? *)
   (* refinement: nt * (terminal list) * (nt list) * (terminal list) *) 
 

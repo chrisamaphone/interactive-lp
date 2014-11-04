@@ -1,0 +1,57 @@
+scene : type.
+s1 : scene.
+s2 : scene.
+s3 : scene.
+s4 : scene.
+
+%% characters
+tamara : scene -> type.
+luisa : scene -> type.
+maid : scene -> type.
+ellis : scene -> type.
+gabriele : scene -> type.
+ballerina : scene -> type.
+dante : scene -> type.
+mario : scene -> type.
+
+
+init 
+: type = 
+{tamara s2 * luisa s1 * maid s1 * ellis s1 * gabriele s1 * ballerina s1 *
+dante s1 * mario s1}.
+
+load-gun 
+  : luisa s1 -o {luisa s2}.
+family-gathers 
+  : gabriele s1 * ellis s1 * ballerina s1
+    -o {gabriele s2 * ellis s2 * ballerina s2}.
+maid-kisses
+  : maid s1 * dante s1 -o {maid s2 * dante s2}.
+maid-kisses-2
+  : maid s1 * mario s1 -o {maid s2 * mario s2}.
+dante-alone
+  : dante s1 -o {dante s2}.
+mario-alone
+  : mario s1 -o {mario s2}.
+gondola
+  : dante s2 -o {dante s3}.
+maid-steal-gun
+  : maid s2 -o {maid s3}.
+mario-helps
+  : mario s2 * tamara s2 -o {mario s3 * tamara s3}.
+luisa-storms
+  : luisa s2 * gabriele s2 -o {luisa s3 * gabriele s3}.
+ellis-flirts
+  : ellis s2 * ballerina s2 -o {ellis s3 * ballerina s3}.
+tamara-rejects
+  : tamara s3 * gabriele s3 -o {tamara s4 * gabriele s4}.
+luisa-suicide
+  : luisa s3 -o {luisa s4}.
+
+#trace * init.
+
+#query * * * 1
+init -o 
+{tamara S0 * luisa S1 * maid S2 * ellis S3 * gabriele S4 * ballerina S5 *
+dante S6 * mario S7}.
+
