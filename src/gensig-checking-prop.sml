@@ -1,31 +1,24 @@
 (*
-* First-order, flat-language-based generative invariant checking.
-* - Chris Martens, 11/11/2014
-*
+* Propositional case of generative signature checking.
+* Chris Martens, cmartens@cs.cmu.edu
+* Snapshot Friday, November 7, 2014:
+*   - inversions seem to work properly!
+*   - buildTrace loops, though. currently very naive and broken implementation.
 *)
 
 structure Check = (* : GENSIGS = *)
 struct
 
-  type term = int (* term constants e.g. z or s *)
-  datatype uvar = BOUND of int | FREE
-  datatype lp_term = UVAR of uvar | LOCAL of int | TERM of term
-  (* | MULTIARY_TERM of (string * (lp_term list)) *)
-  datatype atom = AT of int | AP of string * (lp_term list)
-  (* atom ~= first-order predicate *)
+  type atom = int
 
   type rname = string
-  type genrule = rname * int * atom * int * (atom list)
-    (* (r, avars, nt, evars, rhs) models 
-    *   r : (Pi X)^avars. nt -o {(Exists x)^evars.rhs}
-    *   (nvars is the number of existentials to bind;
-    *     LOCAL refers to the nth new var) *)
+  type genrule = rname * (atom list) * (atom list)
   type gensig = genrule list
   type context = atom list
   type multistep = (atom list) * (atom list)
-    (* at the top level, this will be ([gen], some_context)
-    *   where some_context is derived from the lhs/rhs of the rule we want to
-    *   check. *)
+
+  type state_transition = atom * (atom list) * (atom option)
+  type state_machine = state_transition list
 
   (* flat languages *)
   datatype word =
@@ -37,27 +30,39 @@ struct
     | BRANCH of flat * flat
 
 
+  (* util *)
 
-  (* helper fns (things that don't belong in util because they're dependent on
-  * types defined in this module) *)
-  
-  open Util
+  fun filter_nones [] = []
+    | filter_nones (NONE::L) = filter_nones L
+    | filter_nones ((SOME x)::L) = x::(filter_nones L)
 
-  fun isvar (AT x) = x < 0
-    | isvar _ = false
 
-  (* is the predicate name in 2 atoms the same? *)
-  fun eqpred (AP (p, _)) (AP (p', _)) = p = p'
-    | eqpred (AT a) (AT a') = a = a'
-    | eqpred _ _ = false
+  fun mapi' i f [] = []
+    | mapi' i f (x::xs) = (f(i,x))::(mapi' (i+1) f xs)
 
-  fun memberModuloArgument pred =
-    List.exists (fn p => eqpred p pred)
+  fun mapi f l = mapi' 0 f l
+
+  fun member x = List.exists (fn x' => x = x')
+
+  fun deleteAll x = List.filter (fn x' => x <> x')
+
+  fun deleteFirst x [] = []
+    | deleteFirst x (y::ys) = if x = y then ys else y::(deleteFirst x ys)
+
+  fun deleteFirstIfMember x [] = NONE
+    | deleteFirstIfMember x (y::ys) = if x = y then SOME ys else
+      (case deleteFirstIfMember x ys of
+            NONE => NONE
+          | SOME ys' => SOME (y::ys'))
+
+  fun just w = SEQ (ONCE w, EMPTY)
+
+  fun concatMap f ls = List.concat (map f ls)
+
+  (* helper fns *)
 
   fun langFromList [] = EMPTY
     | langFromList (w::ws) = SEQ (w, langFromList ws)
-
-  fun just w = SEQ (ONCE w, EMPTY)
 
   fun terminal a [] = true
     | terminal a ((ins, outs)::rules)
@@ -67,8 +72,8 @@ struct
     case GI of
          [] => NONE
        | (r::GI') => 
-           (case r of (rname', pi, lhs, exists, rhs) => 
-            if rname = rname' then SOME (pi, lhs, exists, rhs) 
+           (case r of (rname', lhs, rhs) => 
+            if rname = rname' then SOME (lhs, rhs) 
             else lookup GI' rname)
 
   fun overlap ts1 ts2 =
@@ -85,22 +90,25 @@ struct
     | seqSnoc (SEQ (w', L'))          w = SEQ (w', seqSnoc L' w)
     | seqSnoc (BRANCH (L1, L2)) w = raise Match (* shouldn't happen *)
     
+    (*
+  fun seqSnoc L w = case L of
+                     EMPTY => SEQ (w, EMPTY)
+                   | SEQ(w', L') => if w = w' then SEQ(w
+                   | SEQ (w', L') => SEQ (w', seqSnoc L' w)
+                   (* | BRANCH (L1, L2) => BRANCH (seqSnoc L1 w, seqSnoc L2 w)
+                   * * this case is weird & shouldn't happen *)
+                   *)
+
 
   (*** Inversion ***)
 
-  (* Gensyms for context variables. *)
   val sym = ref ~1
   fun gensym () =
     !sym before sym := !sym - 1
 
-  (* firstSplits : gensig -> flat -> context -> (context * flat * context) list
-  *                 -> (context * flat * context) list
-  * (4th arg is an accumulator; call at top-level with firstSplits .. .. .. []) 
-  *
-  * This function decides how a rhs should be split at first (to be called
-  * recursively in the "invs" function).
-  * 
-  **)
+  type inversions = multistep list
+
+
   fun firstSplits GI L rhs prefix =
   (* returns a list of triples (L1, w, L2) 
   *   where w produces some atom in the rhs
@@ -110,8 +118,7 @@ struct
          EMPTY => []
        | SEQ (ONCE w, L') =>
            let
-             (* XXX do what w/pivars, exvars? *)
-             val SOME (pivars, ants, exvars, sucs) = lookup GI w
+             val SOME (ants, sucs) = lookup GI w
              val ts = overlap sucs rhs
            in
              case ts of
@@ -120,8 +127,7 @@ struct
            end
        | SEQ (REPEAT w, L') =>
            let
-             (* XXX do what w/pivars, exvars? *)
-             val SOME (pivars, ants, exvars, sucs) = lookup GI w
+             val SOME (ants, sucs) = lookup GI w
              val ts = overlap sucs rhs
            in
              case ts of
@@ -132,19 +138,47 @@ struct
            (firstSplits GI L1 rhs prefix)@(firstSplits GI L2 rhs prefix)
 
 
-  (* Unification *)
-  (* XXX move this code to its own module? *)
-
   type sub = int * context
-  structure CM = CommutativeMonoid
-  
-  (* XXX modify to unify vars in terms *)
+
+  fun ctx_eq [] [] = true
+    | ctx_eq (x::xs) ys = 
+      (case deleteFirstIfMember x ys of
+            NONE => false
+          | SOME ys => ctx_eq xs ys)
+    | ctx_eq _ _ = false 
+
+  (* commutative monoid difference *)
+  fun ctx_diff C []        = SOME C
+    | ctx_diff [] (c::C)   = NONE
+    | ctx_diff C1 (c2::C2) =
+        (case deleteFirstIfMember c2 C1 of
+              NONE     => NONE
+            | SOME C1' => ctx_diff C1' C2)
+
+  (* intersection *)
+  fun ctx_intersect [] _ accum = accum
+    | ctx_intersect _ [] accum = accum
+    | ctx_intersect (c1::C1) C2 accum =
+      (case deleteFirstIfMember c1 C2 of
+           NONE => ctx_intersect C1 C2 accum
+         | SOME C2' => ctx_intersect C1 C2' (c1::accum)
+      )
+
+  (* complement intersect. C1 \ (C1 /\ C2) *)
+  fun ctx_xnor C1 [] = C1
+    | ctx_xnor [] C2 = []
+    | ctx_xnor (c1::C1) C2 =
+      (case deleteFirstIfMember c1 C2 of
+            NONE     => c1::(ctx_xnor C1 C2)
+          | SOME C2' => ctx_xnor C1 C2')
+      
+
   (* unifyCtx : context * (int option) -> context * (int option) -> sub list option *)
-  fun unifyCtx (ctx1:atom list, NONE) (ctx2:atom list, NONE) = 
-        if CM.eq ctx1 ctx2 then SOME [] else NONE
+  fun unifyCtx (ctx1, NONE) (ctx2, NONE) = 
+        if ctx_eq ctx1 ctx2 then SOME [] else NONE
     | unifyCtx (ctx1, SOME var1) (ctx2, NONE) =
         (* check ctx1 <= ctx2; unify var1 with ctx2-ctx1 *)
-        (case CM.diff ctx2 ctx1 of
+        (case ctx_diff ctx2 ctx1 of
               NONE        => NONE
             | SOME ctx2m1 =>
                 let
@@ -155,7 +189,7 @@ struct
     | unifyCtx (ctx1, NONE) (ctx2, SOME var2) =
         (* symmetric case to previous:
         *   check ctx2 <= ctx1; unify var2 with ctx1-ctx2 *)
-        (case CM.diff ctx1 ctx2 of
+        (case ctx_diff ctx1 ctx2 of
               NONE => NONE
             | SOME ctx1m2 =>
                 let
@@ -163,18 +197,20 @@ struct
                 in
                   SOME [(var2, ctx1m2)]
                 end)
-    | unifyCtx (ctx1:atom list, SOME var1) (ctx2:atom list, SOME var2) =
+    | unifyCtx (ctx1, SOME var1) (ctx2, SOME var2) =
        (* should always succeed.
        *  var1 |-> var, ctx2 - (ctx1 intersect ctx2)
        *  var2 |-> var, ctx1 - (ctx1 intersect ctx2)
        *)
        let
          val var = gensym()
-         val ctx1' = CM.xnor ctx2 ctx1
-         val ctx2' = CM.xnor ctx1 ctx2
+         val ctx1' = ctx_xnor ctx2 ctx1
+         val ctx2' = ctx_xnor ctx1 ctx2
        in
-         SOME [(var1, (AT var)::ctx1'), (var2, (AT var)::ctx2')]
+         SOME [(var1, var::ctx1'), (var2, var::ctx2')]
        end
+
+  fun isvar x = x < 0
 
   (* separate context into (nonvarparts, var) *)
   fun separate' [] accum = (accum, NONE)
@@ -202,21 +238,20 @@ struct
   fun applySubsToSplit subs (pre, L, post) =
     (applySubs' subs pre, L, applySubs' subs post)
 
-  fun checkLangReach GI (start:atom list, L, final:atom list) = 
+  fun checkLangReach GI (start, L, final) = 
     case L of
         EMPTY => (* if L is empty, make sure start and final are unifiable. *)
             unifyCtx (separate start) (separate final)
       | _ => SOME [] (* postpone deciding. *)
         
-  fun matchTrace (GI:gensig) (start, final) (L1, w, L2) =
+  fun matchTrace GI (start, final) (L1, w, L2) =
   (* matches a trace type (start, final) with a split lang (L1, w, L2) *)
   (* returns a ((ctx * lang * ctx) * (ctx * lang * ctx)) option *)
       let
-        (* XXX *)
-        val SOME (pivars, ant, exvars, sucs) = lookup GI w
+        val SOME (ants, sucs) = lookup GI w
         val theta = gensym ()
-        val pre  = (start, L1, [AT theta, ant])
-        val middle = (AT theta)::sucs
+        val pre  = (start, L1, theta::ants)
+        val middle = theta::sucs
         (* remove any overlap of final&sucs from each *)
         val post2 = removeOverlap final middle
         val post1 = removeOverlap middle final
@@ -243,13 +278,22 @@ struct
                end
       end
 
+      (*
+        val subsPost = checkLangReach GI post
+      in 
+        case (subsPre, subs) of
+             (SOME pre', SOME post') => SOME (pre', post')
+            | _           => NONE
+      end
+      *)
+
   (* invs : gensig -> flat -> multistep -> inversions *)
   (* invs GI L (start, end) =>
   *    NONE       if no trace exists from start to end 
   *  | SOME invs  if (start, end) splits into invs where invs has the form
   *                 (start, s1), (s1', s2), ..., (sn, end)
   *)
-  fun invs (GI:gensig) L (lhs : atom list, rhs : atom list) =
+  fun invs GI L (lhs, rhs) =
   let
     val splits = firstSplits GI L rhs EMPTY
     val trace_splits = map (fn s => matchTrace GI (lhs, rhs) s) splits
@@ -270,11 +314,7 @@ struct
   end
 
   (* invert : (atom * gensig) -> context -> multistep list *)
-  (* XXX this just reshuffles args; probably not needed... *)
-  fun invert (gen, (GI:gensig)) L ts = invs GI L (gen, ts)
-
-
-  (*** Reachability checking ***)
+  fun invert (gen, GI) L ts = invs GI L (gen, ts)
 
   fun lang_prefix L1 L2 =
     case (L1, L2) of
@@ -359,9 +399,6 @@ struct
 
   datatype response = Error of string | Yes | No
 
-
-  (*** Putting Inversion & Reachability Checking together: Rule Checking ***)
-
   (* checkRule : context * gensig -> rule -> response *)
   fun checkRule (gen, GI) (ant, suc) =
   (* checks if the program rule (ant, suc) preserves the generative invariant
@@ -408,11 +445,9 @@ struct
 
 
   (* testing context unification *)
-  val ctx1 = map (fn x => AT x) [a, a, b, c]
-  val ctx2 = map (fn x => AT x) [c, c, c, a, c, c, c]
-  val del1 = AT (gensym())
-  val del2 = AT (gensym())
-  val test_unify = unifyCtx (ctx1, SOME del1) (ctx2, SOME del2)
+  val ctx1 = [a, a, b, c]
+  val ctx2 = [c, c, c, a, c, c, c]
+  val test_unify = unifyCtx (ctx1, SOME (gensym())) (ctx2, SOME (gensym ()))
 
 
   (* testing specific GIs *)
@@ -433,33 +468,24 @@ struct
      ([cs], [c, cs]),
      ([cs], [])]
   *)
-
-
-  (* from (int * (int list)) rules to the general first-order form of gensig rules *)
-  fun simple (name, ant, sucs) =
-    (name, 0, AT ant, 0, map (fn x => AT x) sucs)
-
-  val gensig1 : gensig =
-    map simple
-     [("g1", gen, [a, cs]),
-      ("g2", gen, [b, cs]),
-      ("g3", cs, [c, cs]),
-      ("g4", cs, [])]
+  val gensig : gensig =
+     [("g1", [gen], [a, cs]),
+     ("g2", [gen], [b, cs]),
+     ("g3", [cs], [c, cs]),
+     ("g4", [cs], [])]
 
   val gensig2 : gensig =
-    map simple
-    [("g1", gen, [b, c]),
-     ("g2", gen, [a]),
-     ("g3", gen, [a, cs]),
-     ("g4", cs, [c, cs]),
-     ("g5", cs, [c])]
+    [("g1", [gen], [b, c]),
+     ("g2", [gen], [a]),
+     ("g3", [gen], [a, cs]),
+     ("g4", [cs], [c, cs]),
+     ("g5", [cs], [c])]
 
   val gensig3 : gensig =
-    map simple
-    [("g1", gen, [b, c, c]),
-     ("g2", gen, [a, cs]),
-     ("g3", cs, [c, cs]),
-     ("g4", cs, [c])]
+    [("g1", [gen], [b, c, c]),
+     ("g2", [gen], [a, cs]),
+     ("g3", [cs], [c, cs]),
+     ("g4", [cs], [c])]
   
   val del = gensym ()
 
@@ -468,31 +494,21 @@ struct
                              SEQ (ONCE "g2", SEQ (REPEAT "g3", SEQ (ONCE "g4",
                               EMPTY))))
 
-  fun abcs_invert_test () = invert ([AT gen], gensig3) lang3 
-    [AT del, AT a, AT c, AT c]
+  fun abcs_invert_test () = invert ([gen], gensig3) lang3 [del, a, c, c]
 
 
-  val fptp_prop : gensig =
-    [("g1", 0, AT gen, 0, [AT genc, AT gen]),
-     ("g2", 0, AT genc, 0, [AT nvotes, AT genb]),
-     ("g3", 0, AT genb, 0, [AT ballot, AT genb]),
-     ("g4", 0, AT genb, 0, [])]
-
-  val fptp_fo : gensig =
-    [("g1", 0, AT gen, 1, [AP ("genc", [LOCAL 0]), AT gen]),
-     ("g2", 2, AP ("genc", [LOCAL 0]), 0, [AP ("nvotes", [LOCAL 0, LOCAL 1]),
-                                           AP ("genb", [LOCAL 0])]),
-     ("g3", 1, AP ("genb", [LOCAL 0]), 0, [AP ("ballot", [LOCAL 0]),
-                                           AP ("genb", [LOCAL 0])]),
-     ("g4", 1, AP ("genb", [LOCAL 0]), 0, [])]
+  val fptp : gensig =
+    [("g1", [gen], [genc, gen]),
+     ("g2", [genc], [nvotes, genb]),
+     ("g3", [genb], [ballot, genb]),
+     ("g4", [genb], [])]
 
   val lang_fptp : flat = (* g1*g2*g3*g4* *)
     SEQ (REPEAT "g1", SEQ (REPEAT "g2", SEQ (REPEAT "g3", SEQ (REPEAT "g4",
     EMPTY))))
 
 
-  fun fptp_invert_test () = 
-    invert ([AT gen], fptp_prop) lang_fptp [AT del, AT nvotes]
+  fun fptp_invert_test () = invert ([gen], fptp) lang_fptp [del, nvotes]
 
   (* testing language prefix *)
   val l1 = langFromList [ONCE "g2", REPEAT "g3", ONCE "g4"]
