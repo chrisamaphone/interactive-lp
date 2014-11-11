@@ -4,28 +4,10 @@
 *
 *)
 
-structure Check = (* : GENSIGS = *)
+structure Check : GENSIG_CHECKING = 
 struct
 
-  type term = int (* term constants e.g. z or s *)
-  datatype uvar = BOUND of int | FREE
-  datatype lp_term = UVAR of uvar | LOCAL of int | TERM of term
-  (* | MULTIARY_TERM of (string * (lp_term list)) *)
-  datatype atom = AT of int | AP of string * (lp_term list)
-  (* atom ~= first-order predicate *)
-
-  type rname = string
-  type genrule = rname * int * atom * int * (atom list)
-    (* (r, avars, nt, evars, rhs) models 
-    *   r : (Pi X)^avars. nt -o {(Exists x)^evars.rhs}
-    *   (nvars is the number of existentials to bind;
-    *     LOCAL refers to the nth new var) *)
-  type gensig = genrule list
-  type context = atom list
-  type multistep = (atom list) * (atom list)
-    (* at the top level, this will be ([gen], some_context)
-    *   where some_context is derived from the lhs/rhs of the rule we want to
-    *   check. *)
+  open LinearLogicPrograms
 
   (* flat languages *)
   datatype word =
@@ -35,8 +17,6 @@ struct
       EMPTY 
     | SEQ of word * flat
     | BRANCH of flat * flat
-
-
 
   (* helper fns (things that don't belong in util because they're dependent on
   * types defined in this module) *)
@@ -85,55 +65,12 @@ struct
     | seqSnoc (SEQ (w', L'))          w = SEQ (w', seqSnoc L' w)
     | seqSnoc (BRANCH (L1, L2)) w = raise Match (* shouldn't happen *)
     
-
-  (*** Inversion ***)
-
+  
   (* Gensyms for context variables. *)
   val sym = ref ~1
-  fun gensym () =
-    !sym before sym := !sym - 1
-
-  (* firstSplits : gensig -> flat -> context -> (context * flat * context) list
-  *                 -> (context * flat * context) list
-  * (4th arg is an accumulator; call at top-level with firstSplits .. .. .. []) 
-  *
-  * This function decides how a rhs should be split at first (to be called
-  * recursively in the "invs" function).
-  * 
-  **)
-  fun firstSplits GI L rhs prefix =
-  (* returns a list of triples (L1, w, L2) 
-  *   where w produces some atom in the rhs
-  *   and L1 and L2 are the languages matching what comes before & after w in L.
-  * *)
-    case L of
-         EMPTY => []
-       | SEQ (ONCE w, L') =>
-           let
-             (* XXX do what w/pivars, exvars? *)
-             val SOME (pivars, ants, exvars, sucs) = lookup GI w
-             val ts = overlap sucs rhs
-           in
-             case ts of
-                  [] => firstSplits GI L' rhs (seqSnoc prefix (ONCE w))
-                | _ => [(prefix, w, L')]
-           end
-       | SEQ (REPEAT w, L') =>
-           let
-             (* XXX do what w/pivars, exvars? *)
-             val SOME (pivars, ants, exvars, sucs) = lookup GI w
-             val ts = overlap sucs rhs
-           in
-             case ts of
-                  [] => firstSplits GI L' rhs (seqSnoc prefix (REPEAT w))
-                | _ => [(seqSnoc prefix (REPEAT w), w, SEQ(REPEAT w, L'))]
-           end
-       | BRANCH (L1, L2) => 
-           (firstSplits GI L1 rhs prefix)@(firstSplits GI L2 rhs prefix)
-
+  fun gensym () = !sym before sym := !sym - 1
 
   (* Unification *)
-  (* XXX move this code to its own module? *)
 
   type sub = int * context
   structure CM = CommutativeMonoid
@@ -202,6 +139,47 @@ struct
   fun applySubsToSplit subs (pre, L, post) =
     (applySubs' subs pre, L, applySubs' subs post)
 
+
+  (*** Inversion ***)
+
+  (* firstSplits : gensig -> flat -> context -> (context * flat * context) list
+  *                 -> (context * flat * context) list
+  * (4th arg is an accumulator; call at top-level with firstSplits .. .. .. []) 
+  *
+  * This function decides how a rhs should be split at first (to be called
+  * recursively in the "invs" function).
+  * 
+  **)
+  fun firstSplits GI L rhs prefix =
+  (* returns a list of triples (L1, w, L2) 
+  *   where w produces some atom in the rhs
+  *   and L1 and L2 are the languages matching what comes before & after w in L.
+  * *)
+    case L of
+         EMPTY => []
+       | SEQ (ONCE w, L') =>
+           let
+             (* XXX do what w/pivars, exvars? *)
+             val SOME (pivars, ants, exvars, sucs) = lookup GI w
+             val ts = overlap sucs rhs
+           in
+             case ts of
+                  [] => firstSplits GI L' rhs (seqSnoc prefix (ONCE w))
+                | _ => [(prefix, w, L')]
+           end
+       | SEQ (REPEAT w, L') =>
+           let
+             (* XXX do what w/pivars, exvars? *)
+             val SOME (pivars, ants, exvars, sucs) = lookup GI w
+             val ts = overlap sucs rhs
+           in
+             case ts of
+                  [] => firstSplits GI L' rhs (seqSnoc prefix (REPEAT w))
+                | _ => [(seqSnoc prefix (REPEAT w), w, SEQ(REPEAT w, L'))]
+           end
+       | BRANCH (L1, L2) => 
+           (firstSplits GI L1 rhs prefix)@(firstSplits GI L2 rhs prefix)
+  
   fun checkLangReach GI (start:atom list, L, final:atom list) = 
     case L of
         EMPTY => (* if L is empty, make sure start and final are unifiable. *)
@@ -212,7 +190,7 @@ struct
   (* matches a trace type (start, final) with a split lang (L1, w, L2) *)
   (* returns a ((ctx * lang * ctx) * (ctx * lang * ctx)) option *)
       let
-        (* XXX *)
+        (* XXX what to do about pivars and exvars? *)
         val SOME (pivars, ant, exvars, sucs) = lookup GI w
         val theta = gensym ()
         val pre  = (start, L1, [AT theta, ant])
@@ -389,120 +367,121 @@ struct
          end
   end
 
-end
+  (* nested inside Check *)
+  structure Test = 
+  struct
 
-structure Test = 
-struct
-  open Check
-
-  val gen = 0
-  val a = 1
-  val b = 2
-  val c = 3
-  val a_or_b = 4
-  val cs = 5
-  val genc = 6
-  val genb = 7
-  val nvotes = 8
-  val ballot = 9
+    val gen = 0
+    val a = 1
+    val b = 2
+    val c = 3
+    val a_or_b = 4
+    val cs = 5
+    val genc = 6
+    val genb = 7
+    val nvotes = 8
+    val ballot = 9
 
 
-  (* testing context unification *)
-  val ctx1 = map (fn x => AT x) [a, a, b, c]
-  val ctx2 = map (fn x => AT x) [c, c, c, a, c, c, c]
-  val del1 = AT (gensym())
-  val del2 = AT (gensym())
-  val test_unify = unifyCtx (ctx1, SOME del1) (ctx2, SOME del2)
+    (* testing context unification *)
+    val ctx1 = map (fn x => AT x) [a, a, b, c]
+    val ctx2 = map (fn x => AT x) [c, c, c, a, c, c, c]
+    val del1 = AT (gensym())
+    val del2 = AT (gensym())
+    val test_unify = unifyCtx (ctx1, SOME del1) (ctx2, SOME del2)
 
 
-  (* testing specific GIs *)
+    (* testing specific GIs *)
 
-  (* Generative signature:
-  * gen -o {a_or_b * cs}.
-  * a_or_b -o {a}.
-  * a_or_b -o {b}.
-  * cs -o {c * cs}.
-  * cs -o {1}.
-  *)
+    (* Generative signature:
+    * gen -o {a_or_b * cs}.
+    * a_or_b -o {a}.
+    * a_or_b -o {b}.
+    * cs -o {c * cs}.
+    * cs -o {1}.
+    *)
 
-  (*
-  val gensig : gensig =
-     [([gen], [a_or_b, cs]),
-     ([a_or_b], [a]),
-     ([a_or_b], [b]),
-     ([cs], [c, cs]),
-     ([cs], [])]
-  *)
+    (*
+    val gensig : gensig =
+      [([gen], [a_or_b, cs]),
+      ([a_or_b], [a]),
+      ([a_or_b], [b]),
+      ([cs], [c, cs]),
+      ([cs], [])]
+    *)
 
 
-  (* from (int * (int list)) rules to the general first-order form of gensig rules *)
-  fun simple (name, ant, sucs) =
-    (name, 0, AT ant, 0, map (fn x => AT x) sucs)
+    (* from (int * (int list)) rules to the general first-order form of gensig rules *)
+    fun simple (name, ant, sucs) =
+      (name, 0, AT ant, 0, map (fn x => AT x) sucs)
 
-  val gensig1 : gensig =
-    map simple
-     [("g1", gen, [a, cs]),
-      ("g2", gen, [b, cs]),
+    val gensig1 : gensig =
+      map simple
+      [("g1", gen, [a, cs]),
+        ("g2", gen, [b, cs]),
+        ("g3", cs, [c, cs]),
+        ("g4", cs, [])]
+
+    val gensig2 : gensig =
+      map simple
+      [("g1", gen, [b, c]),
+      ("g2", gen, [a]),
+      ("g3", gen, [a, cs]),
+      ("g4", cs, [c, cs]),
+      ("g5", cs, [c])]
+
+    val gensig3 : gensig =
+      map simple
+      [("g1", gen, [b, c, c]),
+      ("g2", gen, [a, cs]),
       ("g3", cs, [c, cs]),
-      ("g4", cs, [])]
+      ("g4", cs, [c])]
+    
+    val del = gensym ()
 
-  val gensig2 : gensig =
-    map simple
-    [("g1", gen, [b, c]),
-     ("g2", gen, [a]),
-     ("g3", gen, [a, cs]),
-     ("g4", cs, [c, cs]),
-     ("g5", cs, [c])]
+    (* g1 | (g2g3*g4) *)
+    val lang3 : flat = BRANCH (SEQ (ONCE "g1", EMPTY), 
+                              SEQ (ONCE "g2", SEQ (REPEAT "g3", SEQ (ONCE "g4",
+                                EMPTY))))
 
-  val gensig3 : gensig =
-    map simple
-    [("g1", gen, [b, c, c]),
-     ("g2", gen, [a, cs]),
-     ("g3", cs, [c, cs]),
-     ("g4", cs, [c])]
-  
-  val del = gensym ()
-
-  (* g1 | (g2g3*g4) *)
-  val lang3 : flat = BRANCH (SEQ (ONCE "g1", EMPTY), 
-                             SEQ (ONCE "g2", SEQ (REPEAT "g3", SEQ (ONCE "g4",
-                              EMPTY))))
-
-  fun abcs_invert_test () = invert ([AT gen], gensig3) lang3 
-    [AT del, AT a, AT c, AT c]
+    fun abcs_invert_test () = invert ([AT gen], gensig3) lang3 
+      [AT del, AT a, AT c, AT c]
 
 
-  val fptp_prop : gensig =
-    [("g1", 0, AT gen, 0, [AT genc, AT gen]),
-     ("g2", 0, AT genc, 0, [AT nvotes, AT genb]),
-     ("g3", 0, AT genb, 0, [AT ballot, AT genb]),
-     ("g4", 0, AT genb, 0, [])]
+    val fptp_prop : gensig =
+      [("g1", 0, AT gen, 0, [AT genc, AT gen]),
+      ("g2", 0, AT genc, 0, [AT nvotes, AT genb]),
+      ("g3", 0, AT genb, 0, [AT ballot, AT genb]),
+      ("g4", 0, AT genb, 0, [])]
 
-  val fptp_fo : gensig =
-    [("g1", 0, AT gen, 1, [AP ("genc", [LOCAL 0]), AT gen]),
-     ("g2", 2, AP ("genc", [LOCAL 0]), 0, [AP ("nvotes", [LOCAL 0, LOCAL 1]),
-                                           AP ("genb", [LOCAL 0])]),
-     ("g3", 1, AP ("genb", [LOCAL 0]), 0, [AP ("ballot", [LOCAL 0]),
-                                           AP ("genb", [LOCAL 0])]),
-     ("g4", 1, AP ("genb", [LOCAL 0]), 0, [])]
+    val fptp_fo : gensig =
+      [("g1", 0, AT gen, 1, [AP ("genc", [LOCAL 0]), AT gen]),
+      ("g2", 2, AP ("genc", [LOCAL 0]), 0, [AP ("nvotes", [LOCAL 0, LOCAL 1]),
+                                            AP ("genb", [LOCAL 0])]),
+      ("g3", 1, AP ("genb", [LOCAL 0]), 0, [AP ("ballot", [LOCAL 0]),
+                                            AP ("genb", [LOCAL 0])]),
+      ("g4", 1, AP ("genb", [LOCAL 0]), 0, [])]
 
-  val lang_fptp : flat = (* g1*g2*g3*g4* *)
-    SEQ (REPEAT "g1", SEQ (REPEAT "g2", SEQ (REPEAT "g3", SEQ (REPEAT "g4",
-    EMPTY))))
+    val lang_fptp : flat = (* g1*g2*g3*g4* *)
+      SEQ (REPEAT "g1", SEQ (REPEAT "g2", SEQ (REPEAT "g3", SEQ (REPEAT "g4",
+      EMPTY))))
 
 
-  fun fptp_invert_test () = 
-    invert ([AT gen], fptp_prop) lang_fptp [AT del, AT nvotes]
+    fun fptp_invert_test () = 
+      invert ([AT gen], fptp_prop) lang_fptp [AT del, AT nvotes]
 
-  (* testing language prefix *)
-  val l1 = langFromList [ONCE "g2", REPEAT "g3", ONCE "g4"]
-  val l2 = langFromList [ONCE "g2"]
-  val l3 = langFromList [ONCE "g2", REPEAT "g3"]
-  val l4 = langFromList [ONCE "g2", ONCE "g3"]
+    (* testing language prefix *)
+    val l1 = langFromList [ONCE "g2", REPEAT "g3", ONCE "g4"]
+    val l2 = langFromList [ONCE "g2"]
+    val l3 = langFromList [ONCE "g2", REPEAT "g3"]
+    val l4 = langFromList [ONCE "g2", ONCE "g3"]
 
-  (* XXX test branching lang prefix *)
+    (* XXX test branching lang prefix *)
 
-  (* testing buildTrace *)
+    (* testing buildTrace *)
+
+  end
 
 
 end
+
