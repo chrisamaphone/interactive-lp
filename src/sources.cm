@@ -4,5 +4,6 @@ Group is
   util.sml
   commutative_monoid.sml
   llp.sml
+  subord.sml
   gensig-checking-sig.sml
   gensig-checking.sml

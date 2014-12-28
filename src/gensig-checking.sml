@@ -4,7 +4,7 @@
 *
 *)
 
-structure Check : GENSIG_CHECKING = 
+structure Check = (* : GENSIG_CHECKING = *)
 struct
 
   open LinearLogicPrograms
@@ -38,10 +38,6 @@ struct
     | langFromList (w::ws) = SEQ (w, langFromList ws)
 
   fun just w = SEQ (ONCE w, EMPTY)
-
-  fun terminal a [] = true
-    | terminal a ((ins, outs)::rules)
-      = not (member a ins) andalso terminal a rules
 
   fun lookup GI rname =
     case GI of
@@ -436,7 +432,8 @@ struct
       ("g2", gen, [a, cs]),
       ("g3", cs, [c, cs]),
       ("g4", cs, [c])]
-    
+
+
     val del = gensym ()
 
     (* g1 | (g2g3*g4) *)
@@ -476,7 +473,16 @@ struct
     val l3 = langFromList [ONCE "g2", REPEAT "g3"]
     val l4 = langFromList [ONCE "g2", ONCE "g3"]
 
-    (* XXX test branching lang prefix *)
+
+    val gensig_blocksworld : gensig = 
+      [("g1", 0, AT gen, 1, 
+          [AT gen, AP ("genblocks", [LOCAL 0]), AP ("ontable", [LOCAL 0]) ]),
+       ("g2", 1, AP ("genblocks", [LOCAL 0]), 0, [AP ("clear", [LOCAL 0])]),
+       ("g3", 1, AP ("genblocks", [LOCAL 0]), 1,
+          [AP ("on", [LOCAL 1, LOCAL 0]), AP ("genblocks", [LOCAL 1])]),
+       ("g4", 0, AT gen, 1, [AP ("arm_holding", [LOCAL 0])]),
+       ("g5", 0, AT gen, 0, [AP ("arm_free", [])])]
+    
 
     (* testing buildTrace *)
 
