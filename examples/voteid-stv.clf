@@ -1,0 +1,220 @@
+%% Natural numbers.
+nat : type.
+
+z : nat.
+s : nat -> nat.
+
+
+nat-less : nat -> nat -> type.
+
+nat-less/z : nat-less z (s _).
+nat-less/s : nat-less (s M) (s N)
+              <- nat-less M N.
+
+
+nat-lesseq : nat -> nat -> type.
+
+nat-lesseq/z : nat-lesseq z _.
+nat-lesseq/s : nat-lesseq (s M) (s N)
+                <- nat-lesseq M N.
+
+
+nat-minus : nat -> nat -> nat -> type.
+
+nat-minus/z : nat-minus M z M.
+nat-minus/s : nat-minus (s M) (s N) N'
+               <- nat-minus M N N'.
+
+
+nat-divmod : nat -> nat -> nat -> nat -> type.
+
+nat-divmod/less  : nat-divmod M N z M
+                    <- nat-less M N.
+nat-divmod/gtreq : nat-divmod M N (s Q) R
+                    <- nat-lesseq N M
+                    <- nat-minus M N M'
+                    <- nat-divmod M' N Q R.
+
+
+%% Candidate names.
+
+candidate : type.
+
+
+%% Lists of candidates.
+
+list : type.
+
+nil  : list.
+cons : candidate -> list -> list.
+
+
+%% STV predicates (Table 2).
+
+uncounted-ballot : candidate -> list -> type.
+counted-ballot : candidate -> list -> type.
+hopeful : candidate -> nat -> type.
+defeated : candidate -> type.
+elected : candidate -> type.
+quota : nat -> type.
+winners : list -> type.
+count-ballots : nat -> nat -> nat -> type.
+defeat-all : type.
+elect-all : type.
+defeat-min : nat -> nat -> nat -> type.
+defeat-min' : nat -> nat -> nat -> type.
+minimum : candidate -> nat -> type.
+transfer : candidate -> nat -> nat -> nat -> nat -> type.
+run : nat -> nat -> nat -> type.
+
+
+%% STV axioms (Figure 3).
+
+count/1 : count-ballots S H (s U) *
+          uncounted-ballot C L *
+          hopeful C N *
+          !quota Q *
+          !nat-less (s N) Q
+            -o {counted-ballot C L *
+                hopeful C (s N) *
+                count-ballots S H U}.
+
+count/2 : count-ballots (s (s S)) (s H) (s U) *
+          uncounted-ballot C L *
+          hopeful C N *
+          !quota Q *
+          !nat-lesseq Q (s N) *
+          winners W
+            -o {counted-ballot C L *
+                !elected C *
+                winners (cons C W) *
+                count-ballots (s S) H U}.
+
+count/3 : count-ballots (s z) H U *
+          uncounted-ballot C L *
+          hopeful C N *
+          !quota Q *
+          !nat-lesseq Q (s N) *
+          winners W
+            -o {counted-ballot C L *
+                !elected C *
+                winners (cons C W) *
+                !defeat-all}.
+
+count/4_1 : count-ballots S H U *
+            uncounted-ballot C (cons C' L) *
+            !elected C
+              -o {uncounted-ballot C' L *
+                  count-ballots S H U}.
+
+count/4_2 : count-ballots S H U *
+            uncounted-ballot C (cons C' L) *
+            !defeated C
+              -o {uncounted-ballot C' L *
+                  count-ballots S H U}.
+
+count/5_1 : count-ballots S H (s U) *
+            uncounted-ballot C nil *
+            !elected C
+              -o {count-ballots S H U}.
+
+count/5_2 : count-ballots S H (s U) *
+            uncounted-ballot C nil *
+            !defeated C
+              -o {count-ballots S H U}.
+
+count/6 : count-ballots S H z
+            -o {defeat-min S H z}.
+
+defeat-min/1 : defeat-min S (s H) M *
+               hopeful C N
+                 -o {minimum C N *
+                     defeat-min S H (s M)}.
+
+defeat-min/2 : defeat-min S z M
+                 -o {defeat-min' S z M}.
+
+defeat-min'/1 : defeat-min' S H (s M) *
+                minimum C N *
+                minimum C' N' *
+                !nat-less N N'
+                  -o {minimum C N *
+                      hopeful C' N' *
+                      defeat-min' S (s H) M}.
+
+defeat-min'/2 : defeat-min' S H (s z) *
+                minimum C N
+                  -o {!defeated C *
+                      transfer C N S H z}.
+
+transfer/1 : transfer C (s N) S H U *
+             counted-ballot C (cons C' L)
+               -o {uncounted-ballot C' L *
+                   transfer C N S H (s U)}.
+
+transfer/2 : transfer C (s N) S H U *
+             counted-ballot C nil
+               -o {transfer C N S H U}.
+
+transfer/3 : transfer C z S H U *
+             !nat-less S H
+               -o {count-ballots S H U}.
+
+transfer/4 : transfer C z S H U *
+             !nat-lesseq H S
+               -o {!elect-all}.
+
+defeat-all/1 : !defeat-all *
+               hopeful C N
+                 -o {!defeated C}.
+
+elect-all/1 : !elect-all *
+              hopeful C N *
+              winners W
+                -o {!elected C *
+                    winners (cons C W)}.
+
+cleanup/1 : !defeat-all *
+            uncounted-ballot C L
+              -o {1}.
+
+cleanup/2 : !defeat-all *
+            counted-ballot C L
+              -o {1}.
+
+cleanup/3 : !elect-all *
+            uncounted-ballot C L
+              -o {1}.
+
+cleanup/4 : !elect-all *
+            counted-ballot C L
+              -o {1}.
+
+run/1 : run S H U *
+        !nat-divmod U (s S) Q _
+          -o {!quota (s Q) *
+              winners nil *
+              count-ballots S H U}.
+
+
+%% Sample queries.
+
+a : candidate.
+b : candidate.
+c : candidate.
+
+#query * * * 20
+  hopeful a z * hopeful b z * hopeful c z *
+  uncounted-ballot a nil * uncounted-ballot a (cons b nil) *
+  uncounted-ballot a (cons c nil) * uncounted-ballot a (cons c nil) *
+  uncounted-ballot b (cons c nil) * uncounted-ballot c nil *
+  run (s (s z)) (s (s (s z))) (s (s (s (s (s (s z)))))) -o
+    {winners Ws}.
+
+#query * * * 20
+  hopeful a z * hopeful b z * hopeful c z *
+  uncounted-ballot a (cons b nil) * uncounted-ballot a (cons b nil) *
+  uncounted-ballot a (cons b nil) * uncounted-ballot a (cons b nil) *
+  uncounted-ballot a (cons b nil) * uncounted-ballot a (cons b nil) *
+  run (s (s z)) (s (s (s z))) (s (s (s (s (s (s z)))))) -o
+    {winners Ws}.

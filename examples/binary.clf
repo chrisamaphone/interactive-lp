@@ -1,0 +1,16 @@
+bit : type.
+b0 : bit.
+b1 : bit.
+
+dest : type.
+eos : dest.
+
+inc : dest -> type.
+
+at : dest -> bit -> dest -> type.
+
+inc0 : inc D * at D b0 D' -o {at D b1 D'}.
+inc1 : inc D * at D b1 D' -o {at D b0 D' * inc D'}.
+ince : inc eos -o {1}.
+
+

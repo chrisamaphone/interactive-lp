@@ -1,0 +1,118 @@
+% Invariants in comments.
+
+block : type.
+a : block.
+b : block.
+c : block.
+
+on : block -> block -> type.
+on_table : block -> type.
+clear : block -> type.
+arm_holding : block -> type.
+arm_free : type.
+
+% action language:
+action : type.
+pickup : block -> action.
+putdown_on : block -> action.
+putdown_table : action.
+cur_act : action -> type.
+stop : action.
+
+% phase blocks = {
+pickup_from_block
+  : cur_act (pickup X)
+  * on X Y * clear X * arm_free -o {clear Y * arm_holding X}.
+
+pickup_from_table
+  : cur_act (pickup X)
+  * on_table X * clear X * arm_free -o {arm_holding X}.
+
+put_on_block
+  : cur_act (putdown_on Y)
+  * arm_holding X * clear Y -o {on X Y * clear X * arm_free}.
+
+put_on_table
+  : cur_act (putdown_table)
+  * arm_holding X -o {on_table X * clear X * arm_free}.
+
+% win_condition
+%  : on_table c * on b c * on a b * clear a * arm_free
+%    -o {1}.
+
+blockstack : type.
+nil : blockstack.
+cons : block -> blockstack -> blockstack.
+stackdest : type.
+stack : stackdest -> blockstack -> type.
+stacklist : type.
+snil : stacklist.
+scons : stackdest -> stacklist -> stacklist.
+things_arm_can_be : type.
+holding : block -> things_arm_can_be.
+free : things_arm_can_be.
+arm_state : things_arm_can_be -> type.
+get_arm_state : type.
+stacks : stacklist -> type.
+
+stop/1 : cur_act stop -o {get_arm_state * stacks snil}.
+
+collect/finishstack
+  : stack D (cons B S) * clear B -o {@stack D (cons B S)}.
+collect/addtostack
+  : stack D (cons B S) * on B' B -o {@stack D (cons B' (cons B S))}.
+collect/startstack
+  : stacks Ss * on_table B 
+    -o {Exists s. @stack s (cons B nil) * stacks (scons s Ss)}.
+collect/armfree
+  : get_arm_state * arm_free -o {arm_state free}.
+collect/armholding
+  : get_arm_state * arm_holding B -o {arm_state (holding B)}.
+% final states: {stacks Stacks * arm_state Arm}.
+     
+init : type.
+- : init 
+    -o {on_table a * on_table b * on c a * clear c * clear b * arm_free}.
+
+alist : type.
+anil : alist.
+acons : action -> alist -> alist.
+
+run : alist -> stacklist -> things_arm_can_be -> type.
+
+run/cons : run (acons A As) Stacks Arm
+          o- (cur_act A -o {run As Stacks Arm}).
+run/nil  : run anil Stacks Arm
+          o- (cur_act stop -o {stacks Stacks * arm_state Arm}).
+
+#trace * {init * cur_act (pickup c)}.
+init1 : type.
+- : init1 -o {on_table a * on_table b * clear b * clear a * arm_holding c}.
+#trace * {init1 * cur_act putdown_table}.
+init2 : type.
+- : init2 -o {on_table a * on_table b * clear b * clear a *
+              on_table c * clear c * arm_free }.
+#trace * {init2 * cur_act (pickup b)}.
+init3 : type.
+- : init3 -o {on_table a * clear a * on_table c * clear c * arm_holding b}.
+#trace * {init3 * cur_act (putdown_on c)}.
+init4 : type.
+- : init4 -o {on_table a * clear a * on_table c * on b c * clear b * arm_free}.
+#trace * {init4 * cur_act (pickup a)}.
+init5 : type.
+- : init5 -o {on_table c * on b c * clear b * arm_holding a}.
+#trace * {init5 * cur_act (putdown_on b)}.
+init6 : type.
+- : init6 -o {on_table c * on b c * on a b * clear a * arm_free}.
+#trace * {init6 * cur_act stop}.
+
+test : alist =
+ (acons (pickup c) 
+  (acons putdown_table 
+  (acons (pickup b) 
+  (acons (putdown_on c)
+  (acons (pickup a)
+  (acons (putdown_on b) anil)))))).
+
+#query * * * 1 init -o run test Stacks Arm. % * stacks Stacks * arm_state Arm}.
+

@@ -1,0 +1,21 @@
+% A simple twine game with no state.
+
+% Passages
+start : type.
+den : type.
+cellar : type.
+end : type.
+
+% Connectors
+start_den : start -o {den}.
+start_cellar : start -o {cellar}.
+den_cellar : den -o {cellar}.
+cellar_den : cellar -o {den}.
+cellar_end : cellar -o {end}.
+% start_choices : start -o {den & cellar}.
+% den_choices : den -o {cellar}.
+% cellar_choices : cellar -o {den & end}.
+
+#trace * start.
+
+#query * * * 10 start -o {end}.

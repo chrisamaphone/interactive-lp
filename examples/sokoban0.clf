@@ -1,0 +1,101 @@
+%% Encoding of the classic block-pushing tile game.
+
+
+pos : type.
+
+ent : type.
+pusher : ent.
+block : ent.
+
+loc : ent -> pos -> type.
+empty : pos -> type.
+
+%% push right
+% loc pusher X Y * loc block (s X) Y * empty (s (s X)) Y
+%  -o {empty X Y * loc pusher (s X) Y * loc block (s (s X)) Y
+%       * (!target (s (s X)) * targets_remaining (s T)
+%            -o {targets_remaining T})}.
+
+direction : type.
+north : direction.
+south : direction.
+west : direction.
+east : direction.
+in_dir : pos -> direction -> pos -> type.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+bool : type.
+yes : bool.
+no : bool.
+target_status : pos -> bool -> type.
+remaining_targets : nat -> type.
+targets_add : nat -> bool -> nat -> type.
+- : targets_add T yes (s T).
+- : targets_add T no T.
+targets_subtract : nat -> bool -> nat -> type.
+- : targets_subtract (s T) yes T.
+- : targets_subtract T no T.
+
+%% generalized:
+push :
+loc pusher L * in_dir L Dir L' * loc block L'
+             * in_dir L' Dir L'' * empty L''
+     * target_status L' T1
+     * target_status L'' T2
+     * remaining_targets T
+     * targets_add T T1 T'
+     * targets_subtract T' T2 T''
+  -o {empty L * loc pusher L' * loc block L'' * remaining_targets T}.
+
+move :
+loc pusher L * in_dir L Dir L' * empty L'
+  -o {empty L * loc pusher L'}.
+
+%% win condition: all blocks on all targets
+you_win : type.
+win : remaining_targets z -o {you_win}.
+
+posxy : nat -> nat -> pos.
+
+- : in_dir (posxy X Y) north (posxy X (s Y)).
+- : in_dir (posxy X Y) east (posxy (s X) Y).
+- : in_dir (posxy X (s Y)) south (posxy X Y).
+- : in_dir (posxy (s X) Y) west (posxy X Y).
+
+% TODO:
+% _  _  _  _   x
+% [] _  x  _   _
+% _  _  _  _  _
+% x  [] _  _  []
+% @  _  [] x  _
+
+
+% simple 3x3:
+% _ _ _
+% _ B _
+% @ _ x
+
+init_grid : type.
+- : init_grid -o
+        {loc pusher (posxy z z) * !target_status (posxy z z) no
+        * loc block (posxy (s z) (s z)) 
+          * !target_status (posxy (s z) (s z)) no
+        * empty (posxy z (s z)) * !target_status (posxy z (s z)) no
+        * empty (posxy z (s (s z))) * !target_status (posxy z (s (s z))) yes
+        * empty (posxy (s z) z) * !target_status (posxy (s z) z) no
+        * empty (posxy (s (s z)) z) * !target_status (posxy (s (s z)) z) no
+        * empty (posxy (s (s z)) (s z)) 
+          * !target_status (posxy (s (s z)) (s z)) no
+        * empty (posxy (s (s z)) (s z))
+          * !target_status (posxy (s (s z)) (s z)) no
+        * empty (posxy (s (s z)) (s (s z)))
+          * !target_status (posxy (s (s z)) (s (s z))) no}.
+
+init : type.
+- : init -o {init_grid * remaining_targets (s z)}.
+
+#trace * init.
+
+% #query * * * 10 init_grid -o {you_win}.

@@ -1,0 +1,54 @@
+note_length : type.
+quarter : note_length.
+half : note_length.
+whole : note_length.
+eighth : note_length.
+sixteenth : note_length.
+
+pitch : type.
+c3 : pitch.
+d3 : pitch.
+e3 : pitch.
+f3 : pitch.
+g3 : pitch.
+a3 : pitch.
+b3 : pitch.
+c4 : pitch.
+
+note : type.
+n : pitch -> note_length -> note.
+
+note_seq : type.
+nil : note_seq.
+cons : note -> note_seq -> note_seq.
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+n4 : nat = s (s (s (s z))).
+n8 : nat = s (s (s (s n4))).
+n16 : nat = s (s (s (s (s (s (s (s n8))))))).
+
+% XXX no pitch rn
+note_at : nat -> note_length -> type.
+nnotes : nat -> type.
+make_song : nat -> type.
+
+done : make_song z -o {1}.
+16th : make_song (s N) * nnotes K -o
+           {note_at (s K) sixteenth * nnotes (s K) * make_song N}.
+8th  : make_song (s (s N)) * nnotes K -o
+           {note_at (s K) eighth * nnotes (s K) * make_song N}.
+4th  : make_song (s (s (s (s N)))) * nnotes K -o
+           {note_at (s K) quarter * nnotes (s K) * make_song N}.
+1/2  : make_song (s (s (s (s (s (s (s (s N)))))))) * nnotes K -o
+           {note_at (s K) half * nnotes (s K) * make_song N}.
+one  : make_song 
+    (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s N))))))))))))))))
+            * nnotes K -o
+            {note_at (s K) whole * nnotes (s K) * make_song N}.
+
+
+
+#trace * {make_song n16 * nnotes z}.

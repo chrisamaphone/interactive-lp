@@ -1,0 +1,262 @@
+% Encoding of the game of War, based on cards.clf
+
+nat : type.
+z : nat.
+s : nat -> nat.
+four : nat = s (s (s (s z))).
+eight : nat = s (s (s (s four))).
+twelve : nat = s (s (s (s (eight)))).
+
+lt : nat -> nat -> type.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+         <- lt N M.
+
+rank : type.
+r2 : rank.
+r3 : rank.
+r4 : rank.
+r5 : rank.
+r6 : rank.
+r7 : rank.
+r8 : rank.
+r9 : rank.
+r10 : rank.
+jack : rank.
+queen : rank.
+king : rank.
+ace : rank.
+
+nat-rank : nat -> rank -> type.
+- : nat-rank z r2.
+- : nat-rank (s z) r3.
+- : nat-rank (s (s z)) r4.
+- : nat-rank (s (s (s z))) r5.
+- : nat-rank four r6.
+- : nat-rank (s four) r7.
+- : nat-rank (s (s four)) r8.
+- : nat-rank (s (s (s four))) r9.
+- : nat-rank eight r10.
+- : nat-rank (s eight) jack.
+- : nat-rank (s (s eight)) queen.
+- : nat-rank (s (s (s eight))) king.
+- : nat-rank twelve ace.
+
+face : rank -> type.
+face/jack : face jack.
+face/queen : face queen.
+face/king : face king.
+face/ace : face ace. % ?.
+
+suit : type.
+hearts : suit.
+clubs : suit.
+diamonds : suit.
+spades : suit.
+
+card : type.
+c : rank -> suit -> card.
+
+indeck : card -> type.
+gen : nat -> type.
+count : nat -> type.
+deal_phase : nat -> type.
+
+generate : gen (s N) * nat-rank N R * count C -o 
+              {indeck (c R hearts) *
+               indeck (c R clubs) *
+               indeck (c R diamonds) *
+               indeck (c R spades) *
+               gen N * count (s (s (s (s C))))}.
+
+gen-to-deal : gen z * count C -o {deal_phase C}.
+
+init_deck : type =
+% { gen (s twelve) * count z }.
+{ gen four * count z }.
+% smaller cardset for testing.
+
+% #trace * init_deck.
+
+%% -- Deal Phase -- %%
+
+player : type.
+p1 : player.
+p2 : player.
+next : player -> player -> type.
+- : next p1 p2.
+- : next p2 p1.
+play_phase : type.
+
+cardloc : type.
+top : player -> cardloc.
+bottom : player -> cardloc.
+% disputed piles of cards
+piletop : cardloc.
+pilebot : cardloc.
+u : card -> cardloc.
+nextcard : cardloc -> cardloc -> type.
+needscard : player -> type.
+
+deal : deal_phase (s N) * needscard P * nextcard L (bottom P) * indeck C * next P P' 
+           -o 
+           {nextcard L (u C) * nextcard (u C) (bottom P) * needscard P' *
+            deal_phase N}.
+
+deal-to-play : deal_phase z * needscard P -o {play_phase}.
+
+init_deal : type = { needscard p1 
+                   * nextcard (top p1) (bottom p1) 
+                   * nextcard (top p2) (bottom p2) }.
+
+%% -- Play phase -- %%
+outcome : type.
+win : player -> outcome.
+war : outcome.
+cmp : card -> card -> outcome -> type.
+cmp/p1 : cmp (c R1 _) (c R2 _) (win p1)
+         <- nat-rank N1 R1
+         <- nat-rank N2 R2
+         <- lt N2 N1.
+cmp/p2 : cmp (c R1 _) (c R2 _) (win p2)
+         <- nat-rank N1 R1
+         <- nat-rank N2 R2
+         <- lt N1 N2.
+cmp/war : cmp (c R1 _) (c R2 _) war
+           <- nat-rank N R1
+           <- nat-rank N R2.
+
+war_phase : type.
+reap_winnings_phase : player -> type.
+
+overall_outcome : type.
+end/win : player -> overall_outcome.
+end/tie : overall_outcome.
+result : overall_outcome -> type.
+
+% ? for some reason, this rule sometimes doesn't seem to fire when X = u C2
+% ...oh snap, that would duplicate cards!
+% ok, need to break this up: determine a winner, remove the cards, *then*
+% add them.
+normal_turn : 
+        play_phase 
+         * nextcard (top p1) (u C1) 
+         * nextcard (top p2) (u C2)
+         * nextcard (u C1) C1'
+         * nextcard (u C2) C2'
+         * cmp C1 C2 (win Winner)
+         -o 
+         {nextcard piletop (u C1) 
+          * nextcard (u C1) (u C2) 
+          * nextcard (u C2) pilebot
+          * nextcard (top p1) C1'
+          * nextcard (top p2) C2'
+          * reap_winnings_phase Winner}.
+
+reap_winnings :
+         reap_winnings_phase Winner
+        * nextcard piletop (u C1)
+        * nextcard (u Cn) pilebot
+        * nextcard W (bottom Winner)
+        -o
+        { nextcard W (u C1)
+          * nextcard (u Cn) (bottom Winner)
+          * play_phase}.
+
+start_war : 
+        play_phase 
+         * nextcard (top p1) (u C1) 
+         * nextcard (top p2) (u C2)
+         * cmp C1 C2 war
+         * nextcard (u C1) X1
+         * nextcard (u C2) X2
+         -o 
+         {nextcard (top p1) X1
+         * nextcard (top p2) X2
+         * nextcard piletop (u C1)
+         * nextcard (u C1) (u C2)
+         * nextcard (u C2) pilebot
+         * war_phase}.
+
+game_over : 
+          play_phase
+          * nextcard (top P) (bottom P)
+          * nextcard (top P') (u X)
+        -o {result (end/win P')}.
+
+game_tie :
+         play_phase
+         * nextcard (top p1) (bottom p1)
+         * nextcard (top p2) (bottom p2)
+        -o {result end/tie}.
+
+init_play : type = {1}.
+
+
+%% War phase %%
+war_war : 
+        war_phase 
+        * nextcard (top p1) (u C1) 
+        * nextcard (top p2) (u C2) 
+        * cmp C1 C2 war
+        * nextcard LastInPile pilebot 
+        * nextcard (u C1) C1'
+        * nextcard C1' C1''
+        * nextcard (u C2) C2'
+        * nextcard C2' C2''
+        -o
+        {nextcard LastInPile (u C1) 
+        * nextcard (u C1) (u C2) 
+        * nextcard (u C2) C1' 
+        * nextcard C1' C2' 
+        * nextcard C2' pilebot
+        * nextcard (top p1) C1''
+        * nextcard (top p2) C2''
+        * war_phase}.
+
+war_play :
+        war_phase
+      * nextcard (top p1) (u C1) 
+      * nextcard (top p2) (u C2) 
+      * nextcard (u C1) X1
+      * nextcard (u C2) X2
+      * cmp C1 C2 (win Winner)
+      -o
+      {nextcard (top p1) X1
+       * nextcard (top p2) X2
+       * reap_winnings_phase Winner}.
+               
+war_win/1 :
+        war_phase
+      * nextcard (top P) (bottom P)
+      * nextcard (top P') (u X)
+    -o {result (end/win P')}.
+
+war_win/2 :
+        war_phase
+      * nextcard (top P1) (u C1)
+      * nextcard (top P2) (u C2)
+      * cmp C1 C2 war
+      * nextcard (u C1) (bottom P1)
+    -o {result (end/win P2)}.
+% XXX tie?
+
+war_tie :
+        war_phase
+      * nextcard (top p1) (bottom p1)
+      * nextcard (top p2) (bottom p2)
+    -o {result end/tie}.
+
+init_war : type = {1}.
+
+%% Cleanup phase -- for queries %%
+
+cleanup : result X * nextcard Y Z -o {result X}.
+
+init : type = {init_deck * init_deal * init_play * init_war}.
+
+#trace * init.
+% #trace * init.
+% #trace * init.
+
+#query * * * 4 init -o {result X}.

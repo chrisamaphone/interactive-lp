@@ -1,0 +1,39 @@
+nat : type.
+z : nat.
+s : nat -> nat.
+
+lt : nat -> nat -> type.
+lt/z : lt z N.
+lt/s : lt (s N) (s M)
+     <- lt N M.
+
+list : type.
+nil : list.
+cons : nat -> list -> list.
+
+append : list -> list -> list -> type.
+append/nil : append nil L L.
+append/cons : append (cons N L1) L2 (cons N L)
+            <- append L1 L2 L.
+
+member : nat -> type.
+explode : list -> type.
+collect : list -> type.
+return : list -> type.
+
+explode/cons : explode (cons N L) -o {@member N * explode L}.
+explode/nil : explode nil -o {collect nil}.
+
+add : member N * collect L -o {collect (cons N L)}.
+stop : collect L -o {return L}.
+
+n1 : nat = s z.
+n2 : nat = s n1.
+n3 : nat = s n2.
+n4 : nat = s n3.
+n5 : nat = s n4.
+
+ltest : list = (cons z (cons n1 (cons n2 (cons n3 (cons n4 nil))))).
+#trace * explode ltest.
+
+#query * * * 5 explode ltest -o {return L}.

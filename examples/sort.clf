@@ -1,0 +1,44 @@
+nat : type.
+z : nat.
+s : nat -> nat.
+
+lt : nat -> nat -> type.
+lt/z : lt z N.
+lt/s : lt (s N) (s M)
+     <- lt N M.
+
+list : type.
+nil : list.
+cons : nat -> list -> list.
+
+append : list -> list -> list -> type.
+append/nil : append nil L L.
+append/cons : append (cons N L1) L2 (cons N L)
+            <- append L1 L2 L.
+
+at_index : nat -> nat -> type.
+% "at_index I N" says N is at index I.
+explode : nat -> list -> type.
+% "explode I L" says we're on index I, working on list L.
+last : nat -> type.
+% "last I" means I is the last index.
+
+explode/cons : explode I (cons N L) -o {at_index I N * explode (s I) L}.
+explode/nil : explode I nil -o {last I}.
+
+swap : at_index I N0 * at_index (s I) N1 * !lt N1 N0
+     -o {at_index I N1 * at_index (s I) N0}.
+
+return : list -> type.
+collect : nat -> list -> type.
+collect/at : collect I L * at_index I N -o {collect (s I) (cons N L)}.
+collect/last : collect I L * last I -o {return L}.
+
+n1 : nat = s z.
+n2 : nat = s n1.
+n3 : nat = s n2.
+n4 : nat = s n3.
+n5 : nat = s n4.
+
+ltest : list = (cons z (cons n2 (cons n5 (cons n1 (cons n3 nil))))).
+#trace * explode z ltest.

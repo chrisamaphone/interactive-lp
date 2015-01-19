@@ -1,0 +1,19 @@
+a : type.
+b : type.
+c : type.
+d : type.
+e : type.
+final : type.
+
+a_bc : type = a -o {b * c}.
+b_c  : type = b -o {c}.
+b_d  : type = b -o {d}.
+cc_e : type = c * c -o {e}.
+slurpc : type = c * final -o {final}.
+slurpd : type = d * final -o {final}.
+slurpe : type = e * final -o {final}.
+init_data : type = {a * a * a * a * final}.
+init_rules : type = {!a_bc * !b_c * !b_d * !cc_e * !slurpc * !slurpd * !slurpe}.
+init: type = {init_data * init_rules}.
+
+#query * * * 1 (init -o {final}).

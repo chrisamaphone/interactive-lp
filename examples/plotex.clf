@@ -1,0 +1,35 @@
+
+bool : type.
+true : bool.
+false : bool.
+
+obj : type.
+sword : obj.
+lamp : obj.
+
+has : obj -> bool -> type.
+underground : bool -> type.
+kitchen : bool -> type.
+pants : bool -> type.
+food : bool -> type.
+
+findSword : has sword false -o {has sword true}.
+findLamp : has lamp false -o {has lamp true}.
+enterCave : has lamp true * underground false 
+                -o {underground true * has lamp true}.
+feedSelf : food true -o {food false}.
+feedCyclops : underground true * kitchen false * food true
+                -o {underground true * kitchen true * food false}.
+feedOrc : food true * pants false -o {pants true * food false}.
+kitchenCook : kitchen true * food false -o {kitchen true * food true}.
+
+init : type.
+- : init
+  -o {food true * has sword false * has lamp false * underground false
+        * kitchen false * pants false}.
+
+% #trace * init.
+
+#query * * * 10
+  init -o {has sword Sword * has lamp Lamp * underground Underground
+          * kitchen Kitchen * pants Pants * food Food}.
