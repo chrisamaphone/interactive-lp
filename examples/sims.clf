@@ -19,6 +19,7 @@ preteen : age.
 adult : age.
 senior : age.
 is_age : sim -> age -> type.
+dead : sim -> type.
 
 job : type.
 unemployed : job.
@@ -26,6 +27,10 @@ artist : job.
 politician : job.
 scientist : job.
 has_job : sim -> job -> type.
+available_job : job -> type.
+- : available_job artist.
+- : available_job politician.
+- : available_job scientist.
 
 rel : type.
 sibling : rel.
@@ -57,67 +62,87 @@ earns : job -> nat -> type.
 
 %% actions
 
+creation_token : type.
+
+%% seed relationships
+seed_rels : sim -> nat -> type.
+seed/z : seed_rels S z -o {1}.
+seed/cons : seed_rels S (s N) * sim_id S' N
+                -o {seed_rels S N * @in_rel S S' stranger}.
+
 create
-: nsims N -o {nsims (s N) * Exists ss:sim. is_age ss adult * sim_id ss N}.
+: creation_token * nsims N -o 
+  {@nsims (s N) * 
+    Exists ss:sim. 
+      @is_age ss adult * 
+      @sim_id ss N *
+      @has_job ss unemployed *
+      seed_rels S N}.
 
 assign_job
-: has_job S unemployed -o {has_job S J}.
+: has_job S unemployed * available_job J -o {@has_job S J}.
 
 % have birthday
 birthday1
-: is_age S infant -o {is_age S toddler}.
+: is_age S infant -o {@is_age S toddler}.
 
 birthday2
-: is_age S toddler -o {is_age S preteen}.
+: is_age S toddler -o {@is_age S preteen}.
 
 birthday3
-: is_age S preteen -o {is_age S adult}.
+: is_age S preteen -o {@is_age S adult}.
 
 birthday4
-: is_age S adult -o {is_age S senior}.
+: is_age S adult * has_job S _ -o {@is_age S senior}.
+
+die
+: is_age S senior * nsims (s N) -o {!dead S * @nsims N }.
 
 % work
+plus : nat -> nat -> nat -> type.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+          <- plus N M P.
+work
+: has_job S J * earns J N * simoleons K * plus N K M
+    -o {@has_job S J * @simoleons M}.
+
 % eat
 % sleep
 % dance
 % coffee
 
 % interact (nice)
+be_nice
+: in_rel S S' stranger -o {@in_rel S S' friend}.
 
 % interact (mean)
 
 % interact (romantic)
+flirt
+: in_rel S S' stranger -o {@in_rel S S' friend}.
+ask_out
+: in_rel S S' friend -o {@in_rel S S' dating}.
+get_serious
+: in_rel S S' dating -o {@in_rel S S' partner}.
 
 % get married
 get_married
 : in_rel S S' partner
-  -o {in_rel S S' married * social S * social S'}.
+  -o {@in_rel S S' spouse * @social S * @social S'}.
 
 % have baby
 have_baby
 : is_age S1 adult * is_age S2 adult * in_rel S1 S2 spouse
     * nsims N
-  -o {is_age S1 adult * is_age S2 adult * rel S1 S2 spouse
-      * Exists ss. is_age ss infant * !sim_id ss N * nsims (s N)}.
-
-%% seed relationships
-seed/z : seed_relationships S z -o {1}.
-seed/cons : seed_relationships S (s N) * sim_id S' N
-                -o {seed_relationships N * in_rel S S' stranger}.
+  -o {@is_age S1 adult * @is_age S2 adult * @in_rel S1 S2 spouse
+      * Exists ss. @is_age ss infant * !sim_id ss N * @nsims (s N)}.
 
 %% initial configuration
 init : type.
 - : init -o
-{ Exists s0. Exists s1. Exists s2. Exists s3.
-    nsims (s (s (s (s z)))) *
-    !sim_id s0 z * is_age s0 adult * has_job s0 unemployed *
-      seed_relationships s0 z *
-    !sim_id s1 (s z) * is_age s1 adult * has_job s1 unemployed *
-      seed_relationships s1 (s z) *
-    !sim_id s2 (s (s z)) * is_age s2 adult * has_job s2 unemployed *
-      seed_relationships s2 (s (s z)) *
-    !sim_id s3 (s (s (s z))) * is_age s3 adult * has_job s3 unemployed * 
-      seed_relationships s3 (s (s (s z)))
-}.
+{@nsims z * @simoleons z *
+    creation_token * creation_token * creation_token }.
 
 #trace * {init}.
+#query * * * 1 init -o {1}.
