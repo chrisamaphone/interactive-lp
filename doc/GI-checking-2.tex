@@ -1,0 +1,973 @@
+\documentclass[fullpage, 11pt]{article}
+
+\usepackage{cmnotes}
+
+\usepackage{float}
+\usepackage{amsmath, amssymb}
+\usepackage{verbatim}
+\usepackage{url}
+\usepackage{proof}
+
+% XXX make a macro set
+\newcommand{\one}{\mathrm{1}}
+\newcommand{\lolli}{\multimap}
+\newcommand{\tensor}{\otimes}
+\newcommand{\bang}{!}
+\newcommand{\mon}[1]{\{#1\}}
+\newcommand{\stepsto}{\rightsquigarrow}
+\newcommand{\with}{\&}
+%"proofs in the standard sequent calculus"
+\newcommand{\proves}{\longrightarrow}
+%"proves in the focusing system"
+\newcommand{\fproves}{\Longrightarrow}
+\newcommand{\atm}[1]{\mathsf{#1}}
+\newcommand{\up}{\uparrow}
+\newcommand{\down}{\downarrow}
+\newcommand{\stable}[1]{#1\mathsf{\ stable}}
+\newcommand{\aff}{@}
+
+% epsilons
+\newcommand{\eps}{\epsilon}
+\newcommand{\bnd}{\mathit{bnd}}
+\newcommand{\nileps}{\langle\rangle}
+% \newcommand{\gets}{\leftarrow}
+% \newcommand{\gets}{=}
+
+% phases
+\newcommand{\type}{\mathsf{type}}
+\newcommand{\phase}{\mathsf{phase}}
+\newcommand{\qui}{\mathsf{qui}}
+\renewcommand{\brack}[2]{[#1]^{#2}}
+
+% meta
+\newcommand{\notmod}{\nvDash} % XXX?
+
+\title{Mechanically Checking Invariants of Propositional Linear Logic Programs}
+\author{Chris Martens}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\abstract
+
+Linear logic has been used fruitfully as a specification language for
+describing stateful, concurrent, distributed, and interactive computation.
+Within a logic programming framework, we can execute these specifications.
+However, very little is known about {\em mechanically reasoning} about
+them.
+
+This note describes a decidability proof and algorithm for checking
+properties of the {\em propositional Horn fragment} of forward-chaining
+linear logic programs.
+
+The properties are described with {\em generative signatures}, which
+themselves are linear logic programs of an even more limited
+fragment---a class whose reachability problem is known to be expressible in
+Presburger arithmetic. Using that expressibility result, we reformulate
+the invariant preservation problem as a Presburger arithmetic proposition.
+
+Finally, we show how the intermediate representation of a generative
+signature giving rise to the Presburger formula makes it more amenable to a
+more direct approach in terms of linear logic proof terms.
+
+%-----------------------------------------------------------%
+\section{Introduction}
+
+Linear logic has been used fruitfully as a specification language for
+describing stateful, concurrent, distributed, and interactive computation.
+Within a logic programming framework, we can execute these specifications;
+however, little is known about how to reason about their operational
+semantics on paper, much less algorithmically.
+
+We present a technique for reasoning automatically about linear logic
+programs. This technique enables the programmer to describe a desired 
+invariant, which can then be checked
+automatically. Instead of developing a new meta-language over linear logic
+programs, we propose the use of {\em generative signatures} as an interface
+to writing environments, where generative signatures are simply a restricted
+subset of Horn linear logic programs.
+
+We describe an algorithm for checking the {\em propositional Horn fragment}
+of linear logic programs under a class of generative signatures
+corresponding with {\em flatable languages}, which have been previously
+shown expressible in Presburger Arithmetic, a decidable theory.
+
+% \subsection{Motivating Example}
+% 
+% The overarching goal of this project is to be able to specify and
+% automatically check properties of programs that manipulate resources.
+% For example, consider the classic Blocks World problem in AI. There are
+% four rules that specify the domain:
+% 
+% \begin{enumerate}
+% \item When the arm is free, it can pick up any block from the table with
+%   nothing on top of it, which we call being ``clear.'' This action causes 
+%   the arm to be holding that block and the block to be no longer clear.
+% \item When the arm is free, it can pick up any clear block $B$ from atop
+%   another block $B'$. Then the arm is holding $B$, $B$ is no
+%   longer clear, and $B'$ is clear.
+% \item When the arm is holding a block $B$, it can set that block on top of
+%   any clear block $B'$. Afterwards, the arm is free, $B'$ 
+%   is no longer clear, and $B$ is clear.
+% \item When the arm is holding a block $B$, it can set that block down on
+%   the table. Afterwards, the arm is free and $B$ is clear.
+% \end{enumerate}
+% 
+% XXX something about forward-chaining LLP
+% 
+% Our linear logic programs considered in this work represent a fragment of the 
+% Celf programming language (XXX cite). In notation borrowed from Celf, 
+% Blocks World can be formalized as follows:
+% 
+% \begin{verbatim}
+% pickup_from_block
+%   : on X Y * clear X * arm_free -o {clear Y * arm_holding X}. 
+% 
+% pickup_from_table
+%   : on_table X * clear X * arm_free -o {arm_holding X}. 
+% 
+% put_on_block
+%   : arm_holding X * clear Y -o {on X Y * clear X * arm_free}.
+% 
+% put_on_table
+%   : arm_holding X -o {on_table X * clear X * arm_free}.
+% \end{verbatim}
+% 
+% Each rule is of the form \verb|r: A -o {B}|, and can be read ``the rule
+% named \verb|r| replaces the facts $A$ with the facts $B$.''
+% 
+% There are several questions we can ask about this specification:
+% \begin{itemize}
+% \item What is the set of well-formed states? An example of an ill-formed
+% state would be \verb|on(a,b) * on(a,c)|. We intend
+% for all blocks to be in at most one position (either on another block, on
+% the table, or held by the arm).
+% \item Which states are well-formed {\em initial} states? In general, this
+% ought to be a subset of the total set of states; in this example, they are
+% the same.
+% \item What is the set of possible states at {\em quiescence} (termination)
+%   of the program? Again, in general, this should be a subset of the total
+%   set of well-formed states, but in this case it is empty (there is no
+%   termination condition).
+% \end{itemize}
+% 
+% Ideally, such specifications and proofs would be parametric over the
+% specification of the \em{domain}, e.g. in this case the set of blocks being
+% considered. 
+ 
+% \subsection{Simple Example}
+% 
+% Here is a simple linear logic program.
+% 
+% \begin{verbatim}
+% a * a -o {a}.
+% a * b -o {a * b * b}.
+% \end{verbatim}
+% 
+% With a program this small, we can reason informally about some of its
+% properties. For instance, if there are no \verb|a|s in the context, the
+% program cannot evolve the context further. We can also reason that if there
+% is an \verb|a| and a \verb|b|, the program will never terminate. This
+% deduction uses two properties of the program: first, that the second
+% rule will continue to produce \verb|b|s as long as there is an \verb|a|,
+% and second, that the existence of at least one \verb|a| in the context is
+% an invariant of the program (as long as we start out with one).
+% 
+% We can characterize these kinds of properties with generative signatures.
+% For instance, if we wanted to describe
+% the ``at least one \verb|a|'' property as a generative signature, we might
+% try this slight modification of the generative signature from the previous
+% section:
+% 
+% \begin{verbatim}
+% gen -o {a * gen}.
+% gen -o {a}.
+% \end{verbatim}
+% 
+% To check this signature (let's call it $\Sigma_{gen}$) as an invariant of
+% the original program (let's call it $\Sigma$), we need to check that (a) it
+% holds of whatever initial context we specify along with $\Sigma$ and (b)
+% that each rule in $\Sigma$ {\em preserves} the invariant. The former
+% problem is a subset of the latter, so we will focus on the latter:
+% invariant preservation on a per-program-rule basis.
+% 
+% \subsection{Notation}
+% 
+% In \verb|verbatim| text we'll use \verb|-o| for the lolli symbol, which we write
+% as $\lolli$ in math text. Similarly, verbatim \verb|*| is tensor, or
+% $\tensor$.
+% 
+% We're sticking to a  multiplicative, atomic-propositional fragment of LL
+% for now. We are also only considering rules of the form $A \lolli B$, where
+% neither $A$ nor $B$ contain $\lolli$ (the ``first order'' fragment, in the
+% logic programming sense of the word).
+% 
+% We'll write $p$ to stand for a generic propositional atom.
+
+\subsection{Linear Logic Programming}
+
+celf, notation, etc (XXX)
+
+
+\subsection{Example}
+
+The overarching goal of this project is to be able to specify and
+automatically check properties of programs that manipulate resources.
+As a simple example, consider a program to simulate coin exchange: a dime
+can be traded for two nickels, a quarter can be traded for two dimes and a
+nickel. % XXX too American-centric?
+This specification can be given in linear logic as two rules:
+
+\begin{eqnarray*}
+r_1 &:& d \lolli n \tensor n\\
+r_2 &:& q \lolli d \tensor d \tensor n
+\end{eqnarray*}
+
+% XXX keep?
+In concrete notation borrowed from Celf (XXX), we write:
+\begin{verbatim}
+r1 : d -o {n * n}.
+r2 : q -o {d * d * n}.
+\end{verbatim}
+
+There are several questions we can ask about this specification:
+\begin{itemize}
+\item {\bf What is the set of well-formed states?} In this case, it is simply any
+number of quarters, dimes, and nickels.
+\item {\bf Which states do we take to be well-formed {\em initial} states?} For
+  instance, we might specify that we start with entirely quarters, or we
+  might allow any configuration of coins.
+\item {\bf What is the set of possible states at {\em quiescence} (termination)
+  of the program?} This depends on the set of initial states. If we take the
+  initial states to be those with only quarters, then we expect to have a
+  multiple of five nickels at the end and no other coins. If we allow any
+  set of coins initially, then we will have an arbitrary number of nickels
+  (and no other coins) at the end.
+\end{itemize}
+
+For this work, we primarily concentrate on addressing the first
+question. We refer to these permissible states at any point during program
+execution as {\em invariants}. To check an invariant, we need to be given
+an initial state (or specification of initial states) to check as a base
+case; then, we check on a per-rule basis for preservation of the invariant.
+
+\subsection{Paper Organization}
+
+The remainder of the paper is organized as follows: Section
+\ref{sec:background} provides the formal definitions for the fragment of
+linear logic from which we consider programs, generative signatures, and
+preservation of such signatures by a program. Section \ref{sec:method}
+describes our approach, including the ``false start'' of iteratively
+splitting program traces, then moves on to
+desribe an encoding of the problem via Vector Addition Systems and
+Presburger Arithmetic. In Section \ref{sec:results} we give the decidability
+proof and algorithm via compiling the question of invariant preservation
+into a Presburger formula. We then walk through an example and prove
+correctness of the algorithm. Finally, in Section \ref{sec:conc}, we
+discuss ongoing work on extending the procedure to handle the first-order
+case. We revisit the ``false start'' idea of trace-splitting in light of
+the Presburger formula extraction approach and suggest its use for handling
+this case.
+
+%-----------------------------------------------------------%
+\section{Background}
+\label{sec:background}
+
+\subsection{The Propositional Horn Fragment of Linear Logic}
+% XXX
+
+\subsection{Generative Signatures}
+
+Generative signatures are like grammars for linear contexts. For example,
+the signature 
+
+\begin{verbatim}
+gen -o {a * gen}.
+gen -o {1}.
+\end{verbatim}
+
+equipped with the {\em seed context} $\{$\verb|gen|$\}$, describes contexts
+containing zero or more instances of \verb|a|. Formally, the set of context
+a signature $\Sigma$ and a seed $\Delta_0$ describes is the set of
+reachable contexts from $\Delta_0$ following rules in $\Sigma$.
+
+Generative signatures were first discussed in Rob Simmons's thesis
+\cite{simmons12thesis}. There they were specifically being used as invariants, so he
+referred to them as generative {\em invariants}.
+
+
+
+\subsection{Synthetic Transitions}
+
+There's just one more piece we need before we can define rule preservation
+precisely. That is the relationship between rules $A \lolli B$ and the
+operational semantics of the program, which can be understood in terms of
+{\em transitions} between contexts $\Delta \stepsto \Delta'$. (To be
+precise, we often write $\Delta \stepsto_{\Sigma} \Delta'$ to indicate
+which program $\Sigma$ we are stepping along.) 
+
+The common case of how rules are related to operational semantics is that a
+rule $a_1 \tensor \dots \tensor a_n \lolli b_1 \tensor \dots \tensor b_m$
+induces a {\em synthetic transition}
+
+\[
+\Delta, a_1, \dots, a_n \stepsto \Delta, b_1, \dots, b_m
+\]
+
+which is parametric over $\Delta$.
+
+In fact, {\em every} transition the program makes per its original
+definition as proof search in a focused logic can be superceded by these
+synthetic transitions. A full account of this correspondence can be found
+in \cite{deyoung12linear}.
+
+We will write $A^*$ to mean
+
+\begin{eqnarray*}
+p^* &=& p \\
+(A \tensor B)^* &=& A^*, B^*
+\end{eqnarray*}
+
+to transform tensors of atoms into contexts.
+
+\subsection{Generative Property Preservation}
+
+Now we can define what it means for a rule to preserve a generative
+property.
+
+{\bf Definition 1:} a rule $r : A \lolli B$ preserves a generative
+property $\langle \Sigma_{gen}, \Delta_0 \rangle$ 
+iff for all $\Delta$, whenever $\Delta_0 \stepsto_{\Sigma_{gen}} \Delta,
+A^*$, it is also the case that $\Delta_0 \stepsto_{\Sigma_{gen}} \Delta,
+B^*$.
+
+{\bf How the first rule passes:} Upon inspection of the first rule in
+$\Sigma$, $A = a \tensor a$ and $B = a$. This means we have by assumption
+that for all $\Delta$, ${\sf gen}\stepsto_{\Sigma_{gen}} \Delta, a, a$ and
+we need to show ${\sf gen} \stepsto_{\Sigma_{gen}} \Delta, a$. Intuitively,
+this means reasoning about how the two $a$s were generated in the first
+production and recognizing that the second generative signature rule must
+have been applied last (assuming no instances of \verb|gen| remain in
+$\Delta$, which we should explicitly state as an assumption). Since
+applying that rule ends the generative computation, it can only have been
+applied once, meaning the other $a$ must have come from the first
+generative rule, preserving \verb|gen|. And the application of that rule
+could instead be replaced by the second rule (which fires on the same
+premises), decreasing the number of $a$s produced by one.
+
+This handwavy argument can be made more formal by induction over the length
+of the trace and reasoning by permutative equality; see
+\cite{simmons12thesis} for details.
+
+{\bf How the second rule passes -- but not quite how we wanted!:} Note that
+if we try to reason about how our generative signature creates a context
+$\Delta, a, b$, we fail -- because we haven't given any rules that can
+produce $b$. Thus the {\em implication} succeeds, but only vacuously. If we
+seeded our program with any \verb|b|s, the base case for the proof would
+fail, and for any other seed context, the program rule would never fire.
+
+Let's modify the generative signature to {\em fully} characterize the set
+of contexts that we expect.\footnote{Future work includes consideration for
+{\em modular} specifications, i.e. properties that can be specified as only
+partial representations of the context.}
+
+\begin{verbatim}
+gen -o {a * gen}
+gen -o {a * bs}.
+bs -o {1}.
+bs -o {b * bs}.
+\end{verbatim}
+
+Note: we might expect the algorithm to flag these ``cannot fire'' rules
+even if they don't violate the invariant.
+
+In this extended context, we can reason about how $\Delta, a, b$ was
+produced with the same technique of induction over the production trace,
+then inject another instance of the fourth generative rule to arrive at the
+well-formation of $\Delta, a, b, b$.
+
+\subsection{A Pathological Example}
+
+Consider the following generative signature.
+
+\begin{verbatim}
+g1 : gen -o {a * cs}.
+g2 : gen -o {b * c * c}.
+g3 : cs -o {c * cs}.
+g4 : cs -o {1}.
+\end{verbatim}
+
+Note that the class of contexts ($\Sigma_{gen}'$, \verb|gen|) describes is
+one where an \verb|a| can appear alongside arbitrarily many \verb|c|s, but
+a \verb|b| requires {\em exactly one} \verb|c| alongside it.
+
+
+Rules that should pass (preserve the invariant):
+\begin{enumerate}
+\item \verb|a -o {a * c}.|
+\item \verb|a * c -o {a}.|
+\end{enumerate}
+
+That is, if there is an \verb|a| in the context, we should be able to add
+or subtract arbitrarily many \verb|c|s.
+
+Rules that should fail (do not preserve the invariant):
+\begin{enumerate}
+\item \verb|1 -o {c}|.
+\item \verb|c -o {1}|.
+\end{enumerate}
+
+That is, we may not arbitrarily remove or generate a \verb|c|. The second
+generative rule \verb|g2| permits a context with {\em exactly} one \verb|b|
+and two \verb|c|s.
+
+Thus, our algorithm needs to be able to account for preservation not on a purely
+local, or context-free, basis, but rather in a sense that takes into
+account {\em all the possible ways} an atom on the left-hand side of the
+rule could be generated---which may impose some constraints on the
+context---and conclude that, in all of those scenarios, including their
+constraints, the right-hand side of the rule could have been generated in
+its place.
+
+%-----------------------------------------------------------%
+\section{Methodology}
+\label{sec:method}
+
+\subsection{False Start: Trace Splitting}
+
+% XXX edit this text to reflect that we abandoned it
+The first thing we tried was to determine whether a generative signature
+$\Sigma_{gen}$ is preserved by a rule $r : A \lolli \mon{B}$ by first
+performing a process of {\em inversion} on the supposition that $gen
+\stepsto \Delta, A^*$, then using the facts learned by way of inversion to
+demonstrate $gen \stepsto \Delta, B^*$.
+
+The most complex core of this algorithm is {\em inversion}.
+
+Inversion is generalized to take a pair of contexts $\Theta_1$ and
+$\Theta_2$ (instantiated at $gen$ and $\Delta, A^*$ at the top level),
+which then {\em splits} the supposed trace between those contexts along a
+rule that could produce a known atom in $A^*$.
+
+By convention we write $\Theta$ for contexts that may contain nonterminals.
+
+{\bf Coframe property:} If $t$ is terminal and $\epsilon : \Theta, t
+\stepsto_{\Sigma_{gen}} \Theta', t$, then $\epsilon : \Theta
+\stepsto_{\Sigma_{gen}} \Theta'$. {\bf Proof} by inspection of the
+definition of ``terminal'' and possible formations for $\epsilon$: no rules
+in $\Sigma_{gen}$ can consume $t$, so no steps of $\epsilon$ will depend on
+it.
+
+This observation allows us to recursively apply inversion on the right-hand
+split of the trace and ensure termination (we always subtract an atom from
+the right-hand side and work by inversion on a new one).
+
+This property also allows us to invert on the atoms in $A^*$ in arbitrary
+order.
+
+{\bf Inversion trees and paths:} Because multiple rules may apply that give
+rise to the atom along which we perform inversion, we maintain a tree
+structure to hold all possible inversion paths.
+The following recurisve datatype is used to represent the output of
+inversion:
+
+\begin{verbatim}
+datatype invTree = Leaf | Node of (trace * trace * invTree) list
+\end{verbatim}
+
+Nodes contain a list, one for each rule that applies, of splittings---the
+left and right half of the split (each pairs of contexts between which
+there exists a trace), and the child tree that represents the remainder of
+the computation.
+
+All inversion paths can be enumerated by enumerating paths through the
+tree. For each path, we'll need to try adding the inversions to the
+generative signature to prove the program rule's consequence from $gen$
+using the additional information learned through inversion. Every such test
+will need to succeed for the rule to be sound.
+
+The ML code implementing inversion can be found in
+Figure~\ref{fig:inversion}.
+
+\begin{figure}[ht]
+\label{fig:inversion}
+\footnotesize
+\begin{verbatim}
+(* invs : gensig -> trace -> invTree option *)
+  fun invs S (lhs, nil) = SOME Leaf
+    | invs S (lhs, a::D) =
+        let 
+          val rules = List.filter (fn (bs, ays) => member a ays) S
+        in  
+          case rules of
+               nil => NONE
+             | _ =>
+                 let 
+                   val theta = gensym()
+                   fun split (bs, ays) = 
+                     ((lhs, theta::bs), 
+                      (theta::(deleteFirst a ays), D)) 
+                   fun child r = 
+                      let 
+                        val (ltrace, rtrace) = split r
+                        val result = invs S rtrace
+                      in  
+                        case result of
+                            NONE => NONE
+                          | SOME tree => SOME (ltrace, rtrace, tree)
+                      end 
+                   fun filterNones (NONE::l) = filterNones l
+                     | filterNones ((SOME x)::l) = x::(filterNones l)
+                     | filterNones [] = []
+                   val children = filterNones (map child rules)
+                 in  
+                   case children of
+                        [] => NONE
+                      | _ => SOME (Node children)
+                 end 
+        end 
+\end{verbatim}
+\caption{ML code implementing (right-only) inversion}
+\end{figure}
+
+{\bf Incompleteness:}
+This algorithm only recursively splits the right half
+of the trace. This is because we don't yet know how to make it decideable
+to split the left. It succeeds anyway on a fair number of cases, but there
+are some pathological ones (which we describe later) where it fails.
+% XXX edit this text and explain more broadly why it doesn't seem feasible
+% (until we introduce flatability later)
+
+
+\subsection{Restating the problem in terms of Vector Addition Systems}
+
+In general, we cannot program a computer to reason inductively about
+arbitrary program traces such that it always terminates. In this section we
+describe how to model generative signatures and programs as {\em vector
+addition systems} (first introduced by Karp and
+    Miller~\cite{karp1969parallel})
+in a way that they can be treated using known
+techniques. Specifically, we show how invariant preservation can be modeled
+in Presburger Arithmetic, the first-order theory of natural numbers with
+inequality and addition, which happens to be decidable.
+
+%\newcommand{\vec}[1]{\mathbf{#1}}
+
+% (XXX scripty font?)
+A {\em vector addition system} (VAS) $V$ is an initial
+configuration $\vec{x_0} \in \mathbb{N}^n$ for a fixed dimension $n$,
+along with a set $T$ of {\em transitions} describing how a configuration
+may evolve. Transitions can be described as vectors $\vec{t} \in \mathbb{Z}^n$
+along with side conditions of the form $\vec{k} \in \mathbb{N}^n$ imposing
+the inequality $\vec{v} \geq \vec{k}$.
+
+If the conditions hold of a configuration $\vec{v}$ (i.e. $\vec{v} \geq
+\vec{k}$) {\em and} $\vec{v} + \vec{t} \geq \vec{0}$, the transition
+$\vec{t}$ is said to be {\em applicable} or {\em fireable}, and the
+transition relation $\stepsto$ holds of $\vec{v} \stepsto \vec{v}+\vec{t}$.
+
+Typically, for these systems, which are equivalent to Petri nets (see e.g.
+~\cite{Leroux2010VASReach}), the question is whether the {\em reachability}
+relation, or transitive transition relation, holds between two
+configurations. More generally, one might want to compute the {\em set} of
+reachable configurations from a given set of configurations $S$ (along a
+set of transitions $T$). Such a set is called the {\em reachability set} of
+$S$ (along $T$). 
+
+A correspondence is known~\cite{Kanovich1995petri} between reachability for
+vector addition systems and provability of a sequent in the propositional
+Horn (or Petri net) fragment of linear logic. Simply put, a VAS transition
+rule of the form $(\vec{t}, \vec{k})$
+can be interpreted as a linear logic rule
+
+\[
+a_1^{c_1} \tensor \dots \tensor a_n^{c_n} \lolli
+  \mon{a_1^{c_1+t_1}\tensor \dots \tensor a_n^{c_n+t_n} }
+\]
+
+Where $c_i = \mathsf{max}(k_i, -t_i)$ and $a^c$ means $a\tensor \dots
+\tensor a$ with $c$ repetitions.
+
+Computing reachability sets for vector addition systems is known to be
+decidable.~\cite{SacerdoteTenney1977} 
+However, the decidability of this problem does not help us directly with
+deciding if a given program rule preserves a generative invariant. Cast as
+a VAS problem, the question is whether
+
+For all configurations $c_{A}$ such that $r : A \lolli \mon{B}$ is
+fireable, if $\vec{c_0} \stepsto^* \vec{c_{A}}$ then $\vec{c_0} \stepsto^*
+\vec{c_{A}} + tk_r$ (where $tk_r = (t_r, k_r)$ is the transition and
+condition vector corresponding with the rule $r$).
+
+The {\em postset} of a given vector set $S$ along a rule $t$, denoted
+$\mathsf{post}_{(t,k)}(S)$, is the set of all vectors $v'$ such that there exists
+a $v \in S$ where $(t,k)$ is fireable on $v$ and $v' = v + t$.
+
+So we can reword the above criterion for preservation as simply
+\[
+\mathsf{post}_{(tk_r)}(S) \subseteq S
+\]
+
+where $S$ is the reachability set of $c_0$ (the initial configuration of
+the generative invariant) along the rules of the generative invariant.
+
+In general, computing the reachability set does not help us answer this
+question. But if the reachability set corresponds to a Presburger formula,
+then the entire thing can be expressed as a Presburger formula, and
+Presburger arithmetic is decidable. Thus, what remains is to show that the
+particular subset of VASs that correspond with generative invariants are
+Presburger.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Presburger Vector Addition Systems}
+
+In general, VASs are not expressible as Presburger Arithmetic formulae.
+An explanation of this fact and a characterization of the Presburger
+fragment is given in~\cite{Leroux2013PresburgerVAS}.
+Briefly speaking, one can encode exponentiation as a
+VAS, which is not Presburger. In this section, we recapitulate Leroux's
+characterization of Presburger Vector Addition Systems in terms of how we
+use them for generative invariants.
+
+In order to show that generative invariant preservation is decidable, we
+need to isolate a fragment of the VAS language that is both suitable to use
+for our generative invariants of interest {\em and} expressible in
+Presburger Arithmetic.
+
+Leroux shows that the Presburger-expressible VASs are exactly those which
+have an equivalent ``flat'' representation. A {\em flat} VAS is one in
+which every run (sequence of applicable rules) is in the grammar
+
+\[
+(w_1)^*\dots(w_n)^*
+\]
+
+for some finite set of {\em words} (finite transition sequences) $w_1 \dots
+w_n$.
+
+A {\em flatable} VAS is one with the same reachability set as a flat VAS.
+One known class of flatable VASs are so-called Basic Parallel Processes, or
+BPPS (XXX cite), which are those corresponding to sets of Horn linear logic
+rules with a single premise (or Petri nets where every transition has a
+single input). Although this class may sound limiting, every generative
+invariant we have studied so far meets this criterion.~\footnote{Simmons' examples
+for the operational semantics of programming languages (XXX cite rob
+thesis) occasionally include a second premise, but always a persistent one
+(premise of the form $\bang A$). This kind of rule may still be expressible
+as a BPP so long as the persistent premise can be represented as a side
+condition, but we currently exclude these examples from our proofs.}
+
+There exist published, proven terminating, and implemented methods to
+decompose VASs such as BPPs into flat languages. (XXX cite olsen, fribourg)
+These techniques involve iteratively disentangling cyclic rule
+dependencies. As an alternative to automatically finding an equivalent flat
+language, we can simply stipulate that a given generative invariant must be
+flat.
+
+\subsection{Flat(able) Generative Invariants}
+
+Here is a generative invariant corresponding loosely to a propositional
+erasure of a well-formedness specification for Blocks World. (XXX mention
+blocks world earlier?)
+
+\begin{verbatim}
+g1 : gen -o {t * gen'}.  %% t ~= "on table"; construct a new stack
+g2 : gen' -o {b * gen'}. %% b ~= "on"; add a block to a stack
+g3 : gen' -o {c * gen}.  %% c ~= "clear"; finish a stack and return
+g4 : gen -o {f}.         %% f ~= "arm free"
+g5 : gen -o {h}.         %% h ~= "arm holding a block"
+\end{verbatim}
+
+This specification is not flat: there is ``nested'' looping of the rule
+\verb|g2| within the wider loop formed by \verb|g1| and \verb|g3|. This
+introduces the constraint that a \verb|t| and \verb|c| both {\em must} be
+generated in order for there to be more than zero \verb|b|s. It also means
+that, if there are no nonterminals \verb|gen| and \verb|gen'|, the number
+of \verb|t|s and \verb|c|s must be the same.
+
+As a VAS, these rules correspond to transitions (XXX)
+
+The output of the automatic decomposition technique on this VAS is
+% XXX Deco output
+
+Alternatively, a hand-crafted flat version of this specification is as
+follows.
+
+\begin{verbatim}
+g1 : gen -o {t * gen * gen'}  %% begin a new stack
+g2 : gen' -o {b * gen'}.      %% add a block to a stack
+g3 : gen' -o {c}.             %% finish a block stack
+g4 : gen -o {f}.        
+g4 : gen -o {h}.       
+\end{verbatim}
+
+This signature allows multiple block stacks to be created concurrently. It
+cannot be interpreted as a state machine; the rule \verb|g1| introduces the
+possibility of being in multiple ``states'' simultaneously. Nonetheless, it
+is still a BPP (one premise per rule), and it is already flat. The flat
+language representing the reachability set is
+
+\[
+(g_1)^*(g_2)^*(g_3)^*(g_4)^*(g_5)^*
+\]
+
+(XXX note interesting things about the relationship between these
+ signatures, parallelism, cps, ?)
+
+%-----------------------------------------------------------%
+\section{Results}
+\label{sec:results}
+
+\subsection{Computing Presburger reachability sets}
+
+In general, the postset of a vector set under an iterated word $w^*$ can be
+given by binding an existential variable for the number of iterations, i.e.
+
+\[
+\mathsf{post}(S, w^*) =
+\{x \mid \exists v\in S.
+\exists n\in\mathbb{N}. (XXX) x = v + na \land v \geq c_w
+\}
+\]
+
+where $c_w$ is XXX define
+
+For a VAS with starting configuration $c_0$, a sequence of Presburger sets
+$C_i$ is computed inductively:
+\begin{eqnarray*}
+C_0 &= \{c_0\} \\
+C_i &= \mathsf{post}(C_{i-1}, (w_i)^*)
+\end{eqnarray*}
+
+% XXX explain connection to GIs?
+
+\subsection{The Algorithm}
+
+\begin{eqnarray}
+| (\Sigma, \Delta_0) | &=& ...
+\end{eqnarray}
+
+Now that we have a Presburger characterization of the reachability sets of
+generative invariants, we can describe what it means for a rule $r : A
+\lolli \mon{B}$ to preserve an invariant $(\Sigma, \Delta_0)$, as a
+Presburger formula itself:
+
+Let $\mathsf{post}^*_{|\Sigma|}(\Delta_0) = S$. The rule $r$ preserves $\Sigma$ iff
+
+\[
+\mathsf{post}_{|r|}(S) \subseteq S
+\]
+
+% XXX need to intersect it with |A|?
+
+\subsection{End-to-End Example}
+
+Let's revisit the pathological case from (XXX reference section).
+
+\begin{verbatim}
+g1 : gen -o {a * cs}.
+g2 : gen -o {b * c * c}.
+g3 : cs -o {c * cs}.
+g4 : cs -o {1}.
+\end{verbatim}
+
+As a vector addition system over \verb|<gen, cs, a, b, c>|:
+\begin{verbatim}
+g1 : <-1,  1, 1, 0, 0>   ; <1, 0, 0, 0, 0>
+g2 : <-1,  0, 0, 1, 2>   ; <1, 0, 0, 0, 0>
+g3 : < 0,  0, 0, 0, 1>   ; <0, 1, 0, 0, 0>
+g4 : < 0, -1, 0, 0, 0>   ; <0, 1, 0, 0, 0>
+\end{verbatim}
+% XXX explain syntax (t, k)
+
+As a flat language:
+\begin{verbatim}
+g2*g1*g3*g4*
+\end{verbatim}
+
+As a more precise flat language:
+\begin{verbatim}
+(g2 | (g1(g3*)g4))
+\end{verbatim}
+
+As a Presburger formula specification:
+\[
+  C = C_{1A} \cup C_{3B}
+\]
+where
+\begin{eqnarray*}
+C_0     &=& \{ \verb|<1, 0, 0, 0, 0>| \}\\
+C_{1A}  &=& \mathsf{post}(C_0, \verb|g2|)\\
+C_{1B}  &=& \mathsf{post}(C_0, \verb|g1|)\\
+C_{2B}  &=& \mathsf{post}(C_{1B}, \verb|g3*|)\\
+C_{3B}  &=& \mathsf{post}(C_{2B}, \verb|g4|)
+\end{eqnarray*}
+
+The only piece of this formula requiring a quantifier is the repeated
+\verb|g3*|. The reachability set involving \verb|g3*| can be described as:
+
+\begin{eqnarray*}
+  C_{2B} &=& \mathsf{post}(C_{1B}, \verb|g3*|)\\
+         &=& \{ 
+              x' \mid
+                \exists n. \verb|<0,1,1,0,0>| + n\verb|<0,0,0,0,1>| = x'
+              \}\\
+        &=& \{
+              x' \mid
+                \exists n. x' = \verb|<0,0,1,0,n>| \}
+\end{eqnarray*}
+
+Thus the final solution for the original GI as a Presburger formula is:
+\[
+C = \{ \verb|<0,0,0,1,2>| \} \cup
+    \{\vec{x} \mid \exists n. \vec{x} = \verb|<0,0,1,0,n>|\}
+\]
+
+% XXX show a proof of rules being preserved
+
+\subsubsection*{Checking Program Rules}
+
+Now we can work out the decision procedure for the example on a couple of
+different program rules. We revisit two examples from section (XXX ref
+pathological example section), one that preserves the invariant and one
+that does not:
+
+\begin{enumerate}
+\item \verb|a -o {a * c}.| (should pass)
+\item \verb|1 -o {c}.| (should fail)
+\end{enumerate}
+
+Consider the postset of $C$ along each rule: for rule 1, the only part
+affected is the second disjunct. $C' = \mathsf{post}_1(C) =$
+
+\[
+    \{ \verb|<0,0,0,1,2>| \} \cup
+    \{\vec{x} \mid \exists n. \vec{x} = \verb|<0,0,1,0,n>|\} \cup
+    \{\vec{x} \mid \exists n. \vec{x} \ \verb|<0,0,1,0,n+1|\}
+\]
+
+But this last unioned set is a subset of 
+$\{\vec{x} \mid \exists n. \vec{x} = \verb|<0,0,1,0,n>|\}$
+(which can be determined in Presburger Arithmetic by modeling subsethood as
+implication).
+
+For rule 2, $C'' = \mathsf{post}_2(C) =$
+
+\[
+    \{ \verb|<0,0,0,1,2>| \} \cup
+    \{\vec{x} \mid \exists n. \verb|<0,0,0,1,n+2>| \} \cup
+    \{\vec{x} \mid \exists n. \vec{x} = \verb|<0,0,1,0,n>|\} \cup
+    \{\vec{x} \mid \exists n. \vec{x} \ \verb|<0,0,1,0,n+1|\}
+\]
+
+This set is not a subset of the original, so it fails, as expected.
+
+
+\subsection{Adequacy and Correctness}
+
+% XXX wrap in thm environment or w/e
+% - check lfinlf for how to do this
+Theorem statement (adequacy): modeling generative invariants as vector
+addition systems is sound and complete with respect to derivability and
+reachability. That is, formally,
+% XXX \mid notation should be replaced w/something better
+  if $\mid \Sigma_{gen}, \Delta_0 \mid = \langle V, c_0\rangle$
+  then
+  $\Delta_0 \stepsto^*_{\Sigma_{gen}} \theta$, 
+  if and only if
+  $\mid \theta \mid = x$ and $c_0 \to^*_{V} x$.
+
+% XXX proof
+
+Theorem statement (soundness): if the Presburger formula representing a
+rule $r : A \lolli \mon{B}$ 
+preserving a generative invariant $\langle \Sigma, \Delta_0 \rangle$ 
+has a proof, then 
+\[
+\Delta_0 \stepsto^*_{\Sigma} A 
+\] 
+if and only if 
+\[
+\Delta_0 \stepsto^*_{\Sigma} B 
+\]
+
+Theorem statement (completeness): converse of soundness.
+
+
+
+%-----------------------------------------------------------%
+\section{Discussion}
+\label{sec:conc}
+
+\subsection{Toward the First-Order Case}
+
+\subsection{Revisiting Trace Splitting}
+
+A generative trace
+\[
+\epsilon : \mathsf{gen} \stepsto^* \delta, t_1, \dots, t_n
+\]
+
+within the ``pathological case'' generative signature must inhabit the
+flat language that characterizes it:
+
+\begin{verbatim}
+(g2 | (g1(g3*)g4))
+\end{verbatim}
+
+This means that when we invert on this trace to split it into smaller
+pieces, we have more information than previously.
+
+% XXX work through example
+
+\subsection{Additional Future Work}
+
+XXX meld programs; voting protocol
+
+quiescence states; initial states; liveness conditions
+
+%%% move to future work section and rewrite
+% Our broader goal is to be able to reason about the operational semantics
+% of linear logic proof search to the full extent that model checking and
+% program verification techniques work in other domains.
+% 
+% Eventually, we'd like to be able to give generative invariants that
+% \begin{itemize}
+% \item include properties of first-order predicates over finite datatypes
+% (e.g. \verb|on(X,Y)| from the Blocks World domain)
+% \item can describe not just {\em invariants} but also {\em quiescence}
+% properties of contexts that are the result of a program's execution when no
+% more rules can fire, and conversely, {\em activity} properties (the
+% complement of quiescence)
+% \item less certainly, we might wish to describe properties of programs
+% outside the ``horn fragment,'' i.e. programs with implicational subgoals
+% ($(A \lolli B) \lolli C)$.
+% \end{itemize}
+
+integration with phases
+
+\subsection{Conclusion}
+
+We have given a decidability proof and decision procedure for determining
+whether a Horn propositional linear logic program preserves an invariant
+given by a generative signature. We have shown that this problem can be
+encoded in Presburger arithmetic via flattening generative invariants.
+Flattening is always a terminating process for the generative invariants we
+have considered so far.
+
+This work represents a very preliminary investigation into the automatic
+checking of properties described by generative invariants. While it
+demonstrates that the idea passes the initial litmus test of decidability,
+compiling to, and checking, a Presburger formula would likely not be
+computationally efficient enough for large examples. It also does not
+clearly scale to the first-order case. % XXX how to end?
+
+XXX something optimistic? about trace splitting?
+
+\bibliographystyle{plain}
+\bibliography{thesis}
+
+\end{document}
