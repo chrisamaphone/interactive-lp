@@ -28,6 +28,9 @@ structure CeptreProp = struct
      init_phase : ident,
      init_state : atom list}
 
+  fun lookup_phase phase phases =
+    List.find (fn {name,body} => name = phase) phases
+
   exception Unimp
   exception Impossible
 
@@ -63,8 +66,9 @@ structure CeptreProp = struct
     List.nth (rs, idx)
   end
 
+  datatype 'a answer = DONE of 'a | NEXT of 'a
 
-  (* step : program -> phase -> atom list -> (ident * atom list) *)
+  (* step : program -> phase -> atom list -> (ident * atom list) answer *)
   fun step prog (phase as {name=phase_name, body=rules}) state =
     (* XXX check for quiescence - if so, add qui, check global rules *)
     (* (might have to do the above many times) *)
@@ -74,18 +78,45 @@ structure CeptreProp = struct
                 let
                   val phase' = phase (* XXX *)
                   val state' = state
-                in
-                  (phase', state')
+                in (* XXX might be globally quiesced *)
+                   (* but might just go to next phase... *)
+                  DONE (phase', state')
                 end
             | rs => 
                 let
                   val {name, lhs, rhs} = select_random rs
                   val state' = removeAtoms state lhs
                   val state'' = IS.addList state' rhs
-                in (phase, state'') 
+                in NEXT (phase, state'') 
                 end )
 
-  (* run : program -> () *)
-  fun run prog = raise Unimp
+  (* step_star : program -> phase -> atom list -> (ident * (atom list)) *)
+  fun step_star prog phase state =
+    (case (step prog phase state) of
+         DONE (phase', state')  => (phase', state') 
+       | NEXT (phase', state')  => step_star prog phase' state')
 
+  (* run : program -> (ident * (atom list)) option *)
+  fun run (prog as {phases,links,init_phase,init_state}) =
+    (case lookup_phase init_phase phases of
+         NONE => 
+          let
+            val () = print ("Couldn't find initial phase "^init_phase)
+          in
+            NONE
+          end
+      |  SOME phase => SOME (step_star prog phase init_state) )
+
+
+  (* tests *)
+  val (a,b,c,d,e) = (Lin 1, Lin 2, Lin 3, Lin 4, Lin 5)
+  val rules1 =
+    [{name = "r1", lhs = [a], rhs = [b,b]},
+     {name = "r2", lhs = [b], rhs = [c]}]
+  val init1 = [a,a,a]  
+  val prog1 = {phases=[{name="phase1",body=rules1}],
+               links=[],
+               init_phase="phase1",
+               init_state=init1}
+    
 end
