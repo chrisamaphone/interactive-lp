@@ -65,9 +65,18 @@ structure CeptreProp = struct
   fun applicable_rules state rules =
     List.filter (fn {name,lhs,rhs} => existsAll lhs state) rules
 
+  fun applicable_phase_rules state current_phase phase_rules =
+    List.filter
+      (fn {name, pre_phase, lhs, post_phase, rhs}
+        => current_phase = pre_phase
+            andalso (existsAll lhs state))
+      phase_rules
+
   (* quiescent : phase -> state -> bool *)
+  (* not currently used?
   fun quiescent {name, body} state =
     List.null (applicable_rules state body)
+    *)
 
   (** selecting rules **)
   fun removeAtoms state atoms =
@@ -86,19 +95,32 @@ structure CeptreProp = struct
   datatype 'a answer = DONE of 'a | NEXT of 'a
 
   (* step : program -> phase -> atom list -> (ident * atom list) answer *)
-  fun step prog (phase as {name=phase_name, body=rules}) state =
+  fun step (prog:program) (phase as {name=phase_name, body=rules}) state =
     (* XXX check for quiescence - if so, add qui, check global rules *)
     (* (might have to do the above many times) *)
     (* check phase's rules *)
         (case applicable_rules state rules of
-              nil =>
-                let
-                  val phase' = phase (* XXX *)
-                  val state' = state
-                in (* XXX might be globally quiesced *)
-                   (* but might just go to next phase... *)
-                  DONE (phase', state')
-                end
+              nil => (* quiesced within the phase *)
+              let 
+                val {phases, links, ...} = prog
+              in
+              (case applicable_phase_rules state phase_name links of
+                    nil => DONE (phase, state) (* globally quiesced *)
+                  | ls => 
+                      let
+                        val {name,pre_phase,lhs,post_phase,rhs}
+                        : phase_rule
+                          = select_random ls
+                        val state' = removeAtoms state lhs
+                        val state'' = IS.addList state' rhs
+                        val SOME phase' = lookup_phase post_phase phases
+                        (* match exception here means an ill-formed phase link
+                        * (post-phase is not in the program) *)
+                      in
+                        NEXT (phase', state'')
+                      end
+              )
+              end
             | rs => 
                 let
                   val {name, lhs, rhs} = select_random rs
@@ -139,5 +161,15 @@ structure CeptreProp = struct
                links=[],
                init_phase="phase1",
                init_state=init1}
+
+  val rules2 =
+    [{name = "r1", lhs = [c], rhs = [a]}]
+  val prog2 : program =
+    {phases=[{name="phase1",body=rules1},
+             {name="phase2",body=rules2}],
+     links=[{name="link1",pre_phase="phase1",post_phase="phase2",
+              lhs=[],rhs=[]}],
+     init_phase="phase1",
+     init_state=init1}
     
 end
