@@ -6,7 +6,7 @@ structure Ceptre = struct
   datatype term = Const of string | Var of var
   type pred = string
   type atprop = pred * (term list)
-  datatype atom = Lin of atprop | Aff of atprop | Pers of atprop
+  datatype atom = Lin of atprop | Pers of atprop
 
   type ident = string
   
@@ -16,8 +16,8 @@ structure Ceptre = struct
   type rule_external = ident * (atom list) * (atom list)
   type rule_internal = ident * int * (atom list) * (atom list)
 
-  (* a phase is a name, a list of rules, and an initial state *)
-  type phase = ident * (rule_internal list) * (atom list)
+  (* a phase is a name & a list of rules *)
+  type phase = ident * (rule_internal list)
 
   (* qui * phase p * S -o {phase p' * S'} =
   *   (?, p, S, p', S') *)
@@ -25,7 +25,6 @@ structure Ceptre = struct
 
   (* program is a set of phases, a set of phase rules, and an identifier for an
   * initial phase *)
-
   type program = (phase list) * (phase_rule list) * ident
 
 end
