@@ -34,6 +34,23 @@ structure CeptreProp = struct
   exception Unimp
   exception Impossible
 
+  (* Stringifiers *)
+
+  fun state_to_string (phase_id, state) =
+  let
+    fun atom_to_string (Lin x) = Int.toString x
+      | atom_to_string (Pers x) = "!"^(Int.toString x)
+    val atom_strings = map atom_to_string state
+    val state_string = String.concatWith ", " atom_strings
+  in
+    "PHASE: "
+    ^ phase_id
+    ^ " | "
+    ^ state_string
+  end
+
+  (* Core program evolution logic *)
+
   structure IS = struct
     fun member state atom = List.exists (fn x => x=atom) state
     fun deleteOne nil atom = raise Impossible
@@ -91,10 +108,14 @@ structure CeptreProp = struct
                 end )
 
   (* step_star : program -> phase -> atom list -> (ident * (atom list)) *)
-  fun step_star prog phase state =
-    (case (step prog phase state) of
+  fun step_star prog (phase as {name,body}) state =
+    let (* DEBUG *)
+      val () = print ((state_to_string (name, state))^"\n")
+    in
+      (case (step prog phase state) of
          DONE (phase', state')  => (phase', state') 
        | NEXT (phase', state')  => step_star prog phase' state')
+    end
 
   (* run : program -> (ident * (atom list)) option *)
   fun run (prog as {phases,links,init_phase,init_state}) =
