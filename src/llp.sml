@@ -1,3 +1,4 @@
+(* Language for invariant checking. *)
 structure LinearLogicPrograms = struct
 
   (* Language definition: terms, atoms, rules, contexts *)
