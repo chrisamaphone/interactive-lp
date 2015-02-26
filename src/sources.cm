@@ -7,3 +7,7 @@ Group is
   subord.sml
   gensig-checking-sig.sml
   gensig-checking.sml
+
+  ceptre.sml
+  core-engine.sml
+  exec.sml
