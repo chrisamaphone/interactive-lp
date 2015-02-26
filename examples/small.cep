@@ -1,0 +1,49 @@
+%%%% Color changer %%%% 
+
+red : pred.
+blue : pred.
+
+stage red_blue = {
+  r1 : red -o blue.
+}
+
+stage blue_green = {
+  r1 : blue -o green.
+}
+
+link1 : qui * stage red_blue -o stage blue_green.
+
+init = red_blue {red, red, red, red}.
+
+%%%% List sorter/minimum getter %%%% 
+
+location : type.
+start : location.
+end : location.
+
+element : type.
+r : element.
+b : element.
+g : element.
+
+at location element location : pred.
+
+!lt element element : pred.
+lt r b.
+lt b g.
+
+!leq element element : pred.
+leq X X.
+leq X Y <- lt X Y.
+
+stage sort = {
+  swap : at L1 E1 L2 * at L2 E2 L * lt E2 E1
+           -o at L1 E2 L2 * at L2 E1 L.
+}
+
+min element : pred.
+stage getmin = {
+  pluck : at start M -o min M.
+  cleanup : min M * at _ _ _ -o min M.
+}
+
