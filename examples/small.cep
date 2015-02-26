@@ -41,6 +41,10 @@ stage sort = {
            -o at L1 E2 L2 * at L2 E1 L.
 }
 
+- : qui * stage sort -o stage getmin.
+% possible alternative syntax:
+% %qui stage sort -o stage getmin.
+
 min element : pred.
 stage getmin = {
   pluck : at start M -o min M.
