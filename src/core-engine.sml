@@ -9,7 +9,7 @@ sig
   (* An enabled transition is (r, ts, S), representing our ability to run
      let {p} = r ts S 
       1) an identifier representing a rule 
-      2) a vector that gives 
+      2) a vector that gives assignments to r's pi-bindings
       3) a tuple of the resources used by that rule
    *)
   type transition = Ceptre.ident * Ceptre.term vector * context_var list

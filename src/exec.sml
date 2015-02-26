@@ -3,14 +3,24 @@ struct
 
 fun fwdchain initialDB phase program = 
 let
-   fun loop fastctx = 
+   fun loop phase fastctx = 
       case CoreEngine.possible_steps phase fastctx of
-         [] => fastctx (* QUIESCENCE *)
-       | T :: _ => loop (CoreEngine.apply_transition fastctx T)   
+         [] => 
+         (case CoreEngine.possible_steps "outer_level" fastctx of 
+             [] => fastctx (* DONE *)
+           | T :: _ => 
+             let 
+                (* READ OUT NEW PHASE FROM PROGRAM *)
+                val phase' = raise Match 
+                val fastctx' = CoreEngine.apply_transition fastctx T
+             in
+                loop phase' fastctx'
+             end)
+       | T :: _ => loop phase (CoreEngine.apply_transition fastctx T)   
 
    val ctx = #2 (foldl (fn (x, (n, l)) => (n+1, (n, x) :: l)) (0, []) initialDB)
 in
-   loop (CoreEngine.init program ctx)
+   CoreEngine.context (loop phase (CoreEngine.init program ctx))
 end
 
 end
