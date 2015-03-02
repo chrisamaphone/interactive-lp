@@ -17,8 +17,13 @@ structure Ceptre = struct
   (* Const term declarations *)
   datatype classifier = Type | Tp of ground_term | LinPred | PersPred
   type decl = ident * classifier
-  type tp_header = decl list
 
+  (* Backward chaining persistent rules *)
+  type bwd_rule = {head:atprop, subgoals : atprop list}
+
+  type tp_header = decl list
+  type sigma = {header:tp_header, rules:bwd_rule list}
+ 
   (* external rule syntax *)
   datatype external_term =
     EConst of ground_term | EVar of ident
@@ -102,6 +107,8 @@ structure Ceptre = struct
                   links : phase_rule list,
                   init_phase : ident,
                   init_state : atom list}
+  (* XXX incorporate sigma? *)
+  (* program definitions/#run/#trace directives? *)
 
   (* compile from program to list of rulesets *)
   type rulesets = (rule_internal list) list
