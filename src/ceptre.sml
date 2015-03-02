@@ -23,6 +23,19 @@ structure Ceptre = struct
 
   type tp_header = decl list
   type sigma = {header:tp_header, rules:bwd_rule list}
+
+  (* Contexts *)
+  type context_var = int (* X1, X2, X3... *)
+  type context = (int * atom) list (* X1:P1, X2:P2, X3:P3, ... *)
+
+  (* An enabled transition is (r, ts, S), representing our ability to run
+     let {p} = r ts S 
+      1) an identifier r representing a rule 
+      2) a vector ts that gives assignments to r's pi-bindings
+      3) a tuple S of the resources used by that rule
+   *)
+  type transition = {r : ident, tms : term vector, S : context_var list}
+
  
   (* external rule syntax *)
   datatype external_term =
@@ -111,7 +124,7 @@ structure Ceptre = struct
   (* program definitions/#run/#trace directives? *)
 
   (* compile from program to list of rulesets *)
-  type rulesets = (rule_internal list) list
+  type rulesets = (ident * (rule_internal list)) list
 
   fun cnst s = Ground (Const s)
 
@@ -119,11 +132,11 @@ structure Ceptre = struct
   fun progToRulesets ({phases, links, init_phase, init_state} : program) =
   let
     fun link_to_rule {name, pivars, pre_phase, lhs, post_phase, rhs} =
-      {name=name, pivars=pivars, 
+      {name=name, pivars=pivars,
         lhs=(Lin ("phase", [cnst pre_phase]))::lhs,
         rhs=(Lin ("phase", [cnst post_phase]))::rhs}
-    val phase_sets = map (fn {name, body} => body) phases
-    val link_set = map link_to_rule links
+    val phase_sets = map (fn {name, body} => (name, body)) phases
+    val link_set = ("outer_level", map link_to_rule links)
     val init = (Lin ("phase", [cnst init_phase]))::init_state
   in
     (link_set::phase_sets : rulesets, init)

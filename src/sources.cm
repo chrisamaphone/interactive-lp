@@ -1,12 +1,6 @@
 Group is
   $/basis.cm
   $/smlnj-lib.cm
-  util.sml
-  commutative_monoid.sml
-  llp.sml
-  subord.sml
-  gensig-checking-sig.sml
-  gensig-checking.sml
 
   ceptre.sml
   core-engine.sml
