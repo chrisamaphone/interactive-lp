@@ -19,7 +19,8 @@
 structure CeptreProp = struct
 
   type atprop = int
-  datatype pull_sensor = ReadString | NoCs
+  type var = int
+  datatype pull_sensor = ReadString of var | NoCs | Read1 | Read0
   datatype atom = Lin of atprop | Pers of atprop | Sense of pull_sensor
 
   type ident = string
@@ -53,10 +54,17 @@ structure CeptreProp = struct
 
   (* Stringifiers *)
 
+  fun sensorToString (ReadString x) = "ReadString "^(Int.toString x)
+    | sensorToString NoCs = "NoCs"
+    | sensorToString Read1 = "Read1"
+    | sensorToString Read0 = "Read0"
+
+  fun atom_to_string (Lin x) = Int.toString x
+    | atom_to_string (Pers x) = "!"^(Int.toString x)
+    | atom_to_string (Sense s) = "sense "^(sensorToString s)
+
   fun state_to_string (phase_id, state) =
   let
-    fun atom_to_string (Lin x) = Int.toString x
-      | atom_to_string (Pers x) = "!"^(Int.toString x)
     val atom_strings = map atom_to_string state
     val state_string = String.concatWith ", " atom_strings
   in
@@ -78,7 +86,12 @@ structure CeptreProp = struct
                   NONE => NONE
                 | SOME st => SOME (x::st))
 
-    fun deleteOne nil atom = raise Impossible
+    fun deleteOne nil atom = 
+          let
+            val () = print ("failed to delete "^(atom_to_string atom))
+          in
+            raise Impossible
+          end
       | deleteOne (x::xs) atom = if x = atom then xs else
           x::(deleteOne xs atom)
 
@@ -91,21 +104,38 @@ structure CeptreProp = struct
   structure PullSensors =
   struct
     val c = Lin 3
-    val all = [ReadString, NoCs]
+    (* val all = [ReadString, NoCs, Read0, Read1] *)
 
     (* in the first-order case this would return a substitution *)
     fun query state sensor =
       (case sensor of
-            ReadString =>
+            ReadString x =>
             (case TextIO.inputLine (TextIO.stdIn) of
-                  NONE => false
-                | SOME s =>
-                    (case Int.fromString s of
-                          NONE => false
-                        | SOME i => true))
+                  NONE => NONE
+                | SOME s => SOME [(x, s)])
           | NoCs => if List.exists (fn x => x=c ) state 
-                    then false else true)
+                    then NONE else SOME []
+          | Read0 =>
+              (case TextIO.inputLine (TextIO.stdIn) of
+                    NONE => NONE
+                  | SOME i => 
+                      (case Int.fromString i of 
+                            SOME i => if i = 0 then SOME [] else NONE
+                          | NONE => SOME []))
+          | Read1 =>
+              (case TextIO.inputLine (TextIO.stdIn) of
+                    NONE => NONE
+                  | SOME i => (case Int.fromString i of
+                                    SOME i => if i = 1 then SOME [] else NONE
+                                  | NONE => NONE )))
   end
+
+  (* XXX eventually this should be invoked as rhs but at this point we're
+  * getting into a first-order impl. *)
+  fun apply [] atoms = atoms
+    | apply ((var,value)::sub) atoms =
+      (* XXX not real *)
+      atoms
 
   fun sat [] _ = true
     | sat (x::xs) (state : atom list) =
@@ -115,9 +145,9 @@ structure CeptreProp = struct
                          | SOME state' => sat xs state')
           | Pers _ => raise Unimp
           | Sense sensor =>
-              if PullSensors.query state sensor
-              then sat xs state
-              else false
+              case PullSensors.query state sensor of
+                   NONE => false
+                | SOME subst => sat (apply subst xs) state
       )
 
   fun applicable_rules state rules =
@@ -133,8 +163,17 @@ structure CeptreProp = struct
 
   (** selecting rules **)
 
-  fun removeAtoms state atoms =
+  fun removeAtoms state [] = state
+    | removeAtoms state (at::atoms) =
+      (case at of
+            Lin x => removeAtoms (IS.deleteOne state at) atoms
+          | Pers x => state
+          | Sense s => state)
+    
+    (*
     foldl (fn (at, st) => IS.deleteOne st at) state atoms
+    *)
+
 
   (* XXX make this actually random *)
   val rand = Random.rand (293847, 923423)
@@ -182,7 +221,7 @@ structure CeptreProp = struct
               in
               (case applicable_phase_rules state phase_name links of
                     nil => DONE (phase, state) (* globally quiesced *)
-                  | ls => 
+                  | ls => (* applicable phase links *)
                       let
                         val {name,pre_phase,lhs,post_phase,rhs}
                         : phase_rule
@@ -203,7 +242,9 @@ structure CeptreProp = struct
                   val state = removeAtoms state lhs
                   val state = IS.addList state rhs
                   (* check for sensing preds *)
+                  (* XXX turning off push sensors for now
                   val state = PushSensors.sense state PushSensors.all 
+                  *)
                 in NEXT (phase, state) 
                 end )
 
@@ -252,7 +293,7 @@ structure CeptreProp = struct
     
   (* Testing pull sensors *)
   val rules3 =
-    {name="r1", lhs=[a, Sense ReadString], rhs=[]}::rules1
+    {name="r1", lhs=[a, Sense (ReadString (~1))], rhs=[]}::rules1
 
   val prog3 =
     {phases=[{name="phase1",body=rules3},
@@ -261,5 +302,72 @@ structure CeptreProp = struct
               lhs=[],rhs=[]}],
      init_phase="phase1",
      init_state=init1}
-     
+
+  (* Slightly bigger test case:
+  *  Two controls, one of which eats an a and one of which spits one out.
+  *
+  *  phase read = {
+  *    stdin X -o input X.
+  *  }
+  *
+  *  phase process = {
+  *    input 1 -o a.
+  *    input 0 * a -o .
+  *  }
+  *
+  *  phase clean = {
+  *    input _ -o .
+  *  }
+  *
+  *  qui * phase read -o phase process.
+  *  qui * phase process -o phase clean.
+  *  qui * phase clean -o phase read.
+  *
+  *)
+
+  val tok = Lin 77
+  val input_1 = c
+  val input_0 = d
+
+  val read_rule1 =
+    {name = "read_rule1", lhs=[tok, Sense Read1], rhs=[input_1]}
+  val read_rule2 =
+    {name = "read_rule2", lhs=[tok, Sense Read0], rhs=[input_0]}
+  
+  val process_rule1 =
+    {name = "proc_rule1", lhs=[input_1], rhs=[a]}
+  val process_rule2 =
+    {name = "proc_rule2", lhs=[input_0,a], rhs=[]}
+
+  val clean_rule1 =
+    {name = "clean_rule1", lhs=[input_0], rhs=[]}
+  val clean_rule2 =
+    {name = "clean_rule2", lhs=[input_1], rhs=[]}
+
+  val phase_read =
+    {name = "read",
+     body = [read_rule1, read_rule2]}
+
+  val phase_process =
+    {name = "process",
+     body = [process_rule1, process_rule2]}
+
+  val phase_clean =
+    {name = "clean",
+     body = [clean_rule1, clean_rule2]}
+
+  val read01_links =
+    [ {name="l1", pre_phase="read", lhs=[], post_phase="process", rhs=[]},
+      {name="l2", pre_phase="process", lhs=[], post_phase="clean",rhs=[]},
+      {name="l3", pre_phase="clean", lhs=[], post_phase="read", rhs=[tok]}
+    ]
+
+  val init_read = [tok]
+
+  val prog_read01 =
+    {phases = [phase_read, phase_process, phase_clean],
+     links = read01_links,
+     init_phase = "read",
+     init_state = [tok]
+    }
 end
