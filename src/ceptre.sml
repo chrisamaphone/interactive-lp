@@ -5,9 +5,8 @@ structure Ceptre = struct
   (* internal rule syntax *)
   type var = int
   type ident = string
-  datatype ground_term = Const of ident 
-                       | Fn of (ground_term * (ground_term list))
-  datatype term = Ground of ground_term | Var of var
+  datatype ground_term = GFn of ident * ground_term list
+  datatype term = Fn of ident * term list | Var of var
   type pred = ident
   type atprop = pred * (term list)
   datatype atom = Lin of atprop | Pers of atprop
@@ -26,7 +25,9 @@ structure Ceptre = struct
 
   (* Contexts *)
   type context_var = int (* X1, X2, X3... *)
-  type context = (int * atom) list (* X1:P1, X2:P2, X3:P3, ... *)
+  type context = {pers: (int * ident * ground_term list) list, 
+                  lin: (int * ident * ground_term list) list}
+     (* X1:P1, X2:P2, X3:P3, ... *)
 
   (* An enabled transition is (r, ts, S), representing our ability to run
      let {p} = r ts S 
@@ -39,7 +40,7 @@ structure Ceptre = struct
  
   (* external rule syntax *)
   datatype external_term =
-    EConst of ground_term | EVar of ident
+    EConst of ident | EVar of ident
   type eatom = pred * (external_term list)
   type rule_external = {name : ident, lhs : eatom list, rhs : eatom list}
   
@@ -74,7 +75,7 @@ structure Ceptre = struct
 
   fun etermToTerm table term =
     case term of
-         EConst g => Ground g
+         EConst g => Fn (g, [])
          (* XXX probably shouldn't valOf *)
        | EVar id => Var (valOf (lookup id table))
 
@@ -126,7 +127,7 @@ structure Ceptre = struct
   (* compile from program to list of rulesets *)
   type rulesets = (ident * (rule_internal list)) list
 
-  fun cnst s = Ground (Const s)
+  fun cnst s = Fn (s, [])
 
   (* progToRulesets : program -> rulesets * (atom list) *)
   fun progToRulesets ({phases, links, init_phase, init_state} : program) =
