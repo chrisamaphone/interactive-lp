@@ -13,19 +13,31 @@ sig
   val possible_steps : Ceptre.ident -> fastctx -> Ceptre.transition list
 
   (* Run a given transition *)
-  val apply_transition : fastctx -> Ceptre.transition -> fastctx
+  val apply_transition : 
+     fastctx -> Ceptre.transition -> fastctx * Ceptre.context_var list
 
 end = 
 struct
 
-  type fastctx = Ceptre.context
+  type fastctx = Ceptre.program * Ceptre.context
   
-  fun init _ ctx = ctx
+  fun init prog ctx = (prog, ctx)
 
-  fun context ctx = ctx
+  fun context (prog, ctx) = ctx
+
+  fun match_term subst p t = raise Match
+
+  and match_terms subst ps ts = raise Match
+
+  fun match_atom subst (a1, ps) (a2, ts) =
+     if a1 = a2 
+        then NONE
+     else match_terms subst ps ts
+                                
 
   fun possible_steps _ _ = []
 
-  fun apply_transition _ _ = [] 
+  fun apply_transition ctx _ = (ctx, []) 
+ 
 
 end

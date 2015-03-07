@@ -3,12 +3,13 @@ struct
 
 exception BadProg
 
-fun currentPhase ((x,p)::ctx) =
-  (case p of
-        (Ceptre.Lin ("phase", [Ceptre.Ground (Ceptre.Const id)])) => id
-      | _ => currentPhase ctx)
-  | currentPhase _ = raise BadProg
-
+fun currentPhase {pers, lin} =
+   case List.mapPartial 
+           (fn (x, "phase", [Ceptre.GFn (id, [])]) => SOME id
+           | _ => NONE)
+           lin of
+      [ id ] => id
+    | _ => raise BadProg 
 
 fun lookupPhase id ({phases,...}:Ceptre.program) =
   let
@@ -23,13 +24,13 @@ fun lookupPhase id ({phases,...}:Ceptre.program) =
   end
 
 
-(* fwdchain : Ceptre.atom list -> Ceptre.program
+(* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
 *  
 *  [fwdchain initialDB program]
 *    runs [program] to global quiescence on [initialDB].
 *)
-fun fwdchain initialDB (program as {init_phase,...} : Ceptre.program) = 
+fun fwdchain ctx (program as {init_phase,...} : Ceptre.program) = 
 let
    fun loop phase fastctx = 
       case CoreEngine.possible_steps phase fastctx of
@@ -38,7 +39,7 @@ let
              [] => fastctx (* DONE *)
            | T :: _ => 
              let 
-                val fastctx' = CoreEngine.apply_transition fastctx T
+                val (fastctx', _) = CoreEngine.apply_transition fastctx T
                 (* READ OUT NEW PHASE FROM PROGRAM *)
                 val phase_id = currentPhase (CoreEngine.context fastctx')
                 (* XXX there's probably a more efficient way to do that. *)
@@ -46,9 +47,7 @@ let
              in
                 loop phase_id fastctx'
              end)
-       | T :: _ => loop phase (CoreEngine.apply_transition fastctx T)   
-
-   val ctx = #2 (foldl (fn (x, (n, l)) => (n+1, (n, x) :: l)) (0, []) initialDB)
+       | T :: _ => loop phase (#1 (CoreEngine.apply_transition fastctx T))
 in
    CoreEngine.context (loop init_phase (CoreEngine.init program ctx))
 end
