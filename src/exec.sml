@@ -48,8 +48,13 @@ let
                 loop phase_id fastctx'
              end)
        | T :: _ => loop phase (#1 (CoreEngine.apply_transition fastctx T))
+
+   (* XXX doesn't this need to have more stuff going on? The init
+    * function is expecting just a list of rulesets, not a structured
+    * Ceptre program with states - RJS *)
+   val phases = #phases program
 in
-   CoreEngine.context (loop init_phase (CoreEngine.init program ctx))
+   CoreEngine.context (loop init_phase (CoreEngine.init phases ctx))
 end
 
 end

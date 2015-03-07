@@ -35,7 +35,7 @@ structure Ceptre = struct
       2) a vector ts that gives assignments to r's pi-bindings
       3) a tuple S of the resources used by that rule
    *)
-  type transition = {r : ident, tms : term vector, S : context_var list}
+  type transition = {r : ident, tms : ground_term vector, S : context_var list}
 
  
   (* external rule syntax *)
