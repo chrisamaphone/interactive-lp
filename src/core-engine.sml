@@ -1,43 +1,172 @@
 structure CoreEngine:>
 sig
 
-  type fastctx
+   type fastctx
 
-  (* Turns a program and a context into a fast context *)
-  val init : Ceptre.program -> Ceptre.context -> fastctx
+   (* Turns a program and a context into a fast context *)
+   val init: Ceptre.phase list -> Ceptre.context -> fastctx
 
-  (* A fast context is just a context with some extra stuff *)
-  val context : fastctx -> Ceptre.context
+   (* A fast context is just a context with some extra stuff *)
+   val context: fastctx -> Ceptre.context
   
-  (* Given a phase identifier, find all transitions in the given context *)
-  val possible_steps : Ceptre.ident -> fastctx -> Ceptre.transition list
+   (* Given a ruleset identifier, find all transitions in the given context *)
+   val possible_steps: Ceptre.ident -> fastctx -> Ceptre.transition list
 
-  (* Run a given transition *)
-  val apply_transition : 
-     fastctx -> Ceptre.transition -> fastctx * Ceptre.context_var list
+   (* Run a given transition *)
+   val apply_transition: 
+      fastctx -> Ceptre.transition -> fastctx * Ceptre.context_var list
 
 end = 
 struct
 
-  type fastctx = Ceptre.program * Ceptre.context
-  
-  fun init prog ctx = (prog, ctx)
+local
+   val i = ref 0
+in
+val gen = fn () => (!i before i := !i + 1)
+fun check (x, a, ts) = i := Int.max (!i, x + 1)
+end
 
-  fun context (prog, ctx) = ctx
+datatype 'a tree = N | L of 'a | C of 'a tree * 'a tree
+fun N @ t = t
+  | t @ N = t
+  | t @ s = C (t, s) 
 
-  fun match_term subst p t = raise Match
+fun flatten t acc = 
+   case t of 
+      N => acc
+    | L x => (x :: acc)
+    | C (t1, t2) => flatten t1 (flatten t2 acc) 
 
-  and match_terms subst ps ts = raise Match
+val fl = fn t => flatten t []
 
-  fun match_atom subst (a1, ps) (a2, ts) =
-     if a1 = a2 
-        then NONE
-     else match_terms subst ps ts
-                                
+structure C = Ceptre
+structure S = 
+RedBlackSetFn(struct type ord_key = int val compare = Int.compare end)
+structure M = 
+RedBlackMapFn(struct type ord_key = string val compare = String.compare end)
 
-  fun possible_steps _ _ = []
+type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
 
-  fun apply_transition ctx _ = (ctx, []) 
+(* LHSes are connected to a particluar ruleset *)
+(* RHSes are just mapped from their names *)
+type fastctx = 
+   {lmap: fast_ruleset M.map, 
+    rmap: C.atom list M.map,
+    ctx: C.context}
+                               
+fun init prog ctx: fastctx = 
+let
+   fun compile_lhses {name, body} = 
+      (name, 
+       List.map
+          (fn {name, pivars, lhs, rhs} => 
+              {name = name, pivars = pivars, lhs = lhs})
+          body)
+   fun compile_rhses ({name, body}: C.phase, map) = 
+      List.foldl 
+          (fn ({name, rhs, ...}, rmap) => 
+              M.insert (rmap, name, rhs))
+          map body
+
+   (* Make sure gensyms don't collide *)
+   val () = app check (#pers ctx)
+   val () = app check (#lin ctx)
+in
+   {lmap = List.foldl M.insert' M.empty (map compile_lhses prog),
+    rmap = List.foldl compile_rhses M.empty prog,
+    ctx = ctx}
+end
+                        
+fun context {lmap, rmap, ctx} = ctx
+
+type msubst = C.ground_term option vector
+
+
+(* Matching of a pattern (C.term) against a ground term *)
+fun match_term (p: C.term, t: C.ground_term) (subst: msubst): msubst option = 
+   case (p, t) of 
+      (C.Var n, t) =>
+        (case Vector.sub (subst, n) of 
+            NONE => SOME (Vector.update (subst, n, SOME t))
+          | SOME t' => 
+               if t = t' then SOME subst else NONE)
+    | (C.Fn (f, ps), C.GFn (g, ts)) => 
+         if f = g then match_terms (f, ps, ts) subst else NONE
+    (* | _ => NONE *)
+
+and match_terms (f, ps, ts) subst: msubst option = 
+   case (ps, ts) of
+      ([], []) => SOME subst
+    | (p :: ps, t :: ts) => 
+         Option.mapPartial
+            (match_terms (f, ps, ts)) 
+            (match_term (p, t) subst)
+    | _ => raise Fail ("Arity error for "^f)
+
+fun is_in x exclude = List.exists (fn y => x = y) exclude
  
+fun match_hyp exclude subst (a, ps) (x, b, ts) =
+   if a = b andalso not (is_in x exclude)
+      then Option.map (fn subst => (x, subst)) (match_terms (a, ps, ts) subst)
+   else NONE
+
+
+(* Search the context for all (non-excluded) matches *)
+fun search_context {lin, pers} used subst prem = 
+   case prem of 
+      C.Lin (a, ps) => List.mapPartial (match_hyp used subst (a, ps)) lin
+    | C.Pers (a, ps) => List.mapPartial (match_hyp [] subst (a, ps)) pers
+
+fun search_premises rule ctx used subst prems = 
+   case prems of 
+      [] => L {r = rule, tms = Vector.map valOf subst, S = rev used}
+    | prem :: prems => 
+         List.foldl 
+            (fn ((x, subst), ans) =>
+               ans @ search_premises rule ctx (x :: used) subst prems)
+            N (search_context ctx used subst prem)
+
+val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
+
+fun possible_steps phase ({lmap, rmap, ctx}: fastctx): C.transition list =
+   case M.find (lmap, phase) of
+      NONE => raise Fail ("Phase "^phase^" unknown to the execution engine")
+    | SOME ruleset => 
+         fl (List.foldl
+               (fn ({name, pivars, lhs}, ans) => 
+                  ans @ search_premises name ctx [] (unknown pivars) lhs)
+               N ruleset)
+
+fun ground gsubst ps = 
+   case ps of 
+      C.Var i => Vector.sub (gsubst, i)
+    | C.Fn (a, ts) => C.GFn (a, map (ground gsubst) ts)
+
+fun add_to_ctx gsubst (conc, ({lin, pers}, xs)) = 
+let val x = gen ()
+in case conc of 
+      C.Lin (a, ps) => 
+         ({lin = (x, a, map (ground gsubst) ps) :: lin, pers = pers}, x :: xs)
+    | C.Pers (a, ps) => 
+         ({lin = lin, pers = (x, a, map (ground gsubst) ps) :: pers}, x :: xs)
+end
+
+fun apply_transition {lmap, rmap, ctx = {pers, lin}} {r, tms, S} =
+let
+   (* Remove linear identifiers from context *)
+   val lin = List.filter (fn (x, _, _) => not (is_in x S)) lin
+
+   (* Find right hand side pattern hand side *)
+   val rhs =
+      case M.find (rmap, r) of
+         NONE => raise Fail ("Error lookuing up rhs of rule "^r)
+       | SOME rhs => rhs
+
+   (* Update context, get new identifiers *)
+   val (ctx, xs) = 
+      List.foldr (add_to_ctx tms) ({pers = pers, lin = lin}, []) rhs
+in
+   ({lmap = lmap, rmap = rmap, ctx = ctx}, xs)
+end
 
 end
