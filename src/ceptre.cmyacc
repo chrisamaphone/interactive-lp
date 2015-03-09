@@ -10,13 +10,13 @@ terminal RBRACE
 terminal LPAREN
 terminal RPAREN
 terminal PERIOD
-terminal COLON    precl 20 /* nonassoc */
-terminal COMMA    precl 10
+terminal COLON    precr 20 /* nonassoc */
+terminal COMMA    precr 10
 terminal EQUALS
 terminal USCORE
 terminal DOLLAR   precl 60
 terminal BANG     precl 60
-terminal STAR     precl 50
+terminal STAR     precr 50
 terminal LARROW   precl 30
 terminal RARROW   precr 40
 terminal LLOLLI   precl 30
