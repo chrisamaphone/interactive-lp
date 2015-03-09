@@ -40,18 +40,16 @@ fun flatten t acc =
 val fl = fn t => flatten t []
 
 structure C = Ceptre
-structure S = 
-RedBlackSetFn(struct type ord_key = int val compare = Int.compare end)
-structure M = 
-RedBlackMapFn(struct type ord_key = string val compare = String.compare end)
+structure S = IntRedBlackSet
+structure M = StringRedBlackDict
 
 type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
 
 (* LHSes are connected to a particluar ruleset *)
 (* RHSes are just mapped from their names *)
 type fastctx = 
-   {lmap: fast_ruleset M.map, 
-    rmap: C.atom list M.map,
+   {lmap: fast_ruleset M.dict, 
+    rmap: C.atom list M.dict,
     ctx: C.context}
                                
 fun init prog ctx: fastctx = 
@@ -65,15 +63,17 @@ let
    fun compile_rhses ({name, body}: C.phase, map) = 
       List.foldl 
           (fn ({name, rhs, ...}, rmap) => 
-              M.insert (rmap, name, rhs))
+              M.insert rmap name rhs)
           map body
 
    (* Make sure gensyms don't collide *)
    val () = app check (#pers ctx)
    val () = app check (#lin ctx)
 in
-   {lmap = List.foldl M.insert' M.empty (map compile_lhses prog),
-    rmap = List.foldl compile_rhses M.empty prog,
+   {lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
+              M.empty (map compile_lhses prog),
+    rmap = List.foldl compile_rhses 
+              M.empty prog,
     ctx = ctx}
 end
                         
@@ -129,7 +129,7 @@ fun search_premises rule ctx used subst prems =
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
 fun possible_steps phase ({lmap, rmap, ctx}: fastctx): C.transition list =
-   case M.find (lmap, phase) of
+   case M.find lmap phase of
       NONE => raise Fail ("Phase "^phase^" unknown to the execution engine")
     | SOME ruleset => 
          fl (List.foldl
@@ -158,7 +158,7 @@ let
 
    (* Find right hand side pattern hand side *)
    val rhs =
-      case M.find (rmap, r) of
+      case M.find rmap r of
          NONE => raise Fail ("Error lookuing up rhs of rule "^r)
        | SOME rhs => rhs
 

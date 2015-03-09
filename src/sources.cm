@@ -1,7 +1,10 @@
 Group is
-  $/basis.cm
-  $/smlnj-lib.cm
+  ../lib/cmlib/cmlib.cm
 
   ceptre.sml
   core-engine.sml
   exec.sml
+
+  ceptre.cmlex.sml
+  ceptre.cmyacc.sml
+  top.sml

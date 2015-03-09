@@ -13,7 +13,10 @@ stage blue_green = {
 
 link1 : qui * stage red_blue -o stage blue_green.
 
-init = red_blue {red, red, red, red}.
+context init = {red, red, red, red}.
+context init' = {init, red}.
+
+#trace _ red_blue init.
 
 %%%% List sorter/minimum getter %%%% 
 
