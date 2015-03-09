@@ -4,3 +4,7 @@ Group is
   ceptre.sml
   core-engine.sml
   exec.sml
+
+  ceptre.cmlex.sml
+  ceptre.cmyacc.sml
+  top.sml
