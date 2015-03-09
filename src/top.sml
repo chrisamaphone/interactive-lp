@@ -96,7 +96,7 @@ LexFn
          Stream.lazy (fn () => #lexmain self follow))
 
    fun hashident ({self, match, follow, ...}: info) =
-      Stream.Cons ((IDENT (stringrange (List.tl match)), posrange match),
+      Stream.Cons ((HASHDENT (stringrange (List.tl match)), posrange match),
          Stream.lazy (fn () => #lexmain self follow))
 
    fun simple token ({self, match, follow, ...}: info) = 
