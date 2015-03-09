@@ -1,0 +1,182 @@
+% Nonsensical parser test from Ceptre paper
+
+at character location : pred.
+likes character character : pred.
+anger character character : pred.
+has character object : pred.
+depressed character : pred.
+!dead character : pred.
+
+do/compliment : at C L * at C' L * likes C C'
+             -o at C L * at C' L * likes C C' * likes C' C.
+
+do/compliment : $at C L * $at C' L * $likes C C' -o likes C' C.
+
+do/murder
+: anger C C' * anger C C' * anger C C' * anger C C' *
+  $at C L * at C' L * $has C weapon
+                -o !dead C'.
+
+do/mourn : $at C L * likes C C' * dead C'
+        -o depressed C * depressed C.
+
+context shakespeare_characters
+  { romeo: character, montague: character, capulet: character,
+    mercutio: character, nurse: character, juliet: character,
+    tybalt: character, apothecary: character }
+
+context shakespeare 
+  { at romeo town, at montague mon_house, at capulet cap_house, 
+    at mercutio town, at nurse cap_house, at juliet town,
+    at tybalt town, at apothecary town, 
+
+    anger montague capulet, anger capulet montague,
+    anger tybalt romeo, anger capulet romeo, anger montague tybalt,
+ 
+    likes mercutio romeo, likes romeo mercutio, 
+    likes montague romeo, likes capulet juliet,
+    likes juliet nurse, likes nurse juliet,
+
+    has tybalt weapon, has romeo weapon, has apothecary weapon } 
+
+do/murder
+: do (murder C C') *
+  anger C C' * anger C C' * anger C C' * anger C C' *
+  $at C L * at C' L * $has C weapon
+                -o !dead C' * report success (murder C C').
+
+stage process_action = {
+   rulename : do (some_action C1 C2) * whatever -o whatever.
+}
+
+stage accept_action = {
+   wait * do Action -o do Action.
+}
+
+qui * stage process_action -o
+  stage accept_action * wait.
+
+qui * stage accept_action * wait
+  -o stage accept_action * wait.
+
+qui * stage accept_action * $do Action
+  -o stage process_action.
+
+see X Y * $property Y green -o move X Y toward quickly.
+
+see entity entity : sensor.
+property entity filter : pred.
+move entity entity selector modifier : action.
+
+bump X Y * $property Y green -o eat X Y.
+
+sense/bump : $loc X L * $loc Y L' * !adj L L' -o bump X Y.
+sense/see : $loc X L * $loc Y L' * !visible L L' -o see X Y.
+act/eat : eat X Y * loc X L * loc Y L' -o loc X L'.
+act/move_t : move toward X Y * loc X L * $loc Y L' *
+              !adj L Ngh * !dist L L' D1 * !dist Ngh L' D2 *
+              !lt D2 D1
+              -o loc X Ngh.
+act/move_a : move away X Y * loc X Y * $loc Y L' *
+              !adj L Ngh * !dist L L' D1 * !dist Ngh L' D2 *
+              !lt D1 D2
+              -o loc X Ngh.
+
+at layer location entity intention : predicate.
+!adjacent location direction location : predicate.
+
+stage ProcessIntentions = {
+  push_crate :
+    $at _ Loc player (go Dir) * adjacent Loc Dir Loc'
+      * at _ Loc' crate _
+    -o at L' crate (go Dir).
+}
+
+stage CarryOutIntentions = {
+  move : at Layer L Ent (go Dir) * adjacent L Dir L'
+           * empty Layer L' -o at Layer L' Ent stationary.
+}
+
+move/up/1 : move up * at L (player_head red)
+            -o at L (player_head red).
+
+move/up/2 : move up * at L (player_head orange)
+            * adj L up L' * empty L'
+            -o at L player_body * at L' (player_head red).
+
+move/up/3 : move up * at L (player_head yellow)
+            * adj L up L' * empty L'
+            -o at L player_body * at L' (player_head orange).
+
+move/up/4 : move up * at L (player_head lime)
+            * adj L up L' * empty L'
+            -o at L player_body * at L' (player_head yellow).
+
+move/r : move right * at L (player_head C) * adj L right L'
+            * empty L'
+            -o at L player_body * at L' (player_head lime).
+% similarly move left
+
+gravity : at L (player_head C) * adj L down L' * empty L'
+            -o at L player_body * at L' (player_head C).
+
+
+visible object : sense.
+do verb : sense.
+success verb message : action.
+portable object : predicate.
+at object location : predicate.
+description object message : predicate.
+adjacent object direction object : predicate.
+
+
+stage DoVerbs = {
+  do/take : do (take Thing) * visible Thing
+          * $portable Thing * at Thing Location
+            -o at Thing player_inventory
+             * success (take Thing) taken.
+  do/look : do look * $at player Room
+          * $description Room Description
+            -o success look Description.
+  do/examine/visible
+          : do (examine Thing) * $visible Thing
+          * $description Thing Description
+            -o success (examine Thing) Description.
+  do/examine/inventory
+          : do (examine Thing) * $at Thing player_inventory
+            * $description Thing Description
+            -o success (examine Thing) Description.
+  do/go   : do (go Direction) * at player Room
+          * $adjacent Room Direction Room'
+          * $description Room' Desc
+            -o at player Room' * success (go Direction) Desc.
+}
+
+stage PreCheck = {
+  check/take/already : do (take Thing)
+    * at Thing player inventory
+    -o fail (take Thing) alreadyHave.
+  check/take/fixed : do (take Thing) * $visible Thing *
+    $fixed Thing -o fail (take Thing) fixedInPlace.
+  check/look : do look * at player Room * state Room dark
+    -o fail look (darkness Room).
+  check/examine : do (examine Thing) * at Player Room
+    * state Room dark
+    -o fail (examine Thing) (darkness Room).
+  check/go : do (go Dir) * $at player R * $at R Door
+    * door Door Dir closed -o fail (go Dir) (closedDoor Door).
+}
+qui * stage PreCheck * $do V -o stage DoVerbs.
+qui * stage PreCheck * $fail V Msg -o stage Report.
+
+qui * stage DoVerbs * $success Verb Msg -o stage Report.
+qui * stage DoVerbs * $do Verb -o stage PostCheck.
+stage postCheck = {
+  check/take/notHere : do (take Thing)
+    -o fail (take Thing) notHere.
+  check/go : do (go Dir) -o fail (go Dir) noExit.
+  check/default : do V * default -o fail V defaultFail.
+}
+qui * stage postCheck * $do V -o default * stage postCheck.
+qui * stage postCheck * $fail Verb Msg -o stage Report.
+
