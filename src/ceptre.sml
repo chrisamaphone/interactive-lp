@@ -40,9 +40,11 @@ structure Ceptre = struct
  
   (* external rule syntax *)
   datatype external_term =
-    EConst of ident | EVar of ident
+    EFn of ident * external_term list | EVar of ident
   type eatom = pred * (external_term list)
-  type rule_external = {name : ident, lhs : eatom list, rhs : eatom list}
+  (* XXX rethink this *)
+  datatype epred = ELin of eatom | EPers of eatom
+  type rule_external = {name : ident, lhs : epred list, rhs : epred list}
   
   (* external: foo X Y -o bar Y
   *  internal: Pi (2). foo 0 1 -o bar 1
@@ -57,16 +59,17 @@ structure Ceptre = struct
   fun walk_terms (tms : external_term list) (table, ctr) =
     (case tms of 
           [] => (table, ctr)
-        | ((EConst _)::tms) => walk_terms tms (table, ctr)
+        | ((EFn _)::tms) => walk_terms tms (table, ctr)
         | ((EVar id)::tms) =>
             (case lookup id table of
                   NONE => walk_terms tms ((id,ctr)::table, ctr+1)
                 | SOME _ => walk_terms tms (table, ctr)))
 
-  fun walk_atoms (atoms:eatom list) (table : ((ident*int)list) * int) =
+  fun walk_atoms (atoms:epred list) (table : ((ident*int)list) * int) =
     case atoms of
          [] => table
-       | ((p, terms)::atoms) => 
+       | ((EPers (p, terms))::atoms
+       | (ELin (p, terms))::atoms) => 
            let
              val t = walk_terms terms table
            in
@@ -75,19 +78,28 @@ structure Ceptre = struct
 
   fun etermToTerm table term =
     case term of
-         EConst g => Fn (g, [])
+         EFn (f, args) => Fn (f, map (etermToTerm table) args)
          (* XXX probably shouldn't valOf *)
        | EVar id => Var (valOf (lookup id table))
 
   exception IllFormed
-  fun eatomToAtom sg table (p, tms) =
+  fun eatomToAtom sg table epred =
     let
       val termMapper = etermToTerm table
     in
-      case lookup p sg of
-          SOME LinPred => Lin (p, map termMapper tms)
-        | SOME PersPred => Pers (p, map termMapper tms)
-        | _ => raise IllFormed
+      (* XXX right now this treats any !'d linear thing as
+      * persistent - not really right. Either all preds should be used
+      * consistently, or !lin should only make sense on the RHS. *)
+      case epred of
+          ELin (p, tms) =>
+            (case lookup p sg of
+                SOME LinPred => Lin (p, map termMapper tms)
+              | SOME PersPred => Pers (p, map termMapper tms)
+              | _ => raise IllFormed)
+        | EPers (p, tms) =>
+            (case lookup p sg of
+                  SOME _ => Pers (p, map termMapper tms)
+                | _ => raise IllFormed)
     end
 
   fun externalToInternal 
@@ -187,8 +199,8 @@ structure Ceptre = struct
 
   (* Testing external to internal translation *)
   val ext1 =
-    {name="r1", lhs=[("a", [EVar "X", EVar "Y"])],
-                 rhs=[("b", [EVar "X"]), ("c", [EVar "Y"])]}
+    {name="r1", lhs=[ELin ("a", [EVar "X", EVar "Y"])],
+                 rhs=[ELin ("b", [EVar "X"]), ELin ("c", [EVar "Y"])]}
 
   val sg1 =
     [("a", LinPred),

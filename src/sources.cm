@@ -8,3 +8,4 @@ Group is
   ceptre.cmlex.sml
   ceptre.cmyacc.sml
   top.sml
+  preprocess.sml
