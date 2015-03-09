@@ -167,7 +167,7 @@ ParseFn
      (case Stream.front s of
          Stream.Nil => Fail "Syntax error at end of file"
        | Stream.Cons ((tok, pos), _) => 
-           (Fail ("Error found at token "^toString tok^
+           (Fail ("Parse error encountered at token "^toString tok^
                   " at position "^Pos.toString pos)))
  end)
 
