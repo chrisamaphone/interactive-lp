@@ -96,7 +96,7 @@ struct
   fun declToRule sg syntax =
     case syntax of
           Decl (Ascribe (App (Id name, []), 
-                Lolli (lhs_syn, rhs_syn))) =>
+                Lolli (lhs_syn, SOME rhs_syn))) => (* XXX MATCH ERROR - RJS *)
             let
               val (lhs, residual) = extractLHS lhs_syn [] []
               val rhs = extractRHS rhs_syn residual
