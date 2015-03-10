@@ -21,7 +21,7 @@ fun toString tok =
 
 datatype syn = 
    Ascribe of syn * syn   (* t : t *)
- | Lolli of syn * syn     (* t -o t *)
+ | Lolli of syn * syn option (* t -o t *)
  | Arrow of syn * syn     (* t -> t *) 
  | Star of syn * syn      (* t * t *)
  | Bang of syn            (* !t *)
@@ -34,7 +34,8 @@ datatype syn =
 fun synToString syn =
   (case syn of 
       Ascribe (x, y) => "("^synToString x^" : "^synToString y^")" 
-    | Lolli (x, y) => "("^synToString x^" -o "^synToString y^")" 
+    | Lolli (x, NONE) => "("^synToString x^" -o )" 
+    | Lolli (x, SOME y) => "("^synToString x^" -o "^synToString y^")" 
     | Arrow (x, y) => "("^synToString x^" -> "^synToString y^")" 
     | Star (x, y) => "("^synToString x^" * "^synToString y^")" 
     | Bang x => "(!"^synToString x^")"
@@ -154,7 +155,9 @@ ParseFn
 
    val parens = fn x => x
    val swap = fn (x, y) => (y, x)
-   val LolliL = Lolli o swap
+   val LolliNONE = fn x => Lolli (x, NONE)
+   val LolliSOME = fn (x, y) => Lolli (x, SOME y)
+   val LolliL = LolliSOME o swap
    val ArrowL = Arrow o swap
    val StagePred = fn x => App (Id "stage", [Id x])
 
