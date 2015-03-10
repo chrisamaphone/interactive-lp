@@ -14,6 +14,15 @@ struct
          [] => raise IllFormed
        | (c::_) => Char.isUpper c
 
+  val wild_gensym = ref 0
+  fun wild () = 
+    let
+      val w = !wild_gensym
+      val () = wild_gensym := w + 1
+    in
+      w
+    end
+
   fun extractTerm syn =
     case syn of
          Id id => if caps id 
@@ -27,6 +36,8 @@ struct
                   EFn (f, []) => EFn (f, termArgs)
                 | _ => raise IllFormed
            end
+       | Wild () => EVar ("_X"^Int.toString (wild ()))
+       | _ => raise IllFormed
 
   fun extractAtom syn rhs =
     case syn of
@@ -82,15 +93,17 @@ struct
                  (atom, []) => atom::acc
                | _ => raise IllFormed)
 
-  fun declToRule syntax =
+  fun declToRule sg syntax =
     case syntax of
-          Decl (Ascribe (Id name, Lolli (lhs_syn, rhs_syn))) =>
+          Decl (Ascribe (App (Id name, []), 
+                Lolli (lhs_syn, rhs_syn))) =>
             let
               val (lhs, residual) = extractLHS lhs_syn [] []
               val rhs = extractRHS rhs_syn residual
-            in
               (* external syntax *)
-              {name = name, lhs = lhs, rhs = rhs}
+              val erule = {name = name, lhs = lhs, rhs = rhs}
+            in
+              externalToInternal sg erule
             end
         | _ => raise IllFormed
 
@@ -98,11 +111,32 @@ struct
     case syntax of
           Stage (name, rules_syntax) =>
           let
-            val external_rules = map declToRule rules_syntax
-            val internal_rules = map (externalToInternal sg) external_rules
+            val rules = map (declToRule sg) rules_syntax
           in
-            {name = name, body = internal_rules}
+            {name = name, body = rules}
           end
         | _ => raise IllFormed
+
+  datatype csyn = CStage of phase | CRule of rule_internal | CNone
+                | CError of top
+
+  fun extractTop sg top =
+    case top of
+         Stage _ => CStage (extractStage sg top)
+       | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
+       | _ => CNone (* XXX *)
+
+  (* testing *)
+  
+  (* XXX next write mapper that handles IllFormed. *)
+
+  fun catch f = (fn x => f x handle IllFormed => CError x)
+  fun mapcatch f = map (catch f)
+    
+  val [tiny1, tiny2] = Top.parsefile ("../examples/tiny.cep")
+
+  val small = Top.parsefile ("../examples/small.cep")
+
+  fun sub l n = List.nth(l,n)
 
 end

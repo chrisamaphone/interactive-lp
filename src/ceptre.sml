@@ -95,7 +95,8 @@ structure Ceptre = struct
             (case lookup p sg of
                 SOME LinPred => Lin (p, map termMapper tms)
               | SOME PersPred => Pers (p, map termMapper tms)
-              | _ => raise IllFormed)
+             (* | _ => raise IllFormed) *)
+              | _ => Lin (p, map termMapper tms))
         | EPers (p, tms) =>
             (case lookup p sg of
                   SOME _ => Pers (p, map termMapper tms)
