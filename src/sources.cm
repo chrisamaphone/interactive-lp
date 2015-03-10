@@ -7,5 +7,6 @@ Group is
 
   ceptre.cmlex.sml
   ceptre.cmyacc.sml
-  top.sml
+  parse.sml
   preprocess.sml
+  top.sml
