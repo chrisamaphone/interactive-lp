@@ -1,13 +1,13 @@
 structure Preprocess =
 struct
 
-  open Top
+  open Parse
   open Ceptre
 
   exception IllFormed
   exception Unimp
 
-  (* translating from Top.syn to Ceptre.external_rule *)
+  (* translating from Parse.syn to Ceptre.external_rule *)
 
   fun caps s =
     case String.explode s of
@@ -102,6 +102,7 @@ struct
               val rhs = extractRHS rhs_syn residual
               (* external syntax *)
               val erule = {name = name, lhs = lhs, rhs = rhs}
+              val () = wild_gensym := 0 (* reset for each rule *)
             in
               externalToInternal sg erule
             end
@@ -126,16 +127,17 @@ struct
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
        | _ => CNone (* XXX *)
 
+  (* XXX handle signatures *)
+  (* XXX turn these into an actual prog. *)
+
   (* testing *)
   
-  (* XXX next write mapper that handles IllFormed. *)
-
   fun catch f = (fn x => f x handle IllFormed => CError x)
   fun mapcatch f = map (catch f)
     
-  val [tiny1, tiny2] = Top.parsefile ("../examples/tiny.cep")
+  val [tiny1, tiny2] = Parse.parsefile ("../examples/tiny.cep")
 
-  val small = Top.parsefile ("../examples/small.cep")
+  val small = Parse.parsefile ("../examples/small.cep")
 
   fun sub l n = List.nth(l,n)
 
