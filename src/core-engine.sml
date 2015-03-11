@@ -4,7 +4,7 @@ sig
    type fastctx
 
    (* Turns a program and a context into a fast context *)
-   val init: Ceptre.phase list -> Ceptre.context -> fastctx
+   val init: Ceptre.stage list -> Ceptre.context -> fastctx
 
    (* A fast context is just a context with some extra stuff *)
    val context: fastctx -> Ceptre.context
@@ -60,7 +60,7 @@ let
           (fn {name, pivars, lhs, rhs} => 
               {name = name, pivars = pivars, lhs = lhs})
           body)
-   fun compile_rhses ({name, body}: C.phase, map) = 
+   fun compile_rhses ({name, body}: C.stage, map) = 
       List.foldl 
           (fn ({name, rhs, ...}, rmap) => 
               M.insert rmap name rhs)
@@ -128,9 +128,9 @@ fun search_premises rule ctx used subst prems =
 
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
-fun possible_steps phase ({lmap, rmap, ctx}: fastctx): C.transition list =
-   case M.find lmap phase of
-      NONE => raise Fail ("Phase "^phase^" unknown to the execution engine")
+fun possible_steps stage ({lmap, rmap, ctx}: fastctx): C.transition list =
+   case M.find lmap stage of
+      NONE => raise Fail ("Phase "^stage^" unknown to the execution engine")
     | SOME ruleset => 
          fl (List.foldl
                (fn ({name, pivars, lhs}, ans) => 

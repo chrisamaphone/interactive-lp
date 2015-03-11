@@ -5,22 +5,22 @@ exception BadProg
 
 fun currentPhase {pers, lin} =
    case List.mapPartial 
-           (fn (x, "phase", [Ceptre.GFn (id, [])]) => SOME id
+           (fn (x, "stage", [Ceptre.GFn (id, [])]) => SOME id
            | _ => NONE)
            lin of
       [ id ] => id
     | _ => raise BadProg 
 
-fun lookupPhase id ({phases,...}:Ceptre.program) =
+fun lookupPhase id ({stages,...}:Ceptre.program) =
   let
-    fun lookupInList phases =
-    (case phases of
-       ((p as {name,body})::phases) => 
+    fun lookupInList stages =
+    (case stages of
+       ((p as {name,body})::stages) => 
          if name = id then p
-         else lookupInList phases
+         else lookupInList stages
       | _ => raise BadProg)
   in
-    lookupInList phases
+    lookupInList stages
   end
 
 
@@ -30,10 +30,10 @@ fun lookupPhase id ({phases,...}:Ceptre.program) =
 *  [fwdchain initialDB program]
 *    runs [program] to global quiescence on [initialDB].
 *)
-fun fwdchain ctx (program as {init_phase,...} : Ceptre.program) = 
+fun fwdchain ctx (program as {init_stage,...} : Ceptre.program) = 
 let
-   fun loop phase fastctx = 
-      case CoreEngine.possible_steps phase fastctx of
+   fun loop stage fastctx = 
+      case CoreEngine.possible_steps stage fastctx of
          [] => 
          (case CoreEngine.possible_steps "outer_level" fastctx of 
              [] => fastctx (* DONE *)
@@ -41,20 +41,20 @@ let
              let 
                 val (fastctx', _) = CoreEngine.apply_transition fastctx T
                 (* READ OUT NEW PHASE FROM PROGRAM *)
-                val phase_id = currentPhase (CoreEngine.context fastctx')
+                val stage_id = currentPhase (CoreEngine.context fastctx')
                 (* XXX there's probably a more efficient way to do that. *)
-                (* val phase' = lookupPhase phase_id program *)
+                (* val stage' = lookupPhase stage_id program *)
              in
-                loop phase_id fastctx'
+                loop stage_id fastctx'
              end)
-       | T :: _ => loop phase (#1 (CoreEngine.apply_transition fastctx T))
+       | T :: _ => loop stage (#1 (CoreEngine.apply_transition fastctx T))
 
    (* XXX doesn't this need to have more stuff going on? The init
     * function is expecting just a list of rulesets, not a structured
     * Ceptre program with states - RJS *)
-   val phases = #phases program
+   val stages = #stages program
 in
-   CoreEngine.context (loop init_phase (CoreEngine.init phases ctx))
+   CoreEngine.context (loop init_stage (CoreEngine.init stages ctx))
 end
 
 end

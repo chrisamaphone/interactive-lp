@@ -29,6 +29,29 @@ structure Ceptre = struct
                   lin: (int * ident * ground_term list) list}
      (* X1:P1, X2:P2, X3:P3, ... *)
 
+  (* Stringification/ pretty printing for internal syntax *)
+
+  fun varToString v = Int.toString v
+
+  fun withArgs p [] = p
+    | withArgs p args =
+            "(" ^ p ^ " " ^ (String.concatWith " " args) ^ ")"
+
+  fun termToString (Fn (p, args)) = withArgs p (map termToString args)
+    | termToString (Var i) = "(Var "^(varToString i)^")"
+
+  fun atomToString (Lin (p, args)) = withArgs p (map termToString args)
+    | atomToString (Pers (p, args)) = withArgs ("!"^p) (map termToString args)
+
+  fun ruleToString {name, pivars, lhs, rhs} =
+    let
+      val lhs_string = String.concatWith " * " (map atomToString lhs)
+      val rhs_string = String.concatWith " * " (map atomToString rhs)
+    in
+      name ^ " : " ^ lhs_string ^ " -o " ^ rhs_string
+    end
+
+
   (* An enabled transition is (r, ts, S), representing our ability to run
      let {p} = r ts S 
       1) an identifier r representing a rule 
@@ -42,7 +65,6 @@ structure Ceptre = struct
   datatype external_term =
     EFn of ident * external_term list | EVar of ident
   type eatom = pred * (external_term list)
-  (* XXX rethink this *)
   datatype epred = ELin of eatom | EPers of eatom
   type rule_external = {name : ident, lhs : epred list, rhs : epred list}
   
@@ -115,24 +137,34 @@ structure Ceptre = struct
       : rule_internal
     end
 
-  (* a phase is a name & a list of rules *)
-  type phase = {name : ident, body : rule_internal list}
+  (* a stage is a name & a list of rules *)
+  type stage = {name : ident, body : rule_internal list}
 
-  (* qui * phase p * S -o {phase p' * S'} =
+  fun stageToString {name, body} =
+  let
+    val rules = map (fn r => "  " ^ (ruleToString r) ^ ".") body
+    val rule_string = String.concatWith "\n" rules
+  in
+    "stage " ^ name ^ " = {\n"
+    ^ rule_string
+    ^ "\n}"
+  end
+
+  (* qui * stage p * S -o {stage p' * S'} =
   *   (?, p, S, p', S') *)
-  type phase_rule = 
+  type stage_rule = 
     {name : ident,
      pivars : int,
-     pre_phase : ident,
+     pre_stage : ident,
      lhs : atom list,
-     post_phase : ident,
+     post_stage : ident,
      rhs : atom list}
 
-  (* program is a set of phases, a set of phase rules, and an identifier for an
-  * initial phase *)
-  type program = {phases : phase list, 
-                  links : phase_rule list,
-                  init_phase : ident,
+  (* program is a set of stages, a set of stage rules, and an identifier for an
+  * initial stage *)
+  type program = {stages : stage list, 
+                  links : stage_rule list,
+                  init_stage : ident,
                   init_state : atom list}
   (* XXX incorporate sigma? *)
   (* program definitions/#run/#trace directives? *)
@@ -143,17 +175,17 @@ structure Ceptre = struct
   fun cnst s = Fn (s, [])
 
   (* progToRulesets : program -> rulesets * (atom list) *)
-  fun progToRulesets ({phases, links, init_phase, init_state} : program) =
+  fun progToRulesets ({stages, links, init_stage, init_state} : program) =
   let
-    fun link_to_rule {name, pivars, pre_phase, lhs, post_phase, rhs} =
+    fun link_to_rule {name, pivars, pre_stage, lhs, post_stage, rhs} =
       {name=name, pivars=pivars,
-        lhs=(Lin ("phase", [cnst pre_phase]))::lhs,
-        rhs=(Lin ("phase", [cnst post_phase]))::rhs}
-    val phase_sets = map (fn {name, body} => (name, body)) phases
+        lhs=(Lin ("stage", [cnst pre_stage]))::lhs,
+        rhs=(Lin ("stage", [cnst post_stage]))::rhs}
+    val stage_sets = map (fn {name, body} => (name, body)) stages
     val link_set = ("outer_level", map link_to_rule links)
-    val init = (Lin ("phase", [cnst init_phase]))::init_state
+    val init = (Lin ("stage", [cnst init_stage]))::init_state
   in
-    (link_set::phase_sets : rulesets, init)
+    (link_set::stage_sets : rulesets, init)
   end
   
 
@@ -161,7 +193,7 @@ structure Ceptre = struct
   val [a,b,c,d,e] = map cnst ["a","b","c","d","e"]
   
 (*
-* phase paths = {
+* stage paths = {
 *   p/edge : edge X Y -o path X Y.
 *   p/trns : path X Y * path Y Z -o path X Z.
 * }
@@ -180,7 +212,7 @@ structure Ceptre = struct
     lhs = [path (Var 0) (Var 1), path (Var 1) (Var 2)],
     rhs = [path (Var 0) (Var 2)]}
 
-  val phase_paths : phase =
+  val stage_paths : stage =
     {name = "paths",
      body = [rule1'1, rule1'2]}
 
@@ -192,9 +224,9 @@ structure Ceptre = struct
      edge d e]
 
   val prog1 : program =
-    {phases = [phase_paths],
+    {stages = [stage_paths],
      links = [],
-     init_phase = "paths",
+     init_stage = "paths",
      init_state = init1}
 
 
