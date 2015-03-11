@@ -33,11 +33,12 @@ nonterminal Top: top =
 nonterminal Tops: tops =       => NilT
    1:Top 2:Tops                => ConsT
 
-nonterminal Syn: syn = 
+nonterminal Syn: syn =
    1:Syn COLON 2:Syn           => Ascribe
    1:Syn LLOLLI 2:Syn          => LolliL
    1:Syn LARROW 2:Syn          => ArrowL
-   1:Syn RLOLLI 2:Syn          => Lolli
+   1:Syn RLOLLI 2:Syn          => LolliSOME
+   1:Syn RLOLLI                => LolliNONE
    1:Syn RARROW 2:Syn          => Arrow  
    1:Syn STAR 2:Syn            => Star
 
