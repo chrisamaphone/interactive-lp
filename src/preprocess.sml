@@ -73,13 +73,13 @@ struct
            let
              val (atom, rhs) = extractAtom a rhs
            in
-               extractLHS lhs (atom::acc) rhs
+               extractLHS lhs (fn x => atom::(acc x)) rhs
            end
        | syn => 
            let
              val (atom, rhs) = extractAtom syn rhs
            in
-             (atom::acc, rhs)
+             (acc atom, rhs)
            end
 
   fun extractRHS syn acc =
@@ -98,7 +98,7 @@ struct
           Decl (Ascribe (App (Id name, []), 
                 Lolli (lhs_syn, SOME rhs_syn))) => (* XXX MATCH ERROR - RJS *)
             let
-              val (lhs, residual) = extractLHS lhs_syn [] []
+              val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
               val rhs = extractRHS rhs_syn residual
               (* external syntax *)
               val erule = {name = name, lhs = lhs, rhs = rhs}
