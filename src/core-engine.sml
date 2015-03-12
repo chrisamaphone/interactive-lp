@@ -1,10 +1,14 @@
 structure CoreEngine:>
 sig
-
    type fastctx
+   type sense = Ceptre.context * Ceptre.ground_term list 
+                -> Ceptre.ground_term list list
 
    (* Turns a program and a context into a fast context *)
-   val init: Ceptre.phase list -> Ceptre.context -> fastctx
+   val init: (string * sense) list 
+             -> Ceptre.phase list 
+             -> Ceptre.context 
+             -> fastctx
 
    (* A fast context is just a context with some extra stuff *)
    val context: fastctx -> Ceptre.context
@@ -16,8 +20,17 @@ sig
    val apply_transition: 
       fastctx -> Ceptre.transition -> fastctx * Ceptre.context_var list
 
+   val insert: fastctx 
+               -> Ceptre.ident * Ceptre.ground_term list
+               -> fastctx * Ceptre.context_var
+
+   val remove: fastctx -> Ceptre.context_var -> fastctx
+
 end = 
 struct
+
+val insert = fn _ => raise Fail "Not implemented"
+val remove = fn _ => raise Fail "Not implemented"
 
 local
    val i = ref 0
@@ -43,16 +56,20 @@ structure C = Ceptre
 structure S = IntRedBlackSet
 structure M = StringRedBlackDict
 
+type sense = Ceptre.context * Ceptre.ground_term list 
+             -> Ceptre.ground_term list list
+
 type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
 
 (* LHSes are connected to a particluar ruleset *)
 (* RHSes are just mapped from their names *)
 type fastctx = 
-   {lmap: fast_ruleset M.dict, 
+   {senses: sense M.dict,
+    lmap: fast_ruleset M.dict, 
     rmap: C.atom list M.dict,
     ctx: C.context}
                                
-fun init prog ctx: fastctx = 
+fun init senses prog ctx: fastctx = 
 let
    fun compile_lhses {name, body} = 
       (name, 
@@ -70,14 +87,16 @@ let
    val () = app check (#pers ctx)
    val () = app check (#lin ctx)
 in
-   {lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
+   {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
+                M.empty senses,
+    lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
               M.empty (map compile_lhses prog),
     rmap = List.foldl compile_rhses 
               M.empty prog,
     ctx = ctx}
 end
                         
-fun context {lmap, rmap, ctx} = ctx
+fun context ({ctx, ...}: fastctx) = ctx
 
 type msubst = C.ground_term option vector
 
@@ -128,7 +147,7 @@ fun search_premises rule ctx used subst prems =
 
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
-fun possible_steps phase ({lmap, rmap, ctx}: fastctx): C.transition list =
+fun possible_steps phase ({lmap, ctx, ...}: fastctx): C.transition list =
    case M.find lmap phase of
       NONE => raise Fail ("Phase "^phase^" unknown to the execution engine")
     | SOME ruleset => 
@@ -151,7 +170,7 @@ in case conc of
          ({lin = lin, pers = (x, a, map (ground gsubst) ps) :: pers}, x :: xs)
 end
 
-fun apply_transition {lmap, rmap, ctx = {pers, lin}} {r, tms, S} =
+fun apply_transition ({lmap, rmap, ctx = {pers, lin}, senses}: fastctx) {r, tms, S} =
 let
    (* Remove linear identifiers from context *)
    val lin = List.filter (fn (x, _, _) => not (is_in x S)) lin
@@ -166,7 +185,7 @@ let
    val (ctx, xs) = 
       List.foldr (add_to_ctx tms) ({pers = pers, lin = lin}, []) rhs
 in
-   ({lmap = lmap, rmap = rmap, ctx = ctx}, xs)
+   ({lmap = lmap, rmap = rmap, ctx = ctx, senses = senses}, xs)
 end
 
 end

@@ -54,7 +54,7 @@ let
     * Ceptre program with states - RJS *)
    val phases = #phases program
 in
-   CoreEngine.context (loop init_phase (CoreEngine.init phases ctx))
+   CoreEngine.context (loop init_phase (CoreEngine.init [] phases ctx))
 end
 
 end
