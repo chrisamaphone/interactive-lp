@@ -54,7 +54,7 @@ let
     * Ceptre program with states - RJS *)
    val stages = #stages program
 in
-   CoreEngine.context (loop init_stage (CoreEngine.init stages ctx))
+   CoreEngine.context (loop init_stage (CoreEngine.init [] stages ctx))
 end
 
 end
