@@ -1,0 +1,4 @@
+stage s = {
+  r1 : foo _ -o bar t.
+  r2 : baz X _ * bar X -o bla.
+}

@@ -118,7 +118,7 @@ struct
           end
         | _ => raise IllFormed
 
-  datatype csyn = CStage of phase | CRule of rule_internal | CNone
+  datatype csyn = CStage of stage | CRule of rule_internal | CNone
                 | CError of top
 
   fun extractTop sg top =
@@ -126,6 +126,11 @@ struct
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
        | _ => CNone (* XXX *)
+
+  fun csynToString (CStage stage) = stageToString stage
+    | csynToString (CRule rule) = ruleToString rule
+    | csynToString CNone = "(doesn't parse yet)"
+    | csynToString (CError _) = "(parse error!)"
 
   (* XXX handle signatures *)
   (* XXX turn these into an actual prog. *)
