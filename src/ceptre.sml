@@ -43,6 +43,8 @@ structure Ceptre = struct
   fun atomToString (Lin (p, args)) = withArgs p (map termToString args)
     | atomToString (Pers (p, args)) = withArgs ("!"^p) (map termToString args)
 
+  fun contextToString x = "{" ^ (String.concatWith ", " (map atomToString x)) ^ "}"
+
   fun ruleToString {name, pivars, lhs, rhs} =
     let
       val lhs_string = String.concatWith " * " (map atomToString lhs)
