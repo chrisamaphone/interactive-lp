@@ -5,29 +5,23 @@ structure Ceptre = struct
   (* internal rule syntax *)
   type var = int
   type ident = string
-  datatype ground_term = GFn of ident * ground_term list
   datatype term = Fn of ident * term list | Var of var
   type pred = ident
-  type atprop = pred * (term list)
-  datatype atom = Lin of atprop | Pers of atprop
+  datatype mode = Pers | Lin
+  type atom = mode * pred * (term list)
   type rule_internal = 
     {name : ident, pivars : int, lhs : atom list, rhs : atom list}
+  type context = atom list
 
   (* Const term declarations *)
-  datatype classifier = Type | Tp of ground_term | LinPred | PersPred
+  datatype classifier = Type | Tp of term | LinPred | PersPred
   type decl = ident * classifier
 
   (* Backward chaining persistent rules *)
-  type bwd_rule = {head:atprop, subgoals : atprop list}
+  type bwd_rule = {head:atom, subgoals : atom list}
 
   type tp_header = decl list
   type sigma = {header:tp_header, rules:bwd_rule list}
-
-  (* Contexts *)
-  type context_var = int (* X1, X2, X3... *)
-  type context = {pers: (int * ident * ground_term list) list, 
-                  lin: (int * ident * ground_term list) list}
-     (* X1:P1, X2:P2, X3:P3, ... *)
 
   (* Stringification/ pretty printing for internal syntax *)
 
@@ -40,10 +34,11 @@ structure Ceptre = struct
   fun termToString (Fn (p, args)) = withArgs p (map termToString args)
     | termToString (Var i) = "(Var "^(varToString i)^")"
 
-  fun atomToString (Lin (p, args)) = withArgs p (map termToString args)
-    | atomToString (Pers (p, args)) = withArgs ("!"^p) (map termToString args)
+  fun atomToString (Lin, p, args) = withArgs p (map termToString args)
+    | atomToString (Pers, p, args) = withArgs ("!"^p) (map termToString args)
 
-  fun contextToString x = "{" ^ (String.concatWith ", " (map atomToString x)) ^ "}"
+  fun contextToString x = 
+    "{" ^ (String.concatWith ", " (map atomToString x)) ^ "}"
 
   fun ruleToString {name, pivars, lhs, rhs} =
     let
@@ -53,6 +48,12 @@ structure Ceptre = struct
       name ^ " : " ^ lhs_string ^ " -o " ^ rhs_string
     end
 
+  fun ctxEltToString (var, id, terms) =
+  let
+    val termStrings = map termToString terms
+  in
+    "X" ^ (Int.toString var) ^ ": " ^ (withArgs id termStrings)
+  end
 
   (* An enabled transition is (r, ts, S), representing our ability to run
      let {p} = r ts S 
@@ -60,7 +61,9 @@ structure Ceptre = struct
       2) a vector ts that gives assignments to r's pi-bindings
       3) a tuple S of the resources used by that rule
    *)
-  type transition = {r : ident, tms : ground_term vector, S : context_var list}
+   (*
+  type transition = {r : ident, tms : term vector, S : context_var list}
+  *) (* XXX *)
 
  
   (* external rule syntax *)
@@ -117,13 +120,13 @@ structure Ceptre = struct
       case epred of
           ELin (p, tms) =>
             (case lookup p sg of
-                SOME LinPred => Lin (p, map termMapper tms)
-              | SOME PersPred => Pers (p, map termMapper tms)
+                SOME LinPred => (Lin, p, map termMapper tms)
+              | SOME PersPred => (Pers, p, map termMapper tms)
              (* | _ => raise IllFormed) *)
-              | _ => Lin (p, map termMapper tms))
+              | _ => (Lin, p, map termMapper tms))
         | EPers (p, tms) =>
             (case lookup p sg of
-                  SOME _ => Pers (p, map termMapper tms)
+                  SOME _ => (Pers, p, map termMapper tms)
                 | _ => raise IllFormed)
     end
 
@@ -167,7 +170,7 @@ structure Ceptre = struct
   type program = {stages : stage list, 
                   links : stage_rule list,
                   init_stage : ident,
-                  init_state : atom list}
+                  init_state : context}
   (* XXX incorporate sigma? *)
   (* program definitions/#run/#trace directives? *)
 
@@ -177,6 +180,8 @@ structure Ceptre = struct
   fun cnst s = Fn (s, [])
 
   (* progToRulesets : program -> rulesets * (atom list) *)
+  (* XXX currently doesn't typecheck due to init_state being a context rather
+  * than an atomlist
   fun progToRulesets ({stages, links, init_stage, init_state} : program) =
   let
     fun link_to_rule {name, pivars, pre_stage, lhs, post_stage, rhs} =
@@ -185,11 +190,12 @@ structure Ceptre = struct
         rhs=(Lin ("stage", [cnst post_stage]))::rhs}
     val stage_sets = map (fn {name, body} => (name, body)) stages
     val link_set = ("outer_level", map link_to_rule links)
-    val init = (Lin ("stage", [cnst init_stage]))::init_state
+    val {lin, pers} = init_stage
+    val init = {pers=pers, lin=("stage", [cnst init_stage])::lin}
   in
     (link_set::stage_sets : rulesets, init)
   end
-  
+  *)
 
   (** Test Programs **)
   val [a,b,c,d,e] = map cnst ["a","b","c","d","e"]
@@ -202,8 +208,8 @@ structure Ceptre = struct
 * n.b. this program doesn't really make sense; just an arbitrary syntax example.
 *)
 
-  fun edge x y = Lin ("edge", [x,y])
-  fun path x y = Lin ("path", [x,y])
+  fun edge x y = (Lin, "edge", [x,y])
+  fun path x y = (Lin, "path", [x,y])
 
   val rule1'1 : rule_internal = 
    {name="p/edge", pivars = 2,
@@ -219,11 +225,7 @@ structure Ceptre = struct
      body = [rule1'1, rule1'2]}
 
   val init1 = 
-    [edge a b,
-     edge b c,
-     edge a d,
-     edge b d,
-     edge d e]
+    [edge a b, edge b c, edge a d, edge b d, edge d e]
 
   val prog1 : program =
     {stages = [stage_paths],

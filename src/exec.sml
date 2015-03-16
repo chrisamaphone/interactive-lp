@@ -3,11 +3,11 @@ struct
 
 exception BadProg
 
-fun currentPhase {pers, lin} =
+fun currentPhase ctx =
    case List.mapPartial 
-           (fn (x, "stage", [Ceptre.GFn (id, [])]) => SOME id
+           (fn (x, "stage", [Ceptre.Fn (id, [])]) => SOME id
            | _ => NONE)
-           lin of
+           ctx of
       [ id ] => id
     | _ => raise BadProg 
 
@@ -56,5 +56,8 @@ let
 in
    CoreEngine.context (loop init_stage (CoreEngine.init [] stages ctx))
 end
+
+fun run (program as {init_state,...} : Ceptre.program) = 
+  fwdchain init_state program
 
 end

@@ -1,7 +1,7 @@
 structure Top =
 struct
 
-  fun top fname =
+  fun progs fname =
   let
     val parsed = Parse.parsefile fname
     val sg = [] (* XXX *)
@@ -13,5 +13,14 @@ struct
   in
     programs
   end
+
+  (* runFirst : string -> Ceptre.context *)
+  (* extracts the first program from the file, then runs it to quiescence,
+  * returning the final context. *) 
+  fun runFirst fname =
+    case progs fname of
+         [] => NONE
+       | (prog::_) => SOME (Exec.run prog)
+
 
 end

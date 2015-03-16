@@ -1,8 +1,15 @@
 structure CoreEngine:>
 sig
    type fastctx
-   type sense = Ceptre.context * Ceptre.ground_term list 
-                -> Ceptre.ground_term list list
+   (* XXX rob fix whatever was depending on these being ground_terms rather
+   * than just terms *)
+   type sense = Ceptre.context * Ceptre.term list 
+                -> Ceptre.term list list
+   
+   type ctx_var
+
+   type transition = (* XXX right? what do clients need to do w/this? *)
+    {r: Ceptre.ident, tms : (ctx_var * Ceptre.term) list}
 
    (* Turns a program and a context into a fast context *)
    val init: (string * sense) list 
@@ -14,20 +21,27 @@ sig
    val context: fastctx -> Ceptre.context
   
    (* Given a ruleset identifier, find all transitions in the given context *)
-   val possible_steps: Ceptre.ident -> fastctx -> Ceptre.transition list
+   val possible_steps: Ceptre.ident -> fastctx -> transition list
 
    (* Run a given transition *)
    val apply_transition: 
-      fastctx -> Ceptre.transition -> fastctx * Ceptre.context_var list
+      fastctx -> transition -> fastctx * ctx_var list
+        (* * Ceptre.context_var list *)
 
    val insert: fastctx 
-               -> Ceptre.ident * Ceptre.ground_term list
-               -> fastctx * Ceptre.context_var
+               -> Ceptre.ident * Ceptre.term list
+               -> fastctx * ctx_var list (* * Ceptre.context_var *)
 
-   val remove: fastctx -> Ceptre.context_var -> fastctx
+   val remove: fastctx -> ctx_var -> fastctx
 
 end = 
 struct
+
+
+type ctx_var = int
+
+type transition =
+{r: Ceptre.ident, tms : (ctx_var * Ceptre.term) list}
 
 val insert = fn _ => raise Fail "Not implemented"
 val remove = fn _ => raise Fail "Not implemented"
@@ -36,7 +50,8 @@ local
    val i = ref 0
 in
 val gen = fn () => (!i before i := !i + 1)
-fun check (x, a, ts) = i := Int.max (!i, x + 1)
+(* fun check (x, a, ts) = i := Int.max (!i, x + 1) *)
+(* XXX do our own numbering *)
 end
 
 datatype 'a tree = N | L of 'a | C of 'a tree * 'a tree
@@ -56,8 +71,8 @@ structure C = Ceptre
 structure S = IntRedBlackSet
 structure M = StringRedBlackDict
 
-type sense = Ceptre.context * Ceptre.ground_term list 
-             -> Ceptre.ground_term list list
+type sense = Ceptre.context * Ceptre.term list 
+             -> Ceptre.term list list
 
 type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
 
@@ -84,8 +99,10 @@ let
           map body
 
    (* Make sure gensyms don't collide *)
+   (*
    val () = app check (#pers ctx)
    val () = app check (#lin ctx)
+   *)
 in
    {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
                 M.empty senses,
@@ -98,20 +115,20 @@ end
                         
 fun context ({ctx, ...}: fastctx) = ctx
 
-type msubst = C.ground_term option vector
+type msubst = C.term option vector
 
 
 (* Matching of a pattern (C.term) against a ground term *)
-fun match_term (p: C.term, t: C.ground_term) (subst: msubst): msubst option = 
+fun match_term (p: C.term, t: C.term) (subst: msubst): msubst option = 
    case (p, t) of 
       (C.Var n, t) =>
         (case Vector.sub (subst, n) of 
             NONE => SOME (Vector.update (subst, n, SOME t))
           | SOME t' => 
                if t = t' then SOME subst else NONE)
-    | (C.Fn (f, ps), C.GFn (g, ts)) => 
+    | (C.Fn (f, ps), C.Fn (g, ts)) => 
          if f = g then match_terms (f, ps, ts) subst else NONE
-    (* | _ => NONE *)
+    | _ => NONE
 
 and match_terms (f, ps, ts) subst: msubst option = 
    case (ps, ts) of
@@ -131,10 +148,10 @@ fun match_hyp exclude subst (a, ps) (x, b, ts) =
 
 
 (* Search the context for all (non-excluded) matches *)
-fun search_context {lin, pers} used subst prem = 
+fun search_context ctx (* {lin, pers} *) used subst prem = 
    case prem of 
-      C.Lin (a, ps) => List.mapPartial (match_hyp used subst (a, ps)) lin
-    | C.Pers (a, ps) => List.mapPartial (match_hyp [] subst (a, ps)) pers
+      (C.Lin, a, ps) => List.mapPartial (match_hyp used subst (a, ps)) ctx
+    | (C.Pers, a, ps) => List.mapPartial (match_hyp [] subst (a, ps)) ctx
 
 fun search_premises rule ctx used subst prems = 
    case prems of 
@@ -147,7 +164,9 @@ fun search_premises rule ctx used subst prems =
 
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
-fun possible_steps stage ({lmap, ctx, ...}: fastctx): C.transition list =
+fun possible_steps stage ({lmap, ctx, ...}: fastctx): transition list =
+raise Fail "Not implemented"
+(*
    case M.find lmap stage of
       NONE => raise Fail ("Stage "^stage^" unknown to the execution engine")
     | SOME ruleset => 
@@ -155,22 +174,25 @@ fun possible_steps stage ({lmap, ctx, ...}: fastctx): C.transition list =
                (fn ({name, pivars, lhs}, ans) => 
                   ans @ search_premises name ctx [] (unknown pivars) lhs)
                N ruleset)
+*)
 
 fun ground gsubst ps = 
    case ps of 
       C.Var i => Vector.sub (gsubst, i)
-    | C.Fn (a, ts) => C.GFn (a, map (ground gsubst) ts)
+    | C.Fn (a, ts) => C.Fn (a, map (ground gsubst) ts)
 
 fun add_to_ctx gsubst (conc, ({lin, pers}, xs)) = 
 let val x = gen ()
 in case conc of 
-      C.Lin (a, ps) => 
+      (C.Lin, a, ps) => 
          ({lin = (x, a, map (ground gsubst) ps) :: lin, pers = pers}, x :: xs)
-    | C.Pers (a, ps) => 
+    | (C.Pers, a, ps) => 
          ({lin = lin, pers = (x, a, map (ground gsubst) ps) :: pers}, x :: xs)
 end
 
-fun apply_transition ({lmap, rmap, ctx = {pers, lin}, senses}: fastctx) {r, tms, S} =
+fun apply_transition ({lmap, rmap, ctx, senses}: fastctx) {r, tms} =
+raise Fail "Not implemented"
+(*
 let
    (* Remove linear identifiers from context *)
    val lin = List.filter (fn (x, _, _) => not (is_in x S)) lin
@@ -187,5 +209,6 @@ let
 in
    ({lmap = lmap, rmap = rmap, ctx = ctx, senses = senses}, xs)
 end
+*)
 
 end

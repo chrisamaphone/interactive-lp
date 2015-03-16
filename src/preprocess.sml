@@ -39,6 +39,21 @@ struct
        | Wild () => EVar ("_X"^Int.toString (wild ()))
        | _ => raise IllFormed
 
+  (* Stuff without vars can go directly into IL syntax *)
+  fun extractGroundTerm syn =
+    case syn of
+         Id id => if caps id then raise IllFormed else
+                  Fn (id, [])
+       | App (f, args) =>
+           let
+             val termArgs = map extractGroundTerm args
+           in
+             case extractGroundTerm f of
+                  Fn (f, []) => Fn (f, termArgs)
+                | _ => raise IllFormed
+           end
+       | _ => raise IllFormed 
+
   fun extractAtom syn rhs =
     case syn of
          Bang syn =>
@@ -67,6 +82,26 @@ struct
            end
        | _ => raise IllFormed
   
+  (* Stuff without vars can go directly into IL syntax *)
+  fun extractGroundAtom syn =
+    case syn of
+         Bang syn =>
+         let
+           val at = extractGroundAtom syn 
+         in
+           case at of
+                (Lin, p, args) => (Pers, p, args)
+              | _ => raise IllFormed 
+         end
+       | Id pred => (Lin, pred, [])
+       | App (Id pred, args) =>
+           let
+             val argTerms = map extractGroundTerm args
+           in
+             (Lin, pred, argTerms)
+           end
+       | _ => raise IllFormed
+
   fun extractLHS syn acc rhs =
     case syn of
          Star (a, lhs) =>
@@ -81,33 +116,6 @@ struct
            in
              (acc atom, rhs)
            end
-
-  (* returns *internal* predicates and terms *)
-  fun extractGroundTerm syn =
-    case syn of
-         Id id => if caps id then raise IllFormed else Fn (id, [])
-       | App (f, args) =>
-           let
-             val args = map extractGroundTerm args
-           in
-             case extractGroundTerm f of
-                  Fn (f, []) => Fn (f, args)
-                | _ => raise IllFormed
-           end
-       | _ => raise IllFormed
-              
-
-  fun extractGroundAtom syn =
-    case syn of
-         Id pred => Lin (pred, [])
-       | App (Id pred, args) =>
-           let
-             val argTerms = map extractGroundTerm args
-           in
-             Lin (pred, argTerms)
-           end
-       | _ => raise IllFormed
-
 
   fun extractRHSAtom syn =
     case extractAtom syn [] of
@@ -124,6 +132,7 @@ struct
            (case extractAtom syn [] of
                  (atom, []) => atom::acc
                | _ => raise IllFormed)
+
 
   fun declToRule sg syntax =
     case syntax of
@@ -153,16 +162,16 @@ struct
     help f (fn x => x) l
   end
 
-  fun stageAtom (Lin (p, args)) = p = "stage"
+  fun stageAtom (Lin, p, args) = p = "stage"
     | stageAtom _ = false
 
   (* XXX hardcode stage keyword? *)
   (* XXX stages with arguments? *)
   fun ruleToStageRule {name, pivars, lhs, rhs} =
     case separate stageAtom lhs of
-         SOME (Lin ("stage", [Fn (pre_stage, [])]), lhs') =>
+         SOME ((Lin, "stage", [Fn (pre_stage, [])]), lhs') =>
     (case separate stageAtom rhs of
-          SOME (Lin ("stage", [Fn (post_stage, [])]), rhs') =>
+          SOME ((Lin, "stage", [Fn (post_stage, [])]), rhs') =>
             SOME
             {name=name, pivars=pivars, lhs=lhs', rhs=rhs',
             pre_stage=pre_stage, post_stage=post_stage}
@@ -193,7 +202,7 @@ struct
 
   datatype csyn = CStage of stage | CRule of rule_internal | CNone
                 | CError of top 
-                | CCtx of ident * (atom list)  (* named ctx *)
+                | CCtx of ident * context  (* named ctx *)
                 | CProg of (int option) * ident * ident 
                     (* limit, initial phase & initial ctx *)
 
