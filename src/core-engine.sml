@@ -1,16 +1,10 @@
 structure CoreEngine:>
 sig
-   type fastctx
-   (* XXX rob fix whatever was depending on these being ground_terms rather
-   * than just terms *)
-   type sense = Ceptre.context * Ceptre.term list 
-                -> Ceptre.term list list
-   
    type ctx_var
-
-   type transition = (* XXX right? what do clients need to do w/this? *)
-    {r: Ceptre.ident, tms : (ctx_var * Ceptre.term) list}
-
+   type transition
+   type fastctx
+   type sense = fastctx * Ceptre.term list -> Ceptre.term list list
+   
    (* Turns a program and a context into a fast context *)
    val init: (string * sense) list 
              -> Ceptre.stage list 
@@ -24,14 +18,12 @@ sig
    val possible_steps: Ceptre.ident -> fastctx -> transition list
 
    (* Run a given transition *)
-   val apply_transition: 
-      fastctx -> transition -> fastctx * ctx_var list
-        (* * Ceptre.context_var list *)
+   val apply_transition: fastctx -> transition -> fastctx * ctx_var list
 
-   val insert: fastctx 
-               -> Ceptre.ident * Ceptre.term list
-               -> fastctx * ctx_var list (* * Ceptre.context_var *)
+   (* Insert a ground atom into the context *)
+   val insert: fastctx -> Ceptre.atom -> fastctx * ctx_var
 
+   (* Remove an atom from the context. Raises Subscript if it's not there. *)
    val remove: fastctx -> ctx_var -> fastctx
 
 end = 
@@ -41,10 +33,7 @@ struct
 type ctx_var = int
 
 type transition =
-{r: Ceptre.ident, tms : (ctx_var * Ceptre.term) list}
-
-val insert = fn _ => raise Fail "Not implemented"
-val remove = fn _ => raise Fail "Not implemented"
+{r: Ceptre.ident, tms : Ceptre.term vector, S: ctx_var list}
 
 local
    val i = ref 0
@@ -54,37 +43,50 @@ val gen = fn () => (!i before i := !i + 1)
 (* XXX do our own numbering *)
 end
 
-datatype 'a tree = N | L of 'a | C of 'a tree * 'a tree
-fun N @ t = t
-  | t @ N = t
-  | t @ s = C (t, s) 
+(* Little data structure of result trees *)
+structure Tree = 
+struct
+   datatype 'a t = N | L of 'a | C of 'a t * 'a t
+   fun N @ t = t
+     | t @ N = t
+     | t @ s = C (t, s) 
 
-fun flatten t acc = 
-   case t of 
-      N => acc
-    | L x => (x :: acc)
-    | C (t1, t2) => flatten t1 (flatten t2 acc) 
+   fun flatten' t acc = 
+      case t of 
+         N => acc
+       | L x => (x :: acc)
+       | C (t1, t2) => flatten' t1 (flatten' t2 acc) 
 
-val fl = fn t => flatten t []
+   val flatten = fn t => flatten' t []
+
+   fun append f (a, t) = t @ f a
+end
 
 structure C = Ceptre
 structure S = IntRedBlackSet
 structure M = StringRedBlackDict
-
-type sense = Ceptre.context * Ceptre.term list 
-             -> Ceptre.term list list
+structure I = IntRedBlackDict
 
 type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
 
 (* LHSes are connected to a particluar ruleset *)
 (* RHSes are just mapped from their names *)
-type fastctx = 
-   {senses: sense M.dict,
-    lmap: fast_ruleset M.dict, 
-    rmap: C.atom list M.dict,
-    ctx: C.context}
+type 'a prog = 
+  {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
+   lmap: fast_ruleset M.dict,
+   rmap: C.atom list M.dict}
+
+type ctx = 
+  {next: ctx_var,
+   concrete: (ctx_var * C.atom) list}
+
+datatype fastctx = 
+   FC of {prog: fastctx prog, 
+          ctx: ctx}
+
+type sense = fastctx * Ceptre.term list -> Ceptre.term list list
                                
-fun init senses prog ctx: fastctx = 
+fun init senses prog initial_ctx: fastctx = 
 let
    fun compile_lhses {name, body} = 
       (name, 
@@ -97,23 +99,25 @@ let
           (fn ({name, rhs, ...}, rmap) => 
               M.insert rmap name rhs)
           map body
+   val prog: fastctx prog = 
+      {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
+                   M.empty senses,
+       lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
+                 M.empty (map compile_lhses prog),
+       rmap = List.foldl compile_rhses 
+                 M.empty prog}
 
-   (* Make sure gensyms don't collide *)
-   (*
-   val () = app check (#pers ctx)
-   val () = app check (#lin ctx)
-   *)
+   val ctx: ctx = 
+      List.foldl 
+         (fn (atom, {next, concrete}) =>
+            {next = next+1, concrete = ((next, atom) :: concrete)})
+         {next = 0, concrete = []}
+         initial_ctx
 in
-   {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
-                M.empty senses,
-    lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
-              M.empty (map compile_lhses prog),
-    rmap = List.foldl compile_rhses 
-              M.empty prog,
-    ctx = ctx}
+   FC {prog = prog, ctx = ctx}
 end
                         
-fun context ({ctx, ...}: fastctx) = ctx
+fun context (FC {ctx = {concrete, ...}, ...}) = map #2 concrete
 
 type msubst = C.term option vector
 
@@ -141,74 +145,78 @@ and match_terms (f, ps, ts) subst: msubst option =
 
 fun is_in x exclude = List.exists (fn y => x = y) exclude
  
-fun match_hyp exclude subst (a, ps) (x, b, ts) =
+fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
    if a = b andalso not (is_in x exclude)
       then Option.map (fn subst => (x, subst)) (match_terms (a, ps, ts) subst)
    else NONE
 
 
 (* Search the context for all (non-excluded) matches *)
-fun search_context ctx (* {lin, pers} *) used subst prem = 
+fun search_context ctx used subst prem = 
    case prem of 
       (C.Lin, a, ps) => List.mapPartial (match_hyp used subst (a, ps)) ctx
     | (C.Pers, a, ps) => List.mapPartial (match_hyp [] subst (a, ps)) ctx
 
 fun search_premises rule ctx used subst prems = 
    case prems of 
-      [] => L {r = rule, tms = Vector.map valOf subst, S = rev used}
+      [] => Tree.L {r = rule, tms = Vector.map valOf subst, S = rev used}
     | prem :: prems => 
          List.foldl 
-            (fn ((x, subst), ans) =>
-               ans @ search_premises rule ctx (x :: used) subst prems)
-            N (search_context ctx used subst prem)
+            (Tree.append (fn (x, subst) => 
+               search_premises rule ctx (x :: used) subst prems))
+            Tree.N (search_context ctx used subst prem)
 
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
-fun possible_steps stage ({lmap, ctx, ...}: fastctx): transition list =
-raise Fail "Not implemented"
-(*
+fun possible_steps stage (FC {prog = {lmap, ...}, ctx = {concrete, ...}}) =
    case M.find lmap stage of
       NONE => raise Fail ("Stage "^stage^" unknown to the execution engine")
     | SOME ruleset => 
-         fl (List.foldl
-               (fn ({name, pivars, lhs}, ans) => 
-                  ans @ search_premises name ctx [] (unknown pivars) lhs)
-               N ruleset)
-*)
+        (Tree.flatten
+           (List.foldl 
+              (Tree.append (fn {name, pivars, lhs} =>
+                 (search_premises name concrete [] (unknown pivars) lhs)))
+              Tree.N ruleset))
+
 
 fun ground gsubst ps = 
    case ps of 
       C.Var i => Vector.sub (gsubst, i)
     | C.Fn (a, ts) => C.Fn (a, map (ground gsubst) ts)
 
-fun add_to_ctx gsubst (conc, ({lin, pers}, xs)) = 
-let val x = gen ()
-in case conc of 
-      (C.Lin, a, ps) => 
-         ({lin = (x, a, map (ground gsubst) ps) :: lin, pers = pers}, x :: xs)
-    | (C.Pers, a, ps) => 
-         ({lin = lin, pers = (x, a, map (ground gsubst) ps) :: pers}, x :: xs)
-end
+fun add_to_ctx gsubst ((mode, a, ps), ({next, concrete}, xs)) = 
+  ({next = next + 1, 
+    concrete = (next, (mode, a, map (ground gsubst) ps)) :: concrete},
+   next :: xs)
 
-fun apply_transition ({lmap, rmap, ctx, senses}: fastctx) {r, tms} =
-raise Fail "Not implemented"
-(*
+fun apply_transition (FC {prog, ctx = {concrete, next}}) {r, tms, S} =
 let
+
    (* Remove linear identifiers from context *)
-   val lin = List.filter (fn (x, _, _) => not (is_in x S)) lin
+   val concrete = 
+      List.filter (fn (x, a) => C.Lin = #1 a orelse not (is_in x S)) concrete
 
    (* Find right hand side pattern hand side *)
-   val rhs =
-      case M.find rmap r of
+   val rhs = 
+      case M.find (#rmap prog) r of 
          NONE => raise Fail ("Error lookuing up rhs of rule "^r)
        | SOME rhs => rhs
-
+  
    (* Update context, get new identifiers *)
    val (ctx, xs) = 
-      List.foldr (add_to_ctx tms) ({pers = pers, lin = lin}, []) rhs
+      List.foldr (add_to_ctx tms) ({concrete = concrete, next = next}, []) rhs
 in
-   ({lmap = lmap, rmap = rmap, ctx = ctx, senses = senses}, xs)
+   (FC {prog = prog, ctx = ctx}, xs)
 end
-*)
+
+fun insert (FC {prog, ctx = {concrete, next}}) atom =
+   (FC {prog = prog,
+        ctx = {concrete = (next, atom) :: concrete, next = next+1}},
+    next)
+
+fun remove (FC {prog, ctx = {concrete, next}}) x = 
+   FC {prog = prog,
+       ctx = {next = next,
+              concrete = List.filter (fn (y, a) => x <> y) concrete}}
 
 end
