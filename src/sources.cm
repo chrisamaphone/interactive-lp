@@ -2,6 +2,7 @@ Group is
   ../lib/cmlib/cmlib.cm
 
   ceptre.sml
+  sensing.sml
   core-engine.sml
   exec.sml
 
