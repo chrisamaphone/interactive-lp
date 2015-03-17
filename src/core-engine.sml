@@ -197,7 +197,7 @@ let
 
    (* Remove linear identifiers from context *)
    val concrete = 
-      List.filter (fn (x, a) => C.Lin = #1 a orelse not (is_in x S)) concrete
+      List.filter (fn (x, a) => C.Pers = #1 a orelse not (is_in x S)) concrete
 
    (* Find right hand side pattern hand side *)
    val rhs = 
