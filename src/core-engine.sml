@@ -26,6 +26,9 @@ sig
    (* Remove an atom from the context. Raises Subscript if it's not there. *)
    val remove: fastctx -> ctx_var -> fastctx
 
+   (* Look up all atoms with a particular name *)
+   val lookup: fastctx -> Ceptre.ident -> (ctx_var * Ceptre.term list) list
+
 end = 
 struct
 
@@ -218,5 +221,10 @@ fun remove (FC {prog, ctx = {concrete, next}}) x =
    FC {prog = prog,
        ctx = {next = next,
               concrete = List.filter (fn (y, a) => x <> y) concrete}}
+
+fun lookup (FC {prog, ctx}) a = 
+  (List.mapPartial 
+     (fn (x, (m, b, tms)) => if a = b then SOME (x, tms) else NONE)
+     (#concrete ctx))
 
 end
