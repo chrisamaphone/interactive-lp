@@ -200,7 +200,8 @@ struct
               (NONE, stage, ctx) (* XXX someday first elt should be limit *)
        | _ => raise IllFormed
 
-  datatype csyn = CStage of stage | CRule of rule_internal | CNone
+  datatype csyn = CStage of stage | CRule of rule_internal 
+                | CNone of syn
                 | CError of top 
                 | CCtx of ident * context  (* named ctx *)
                 | CProg of (int option) * ident * ident 
@@ -210,13 +211,13 @@ struct
     case top of
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
-       | Decl _ => CNone (* XXX not handled yet *)
+       | Decl s => CNone s (* XXX not handled yet *)
        | Context _ => CCtx (extractContext top)
        | Special _ => CProg (extractProgram top)
 
   fun csynToString (CStage stage) = stageToString stage
     | csynToString (CRule rule) = ruleToString rule
-    | csynToString CNone = "(doesn't parse yet)"
+    | csynToString (CNone s) = "(" ^ (synToString s) ^ " doesn't parse yet)"
     | csynToString (CError _) = "(parse error!)"
     | csynToString (CCtx (name, ctx)) = name ^ " : " ^ (contextToString ctx)
     | csynToString (CProg (_,stg,ctx)) = "#trace * " ^ stg ^ " " ^ ctx ^ "."
@@ -241,7 +242,7 @@ struct
                           process' tops sg contexts stages (link::links) progs
                        | NONE => (* XXX error? *)
                           process' tops sg contexts stages links progs)
-               | CNone => process' tops sg contexts stages links progs
+               | CNone _ => process' tops sg contexts stages links progs
                | CError _ => process' tops sg contexts stages links progs
                             (* XXX error? *)
                | CCtx c => process' tops sg (c::contexts) stages links progs

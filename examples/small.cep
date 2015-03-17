@@ -54,3 +54,9 @@ stage getmin = {
   cleanup : min M * at _ _ _ -o min M.
 }
 
+context sort_init = 
+{at l1 g l2, at l2 r l3, at l3 g l4,
+  at l4 b l5, at l5 r end}.
+
+#trace _ sort sort_init.
+

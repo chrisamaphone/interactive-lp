@@ -28,5 +28,12 @@ struct
              SOME (Exec.run prog)
            end
 
+   fun run fname index =
+     let
+       val ans = Exec.run (List.nth (progs fname, index))
+     in
+       print ("\n\nFinal state:\n" ^ (Ceptre.contextToString ans) ^ "\n")
+     end
+
 
 end
