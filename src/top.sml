@@ -20,7 +20,13 @@ struct
   fun runFirst fname =
     case progs fname of
          [] => NONE
-       | (prog::_) => SOME (Exec.run prog)
+       | (prog::_) => 
+           let
+             val () = print "Running the following program:\n"
+             val () = print (Ceptre.programToString prog) 
+           in
+             SOME (Exec.run prog)
+           end
 
 
 end

@@ -165,6 +165,18 @@ structure Ceptre = struct
      post_stage : ident,
      rhs : atom list}
 
+  fun nullaryTerm t = Fn (t, [])
+  fun unaryPred p arg = (Lin, p, [nullaryTerm arg])
+
+  (* XXX also remove qui? *)
+  fun stageRuleToRule {name, pivars, pre_stage, lhs, post_stage, rhs} =
+  let
+    val lhs = (unaryPred "stage" pre_stage)::lhs
+    val rhs = (unaryPred "stage" post_stage)::rhs
+  in
+    {name=name, pivars=pivars, lhs=lhs, rhs=rhs}
+  end
+
   (* program is a set of stages, a set of stage rules, and an identifier for an
   * initial stage *)
   type program = {stages : stage list, 
@@ -174,28 +186,35 @@ structure Ceptre = struct
   (* XXX incorporate sigma? *)
   (* program definitions/#run/#trace directives? *)
 
-  (* compile from program to list of rulesets *)
-  type rulesets = (ident * (rule_internal list)) list
+  fun programToString ({stages, links, init_stage, init_state} : program) =
+    let
+      val stage_strings = map stageToString stages
+      val stages_string = String.concatWith "\n" stage_strings
+      val link_strings = map (ruleToString o stageRuleToRule) links
+      val links_string = String.concatWith "\n" link_strings
+      val init_state_string = contextToString init_state
+    in
+      "Stages:\n" ^ stages_string ^ "\n" ^
+      "Links:\n" ^ links_string ^ "\n" ^
+      "Initial stage: " ^ init_stage ^ "\n" ^
+      "Initial state:\n" ^ init_state_string ^ "\n"
+    end
 
   fun cnst s = Fn (s, [])
 
-  (* progToRulesets : program -> rulesets * (atom list) *)
-  (* XXX currently doesn't typecheck due to init_state being a context rather
-  * than an atomlist
-  fun progToRulesets ({stages, links, init_stage, init_state} : program) =
+  (* reduce the outer level of a prog to just another stage *)
+  (* progToRulesets : program -> rulesets * context *)
+  fun progToRulesets ({stages, links, init_stage, init_state} : program)
+    : (stage list) * context
+    =
   let
-    fun link_to_rule {name, pivars, pre_stage, lhs, post_stage, rhs} =
-      {name=name, pivars=pivars,
-        lhs=(Lin ("stage", [cnst pre_stage]))::lhs,
-        rhs=(Lin ("stage", [cnst post_stage]))::rhs}
-    val stage_sets = map (fn {name, body} => (name, body)) stages
-    val link_set = ("outer_level", map link_to_rule links)
-    val {lin, pers} = init_stage
-    val init = {pers=pers, lin=("stage", [cnst init_stage])::lin}
+    val outer_level_rules = map stageRuleToRule links
+    (* XXX remove qui? *)
+    val outer_level = {name="outer_level", body=outer_level_rules}
+    val ctx = (unaryPred "stage" init_stage)::init_state
   in
-    (link_set::stage_sets : rulesets, init)
+    (outer_level::stages, ctx)
   end
-  *)
 
   (** Test Programs **)
   val [a,b,c,d,e] = map cnst ["a","b","c","d","e"]
