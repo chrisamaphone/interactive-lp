@@ -23,6 +23,11 @@ fun lookupPhase id ({stages,...}:Ceptre.program) =
     lookupInList stages
   end
 
+structure Rand = RandFromRandom(structure Random = AESRandom)
+
+(* pick one element from a list *)
+fun pick L = List.nth (L, Rand.randInt (List.length L))
+
 
 (* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
@@ -42,8 +47,9 @@ let
         [] => 
         (case CoreEngine.possible_steps "outer_level" fastctx of 
             [] => fastctx (* DONE *)
-          | T :: _ => 
+          | L => 
             let 
+               val T = pick L
                val (fastctx', _) = CoreEngine.apply_transition fastctx T
                (* READ OUT NEW PHASE FROM PROGRAM *)
                val stage_id = currentPhase (CoreEngine.context fastctx')
@@ -52,7 +58,7 @@ let
             in
                loop stage_id fastctx'
             end)
-      | T :: _ => loop stage (#1 (CoreEngine.apply_transition fastctx T))
+      | L => loop stage (#1 (CoreEngine.apply_transition fastctx (pick L)))
   end
 
   (* XXX doesn't this need to have more stuff going on? The init

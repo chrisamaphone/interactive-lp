@@ -1,0 +1,8 @@
+
+stage shuffle = {
+pick : member E * list L -o list (cons E L).
+}
+
+context init = {member a, member b, member c, list nil}.
+
+#trace _ shuffle init.
