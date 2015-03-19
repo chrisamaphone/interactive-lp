@@ -150,7 +150,6 @@ struct
               externalToInternal sg erule
             end
         | _ => raise IllFormed
-  
 
   fun separate f l =
   let
@@ -200,12 +199,51 @@ struct
               (NONE, stage, ctx) (* XXX someday first elt should be limit *)
        | _ => raise IllFormed
 
+  (* XXX write the below 2 fns in one *)
+  fun extractClassifier (sg : (ident * classifier) list) syn =
+    case syn of
+         Pred () => Pred []
+       | Id "type" => Type
+       | (App (Id tp, []) | Id tp) 
+          => (case lookup tp sg of
+                   SOME Type => Tp tp (* XXX won't tc *)
+                 | _ => raise IllFormed)
+       | _ => raise IllFormed
+
+  (* checks decl wrt sg *)
+  fun extractDecl sg top =
+    case top of
+         Decl (Ascribe (data_syn, classifier_syn)) =>
+            case extractClassifier sg classifier_syn of
+              Pred [] => (* extract data_syn as newid t1 ... tn *)
+                let
+                  (* XXX check that all args are valid wrt sg? *)
+                  val Fn (id, args) = extractGroundTerm data_syn
+                in
+                  (id, Pred args)
+                end
+            | Type => (* data_syn should just be an id *)
+              (case extractGroundTerm data_syn of
+                   Fn (id, []) => (id, Type)
+                  | _ => raise IllFormed)
+            | Tp tp => (* data_syn as newid t1 ... tn *)
+              let
+                val Fn (id, args) = extractGroundTerm data_syn
+              in
+                XXX
+              end
+                
+       | _ => raise IllFormed
+
+
   datatype csyn = CStage of stage | CRule of rule_internal 
                 | CNone of syn
                 | CError of top 
                 | CCtx of ident * context  (* named ctx *)
                 | CProg of (int option) * ident * ident 
                     (* limit, initial phase & initial ctx *)
+                | CDecl of decl
+                | CBwd of bwd_rule
 
   fun extractTop sg top =
     case top of
@@ -222,8 +260,6 @@ struct
     | csynToString (CCtx (name, ctx)) = name ^ " : " ^ (contextToString ctx)
     | csynToString (CProg (_,stg,ctx)) = "#trace * " ^ stg ^ " " ^ ctx ^ "."
 
-
-  (* XXX handle signatures *)
 
   fun stage_exists s (stages : Ceptre.stage list) =
     List.exists (fn {name, body} => name = s) stages

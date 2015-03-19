@@ -41,7 +41,7 @@ let
   let
     (* XXX debugging *)
     val ctx_string = Ceptre.contextToString (CoreEngine.context fastctx)
-    val () = print ("\n\nCurrent state: " ^ ctx_string)
+    val () = print ("\n---- " ^ ctx_string ^ "\n")
   in
      case CoreEngine.possible_steps stage fastctx of
         [] => 
@@ -50,6 +50,8 @@ let
           | L => 
             let 
                val T = pick L
+               val () = print "Applying stage transition "
+               val () = print (CoreEngine.transitionToString T) 
                val (fastctx', _) = CoreEngine.apply_transition fastctx T
                (* READ OUT NEW PHASE FROM PROGRAM *)
                val stage_id = currentPhase (CoreEngine.context fastctx')
@@ -58,7 +60,15 @@ let
             in
                loop stage_id fastctx'
             end)
-      | L => loop stage (#1 (CoreEngine.apply_transition fastctx (pick L)))
+      | L => 
+          let
+            val T = pick L
+            val () = print "\nApplying transition "
+            val () = print (CoreEngine.transitionToString T)
+          in
+             loop stage 
+             (#1 (CoreEngine.apply_transition fastctx T))
+          end
   end
 
   (* XXX doesn't this need to have more stuff going on? The init

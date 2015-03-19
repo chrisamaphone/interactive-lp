@@ -14,7 +14,7 @@ structure Ceptre = struct
   type context = atom list
 
   (* Const term declarations *)
-  datatype classifier = Type | Tp of term | LinPred | PersPred
+  datatype classifier = Type | Tp of (term list) * ident | Pred of term list
   type decl = ident * classifier
 
   (* Backward chaining persistent rules *)

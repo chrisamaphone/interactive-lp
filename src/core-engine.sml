@@ -4,6 +4,8 @@ sig
    type transition
    type fastctx
    type sense = fastctx * Ceptre.term list -> Ceptre.term list list
+
+   val transitionToString : transition -> string
    
    (* Turns a program and a context into a fast context *)
    val init: (string * sense) list 
@@ -37,6 +39,12 @@ type ctx_var = int
 
 type transition =
 {r: Ceptre.ident, tms : Ceptre.term vector, S: ctx_var list}
+
+  fun vectorToList v = 
+    List.tabulate (Vector.length v, fn i => Vector.sub (v, i))
+
+  fun transitionToString {r, tms, S} =
+    Ceptre.withArgs r (map Ceptre.termToString (vectorToList tms))
 
 local
    val i = ref 0
