@@ -1,0 +1,4 @@
+!true (implies A B), !true A -o !true B.
+!true (conj A B) -o !true A, !true B.
+
+#exec _ (!true (conj p r), !true (implies p q)).

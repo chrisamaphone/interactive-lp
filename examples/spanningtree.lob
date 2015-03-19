@@ -1,0 +1,35 @@
+%  Spanning tree of an undirected graph,
+%  using imperative logic programming!
+%
+%    Graph:
+%    node x          x is a graph node (ephemeral)
+%    !edge x y       (x, y) is a graph edge
+%
+%    Tree:
+%    empty           the spanning tree is empty (ephemeral)
+%    !tree-node x    x is a spanning tree node
+%    !tree-edge x y  (x, y) is a spanning tree edge
+%
+%  Ephemeral facts ensure termination: empty gets us started,
+%  while each (node x) gets consumed until all graph nodes are
+%  in the spanning tree.
+
+% first, saturate to make sure the graph is undirected
+!edge X Y -o !edge Y X.
+
+% then, pick a node to start from, consume it, and add it to the tree
+empty, node X
+    -o !tree-node X.
+
+% next, repeatedly add edges that grow the tree until you're done
+!tree-node X, !edge X Y, node Y
+    -o !tree-edge X Y, !tree-node Y.
+
+#trace _ (node a, node b, node c, node d, node e,
+          !edge a b, !edge a c, !edge b c, !edge b d, !edge d e, !edge e c,
+          empty).
+
+#exec _ (node a, node b, node c, node d, node e,
+         !edge a b, !edge a c, !edge b c, !edge b d, !edge d e, !edge e c,
+         !edge c d, !edge b e,
+         empty).

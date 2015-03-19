@@ -4,6 +4,7 @@ terminal PRED
 terminal STAGE
 terminal CONTEXT
 terminal IDENT of string
+terminal NUM of int
 terminal HASHDENT of string
 terminal LBRACE
 terminal RBRACE
@@ -21,13 +22,15 @@ terminal LARROW   precl 30
 terminal RARROW   precr 40
 terminal LLOLLI   precl 30
 terminal RLOLLI   precr 40
+terminal UNIFY    precr 80 /* nonassoc */
+terminal DIFFER   precr 80 /* nonassoc */
 
 start Tops
 
 nonterminal Top: top = 
    1:Syn PERIOD                                                 => Decl
    STAGE 1:IDENT OpEquals LBRACE 2:Tops RBRACE OpPeriod         => Stage
-   CONTEXT 1:IDENT OpEquals LBRACE 2:Syncommas RBRACE OpPeriod  => Context
+   CONTEXT 1:IDENT OpEquals LBRACE 2:Syn RBRACE OpPeriod        => Context
    1:HASHDENT 2:Atomics PERIOD                                  => Special
 
 nonterminal Tops: tops =       => NilT
@@ -37,10 +40,13 @@ nonterminal Syn: syn =
    1:Syn COLON 2:Syn           => Ascribe
    1:Syn LLOLLI 2:Syn          => LolliL
    1:Syn LARROW 2:Syn          => ArrowL
-   1:Syn RLOLLI 2:Syn          => LolliSOME
-   1:Syn RLOLLI                => LolliNONE
+   1:Syn RLOLLI 2:Syn          => Lolli
+   1:Syn RLOLLI                => LolliOne
    1:Syn RARROW 2:Syn          => Arrow  
    1:Syn STAR 2:Syn            => Star
+   1:Syn COMMA 2:Syn           => Comma
+   1:Syn UNIFY 2:Syn           => Unify
+   1:Syn DIFFER 2:Syn          => Differ
 
    BANG 1:Syn                  => Bang
    DOLLAR 1:Syn                => Dollar
@@ -53,13 +59,11 @@ nonterminal Atomics: syns =    => Nil
 
 nonterminal Atomic: syn =
    LPAREN 1:Syn RPAREN         => parens
+   LPAREN RPAREN               => One
    1:IDENT                     => Id
    USCORE                      => Wild
    PRED                        => Pred
-
-nonterminal Syncommas: syns =  => Nil
-   1:Syn                       => Single
-   1:Syn COMMA 2:Syncommas     => Cons
+   1:NUM                       => Num
    
 nonterminal OpEquals: ign =    => Ign
    EQUALS                      => Ign

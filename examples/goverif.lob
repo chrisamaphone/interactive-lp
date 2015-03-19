@@ -1,0 +1,20 @@
+% seed the initial database with (subformula A) if we're trying to prove A.
+% (this is like the go-* predicates of magic templates.  could call it
+% go-verif if we wanted to draw the analogy...)
+!subformula (conj A B) -o !subformula A.
+!subformula (conj A B) -o !subformula B.
+
+% only generate verifications of (conj A B) if it is a subformula of the
+% thing we're trying to prove.  (here, we really want backward chaining)
+!verif A, !verif B, !subformula (conj A B) -o !verif (conj A B).
+
+!use (implies A B), !verif A -o !use B.
+!use (conj A B) -o !use A, !use B.
+
+!use (atom P), !subformula (atom P) -o !verif (atom P).
+
+% what verifications do we get?  one of them is verif (A /\ B),
+% since we said it was a subformula we cared about.
+#exec _ !use (atom p),
+        !use (implies (atom p) (atom q)),
+        !subformula (conj (atom q) (atom p)).

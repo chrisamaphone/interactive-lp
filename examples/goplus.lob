@@ -1,0 +1,16 @@
+%%%% magic sets append with mode (+, +, -). %%%%
+
+% plus z N N.
+
+!go-plus z N 
+    -o !plus z N N.
+
+% plus (s M) N (s P) <- plus M N P.
+
+!go-plus (s M) N
+    -o !go-plus M N.
+
+!go-plus (s M) N, !plus M N P 
+    -o !plus (s M) N (s P).
+
+#exec _ !go-plus (s (s z)) (s (s (s z))).
