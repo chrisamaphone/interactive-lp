@@ -1,8 +1,8 @@
 structure Preprocess =
 struct
 
-  open Parse
   open Ceptre
+  open Parse
 
   exception IllFormed
   exception Unimp
@@ -199,42 +199,72 @@ struct
               (NONE, stage, ctx) (* XXX someday first elt should be limit *)
        | _ => raise IllFormed
 
-  (* XXX write the below 2 fns in one *)
-  fun extractClassifier (sg : (ident * classifier) list) syn =
-    case syn of
-         Pred () => Pred []
-       | Id "type" => Type
-       | (App (Id tp, []) | Id tp) 
-          => (case lookup tp sg of
-                   SOME Type => Tp tp (* XXX won't tc *)
-                 | _ => raise IllFormed)
-       | _ => raise IllFormed
+  fun extractID (Id f) = f
+    | extractID (App (Id f, [])) = f
+    | extractID _ = raise IllFormed
+
+  fun extractPredDecl data predclass =
+    let
+      val Fn (id, args) = extractGroundTerm data
+    in
+      (id, Ceptre.Pred (predclass, args))
+    end
+
+  fun extractIDTms (Fn (i, [])) = i
+    | extractIDTms _ = raise IllFormed
 
   (* checks decl wrt sg *)
   fun extractDecl sg top =
     case top of
-         Decl (Ascribe (data_syn, classifier_syn)) =>
-            case extractClassifier sg classifier_syn of
-              Pred [] => (* extract data_syn as newid t1 ... tn *)
-                let
-                  (* XXX check that all args are valid wrt sg? *)
-                  val Fn (id, args) = extractGroundTerm data_syn
-                in
-                  (id, Pred args)
-                end
-            | Type => (* data_syn should just be an id *)
-              (case extractGroundTerm data_syn of
-                   Fn (id, []) => (id, Type)
-                  | _ => raise IllFormed)
-            | Tp tp => (* data_syn as newid t1 ... tn *)
-              let
-                val Fn (id, args) = extractGroundTerm data_syn
-              in
-                XXX
-              end
-                
-       | _ => raise IllFormed
-
+         Decl (Ascribe (data, class)) =>
+         (case class of
+            (* first-order types *)
+               Id "type" => 
+               (case data of
+                     (Id id) => (id, Ceptre.Type)
+                   | (App (Id id, [])) => (id, Ceptre.Type)
+                   | _ => raise IllFormed)
+            (* predicates *)
+             | Pred () => (* parse data as f t...t *)
+                extractPredDecl data Ceptre.Prop
+             | Id "bwd" =>
+                 extractPredDecl data Ceptre.Bwd
+             | Id "sense" => (* Parse as a Ceptre.Pred Bwd *)
+                 extractPredDecl data Ceptre.Sense
+             | Id "action" => (* parse as Ceptre.pred Act *)
+                 extractPredDecl data Ceptre.Act
+            (* first-order terms *)
+             | Id ident => (* data : ident *)
+                 (* XXX look up ident in sg.
+                 * if it's a type, parse data as name * argtp list and
+                 * return a (name, Ceptre.Tp (argtps, ident)) *)
+                 (case lookup ident sg of
+                      SOME Ceptre.Type =>
+                        let
+                          val Fn (name, argtps) = extractGroundTerm data
+                          val idents = map extractIDTms argtps
+                        in
+                          (name, Ceptre.Tp (idents, ident))
+                        end
+                 (* if it's a bwd pred, data should just be an id. *)
+                  (*  | SOME (Ceptre.Pred (Bwd, args)) =>
+                        let
+                          val Fn (id, []) = extractGroundTerm data
+                        in
+                          (* XXX nooo this won't typecheck ugh *)
+                          (id, {name=id, head=(ident,[]), subgoals=[]})
+                        end *)
+                    | _ => raise IllFormed)
+            (* backward chaining rules *)
+            (* XXX get to this
+             | Arrow rule =>
+                 (* call another fn that parses rule as (lhs, rhs) *)
+                 (* parse lhs as a predicate *)
+                 (* parse rhs as another arrow or a head *)
+                 (* eventually return a Ceptre.bwd_rule *)
+                 *)
+             | _ => raise IllFormed)
+      | _ => raise IllFormed
 
   datatype csyn = CStage of stage | CRule of rule_internal 
                 | CNone of syn
@@ -249,7 +279,8 @@ struct
     case top of
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
-       | Decl s => CNone s (* XXX not handled yet *)
+       | Decl s => (CDecl (extractDecl sg top)
+                      handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext top)
        | Special _ => CProg (extractProgram top)
 

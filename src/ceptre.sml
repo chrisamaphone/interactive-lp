@@ -14,11 +14,17 @@ structure Ceptre = struct
   type context = atom list
 
   (* Const term declarations *)
-  datatype classifier = Type | Tp of (term list) * ident | Pred of term list
+  datatype predClass = Prop | Bwd | Sense | Act
+  datatype classifier = 
+      Type | Tp of (ident list) * ident | Pred of predClass * term list
+
   type decl = ident * classifier
 
   (* Backward chaining persistent rules *)
-  type bwd_rule = {head:atom, subgoals : atom list}
+  type bwd_rule = 
+  {name : ident, 
+   head : pred * term list, 
+   subgoals : atom list}
 
   type tp_header = decl list
   type sigma = {header:tp_header, rules:bwd_rule list}
@@ -120,8 +126,8 @@ structure Ceptre = struct
       case epred of
           ELin (p, tms) =>
             (case lookup p sg of
-                SOME LinPred => (Lin, p, map termMapper tms)
-              | SOME PersPred => (Pers, p, map termMapper tms)
+                SOME (Pred (class, tps)) => (Lin, p, map termMapper tms)
+                (* XXX check tms match tps? *)
              (* | _ => raise IllFormed) *)
               | _ => (Lin, p, map termMapper tms))
         | EPers (p, tms) =>
@@ -258,10 +264,12 @@ structure Ceptre = struct
     {name="r1", lhs=[ELin ("a", [EVar "X", EVar "Y"])],
                  rhs=[ELin ("b", [EVar "X"]), ELin ("c", [EVar "Y"])]}
 
+  val linpred = Pred (Prop, [])
+
   val sg1 =
-    [("a", LinPred),
-     ("b", LinPred),
-     ("c", LinPred)]
+    [("a", linpred),
+     ("b", linpred),
+     ("c", linpred)]
 
  val etoi_test1 = externalToInternal sg1 ext1
 
