@@ -14,11 +14,12 @@ structure Ceptre = struct
   type context = atom list
 
   (* Const term declarations *)
-  datatype classifier = Type | Tp of term | LinPred | PersPred
+  datatype classifier = 
+     Type | Tp of term | LinPred | PersPred | Bwd | Sense | Act
   type decl = ident * classifier
 
   (* Backward chaining persistent rules *)
-  type bwd_rule = {head:atom, subgoals : atom list}
+  type bwd_rule = {head : pred * term list, subgoals : atom list}
 
   type tp_header = decl list
   type sigma = {header:tp_header, rules:bwd_rule list}
