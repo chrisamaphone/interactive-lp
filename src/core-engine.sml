@@ -8,7 +8,8 @@ sig
    val transitionToString : transition -> string
    
    (* Turns a program and a context into a fast context *)
-   val init: (string * sense) list 
+   val init: Ceptre.sigma
+             -> (string * sense) list 
              -> Ceptre.stage list 
              -> Ceptre.context 
              -> fastctx
@@ -97,7 +98,7 @@ datatype fastctx =
 
 type sense = fastctx * Ceptre.term list -> Ceptre.term list list
                                
-fun init senses prog initial_ctx: fastctx = 
+fun init _ senses prog initial_ctx: fastctx = 
 let
    fun compile_lhses {name, body} = 
       (name, 
@@ -176,6 +177,10 @@ fun search_premises rule ctx used subst prems =
             (Tree.append (fn (x, subst) => 
                search_premises rule ctx (x :: used) subst prems))
             Tree.N (search_context ctx used subst prem)
+
+(*
+fun backward_chain_rule {head, subgoals} subst = 0
+*)
 
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 

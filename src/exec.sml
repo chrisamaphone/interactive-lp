@@ -53,10 +53,8 @@ let
                val () = print "Applying stage transition "
                val () = print (CoreEngine.transitionToString T) 
                val (fastctx', _) = CoreEngine.apply_transition fastctx T
-               (* READ OUT NEW PHASE FROM PROGRAM *)
-               val stage_id = currentPhase (CoreEngine.context fastctx')
-               (* XXX there's probably a more efficient way to do that. *)
-               (* val stage' = lookupPhase stage_id program *)
+               val [(x, [Ceptre.Fn (stage_id, [])])] = 
+                  CoreEngine.lookup fastctx' "stage"
             in
                loop stage_id fastctx'
             end)
@@ -71,12 +69,12 @@ let
           end
   end
 
-  (* XXX doesn't this need to have more stuff going on? The init
-   * function is expecting just a list of rulesets, not a structured
-   * Ceptre program with states - RJS *)
   val (stages, ctx) = Ceptre.progToRulesets program
+
+  (*  XXX MAKE THIS THE REAL SIGMA *)
+  val sigma = {header = [], rules = []}
 in
-   CoreEngine.context (loop init_stage (CoreEngine.init [] stages ctx))
+   CoreEngine.context (loop init_stage (CoreEngine.init sigma [] stages ctx))
 end
 
 fun run (program as {init_state,...} : Ceptre.program) = 
