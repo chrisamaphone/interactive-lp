@@ -1,5 +1,5 @@
-# Permute a list by removing all elements and then readding them.
-# Reaches quiescence in linear time.
+% Permute a list by removing all elements and then readding them.
+% Reaches quiescence in linear time.
 
 list(cons X Xs) -o elem(X), list(Xs).
 list(nil) -o list'(nil).
@@ -8,8 +8,8 @@ elem(X), list'(Xs) -o list'(cons X Xs).
 % as it turns out, the implementation always deterministically
 % reconstructs the same list.. but it is fun to watch it work,
 % nonetheless!
-#trace * list (cons 1 (cons 2 (cons 3 nil))).
+#trace _ list (cons 1 (cons 2 (cons 3 nil))).
 
 % even a list with duplicates will have duplicates at the end:
 % our hypotheses do not admit contraction.
-#trace * list (cons 1 (cons 1 nil)).
+#trace _ list (cons 1 (cons 1 nil)).

@@ -15,6 +15,6 @@
 
 % what verifications do we get?  one of them is verif (A /\ B),
 % since we said it was a subformula we cared about.
-#exec _ !use (atom p),
-        !use (implies (atom p) (atom q)),
-        !subformula (conj (atom q) (atom p)).
+#exec _ (!use (atom p),
+         !use (implies (atom p) (atom q)),
+         !subformula (conj (atom q) (atom p))).

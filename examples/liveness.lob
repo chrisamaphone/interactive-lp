@@ -46,8 +46,8 @@ W <> X
 !inst L (if X K)
     -o !live X L.
 
-#exec _ !inst 1 (assign x + y z),
-        !inst 2 (if x 4),
-        !inst 3 (goto 1),
-        !inst 4 (assign w + x x),
-        !inst 5 (halt).
+#exec _ (!inst 1 (assign x plus y z),
+         !inst 2 (if x 4),
+         !inst 3 (goto 1),
+         !inst 4 (assign w plus x x),
+         !inst 5 (halt)).
