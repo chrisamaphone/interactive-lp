@@ -22,9 +22,7 @@ structure Ceptre = struct
 
   (* Backward chaining persistent rules *)
   type bwd_rule = 
-  {name : ident, 
-   head : pred * term list, 
-   subgoals : atom list}
+    {name : ident, pivars : int, head : pred * term list, subgoals : atom list}
 
   type tp_header = decl list
   type sigma = {header:tp_header, rules:bwd_rule list}
