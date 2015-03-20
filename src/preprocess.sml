@@ -212,14 +212,24 @@ struct
 
   fun extractIDTms (Fn (i, [])) = i
     | extractIDTms _ = raise IllFormed
+  
+  datatype csyn = CStage of stage | CRule of rule_internal 
+                | CNone of syn
+                | CError of top 
+                | CCtx of ident * context  (* named ctx *)
+                | CProg of (int option) * ident * ident 
+                    (* limit, initial phase & initial ctx *)
+                | CDecl of decl
+                | CBwd of bwd_rule
 
   (* checks decl wrt sg *)
   fun extractDecl sg top =
     case top of
          Decl (Ascribe (data, class)) =>
          (case class of
+               App (class, []) => extractDecl sg (Decl (Ascribe (data, class)))
             (* first-order types *)
-               Id "type" => 
+             | Id "type" => 
                (case data of
                      (Id id) => (id, Ceptre.Type)
                    | (App (Id id, [])) => (id, Ceptre.Type)
@@ -265,15 +275,6 @@ struct
                  *)
              | _ => raise IllFormed)
       | _ => raise IllFormed
-
-  datatype csyn = CStage of stage | CRule of rule_internal 
-                | CNone of syn
-                | CError of top 
-                | CCtx of ident * context  (* named ctx *)
-                | CProg of (int option) * ident * ident 
-                    (* limit, initial phase & initial ctx *)
-                | CDecl of decl
-                | CBwd of bwd_rule
 
   fun extractTop sg top =
     case top of

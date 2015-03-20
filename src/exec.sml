@@ -28,6 +28,7 @@ structure Rand = RandFromRandom(structure Random = AESRandom)
 (* pick one element from a list *)
 fun pick L = List.nth (L, Rand.randInt (List.length L))
 
+val qui = (Ceptre.Lin, "qui", [])
 
 (* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
@@ -45,21 +46,25 @@ let
   in
      case CoreEngine.possible_steps stage fastctx of
         [] => 
-        (case CoreEngine.possible_steps "outer_level" fastctx of 
-            [] => fastctx (* DONE *)
-          | L => 
-            let 
-               val T = pick L
-               val () = print "Applying stage transition "
-               val () = print (CoreEngine.transitionToString T) 
-               val (fastctx', _) = CoreEngine.apply_transition fastctx T
-               (* READ OUT NEW PHASE FROM PROGRAM *)
-               val stage_id = currentPhase (CoreEngine.context fastctx')
-               (* XXX there's probably a more efficient way to do that. *)
-               (* val stage' = lookupPhase stage_id program *)
-            in
-               loop stage_id fastctx'
-            end)
+        let
+          val (fastctx, var) = CoreEngine.insert fastctx qui
+        in
+          (case CoreEngine.possible_steps "outer_level" fastctx of 
+              [] => fastctx (* DONE *)
+            | L => 
+              let 
+                val T = pick L
+                val () = print "Applying stage transition "
+                val () = print (CoreEngine.transitionToString T) 
+                val (fastctx', _) = CoreEngine.apply_transition fastctx T
+                (* READ OUT NEW PHASE FROM PROGRAM *)
+                val stage_id = currentPhase (CoreEngine.context fastctx')
+                (* XXX there's probably a more efficient way to do that. *)
+                (* val stage' = lookupPhase stage_id program *)
+              in
+                loop stage_id fastctx'
+              end)
+        end
       | L => 
           let
             val T = pick L
