@@ -35,11 +35,13 @@ datatype syn =
  | Dollar of syn             (* $t *)
  | One of unit               (* () *)
  | App of syn * syn list     (* t t1...tn *)
+                             (* Parser will only allow t = Id, Wild *)
  | Pred of unit              (* pred *)
  | Wild of unit              (* _ *)
  | Id of string              (* x or X *)
  | Num of IntInf.int         (* x or X *)
-                
+ | Braces of syn             (* { t } *)                
+
 fun synToString syn =
   (case syn of 
       Ascribe (x, y) => "("^synToString x^" : "^synToString y^")" 
@@ -57,7 +59,8 @@ fun synToString syn =
     | Pred () => "pred"
     | Wild () => "_"
     | Id x => x
-    | Num n => IntInf.toString n)
+    | Num n => IntInf.toString n
+    | Braces x => "{"^synToString x^"}")
 
 datatype top = 
    Decl of syn                  (* something. *)
@@ -179,10 +182,19 @@ ParseFn
 
    val parens = fn x => x
    val swap = fn (x, y) => (y, x)
-   val LolliOne = fn x => Lolli (x, App (One (), []))
+   val LolliOne = fn x => Lolli (x, One ())
    val LolliL = Lolli o swap
    val ArrowL = Arrow o swap
    val StagePred = fn x => App (Id "stage", [Id x])
+   fun app (x, ys) = 
+      case (x, ys) of 
+         (App (x, xs), ys) => app (x, xs @ ys)
+       | (x, []) => x
+       | (Id x, ys) => App (Id x, ys)
+       | (Wild x, ys) => App (Wild x, ys)
+       | _ => raise Fail ("It never makes sense to give arguments to '"^
+                          synToString x^"', but this was given "^
+                          Int.toString (length ys)^" argument(s).")
 
    type tops = top list
    type syns = syn list
@@ -232,7 +244,7 @@ let
 
    (* Debug: print out all tokens *)
    val () = 
-      if false then ()
+      if true then ()
       else Stream.app
              (fn (tok, pos) =>
                  print (toString tok^

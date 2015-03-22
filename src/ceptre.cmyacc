@@ -52,13 +52,14 @@ nonterminal Syn: syn =
    DOLLAR 1:Syn                => Dollar
 
    STAGE 1:IDENT               => StagePred
-   1:Atomic 2:Atomics          => App
+   1:Atomic 2:Atomics          => app
 
 nonterminal Atomics: syns =    => Nil
    1:Atomic 2:Atomics          => Cons precl 90
 
 nonterminal Atomic: syn =
    LPAREN 1:Syn RPAREN         => parens
+   LBRACE 1:Syn RBRACE         => Braces
    LPAREN RPAREN               => One
    1:IDENT                     => Id
    USCORE                      => Wild

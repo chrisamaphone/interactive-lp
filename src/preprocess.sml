@@ -136,12 +136,13 @@ struct
 
   fun declToRule sg syntax =
     case syntax of
-          Decl (Ascribe (App (Id name, []), 
+          Decl (Ascribe (Id name, 
                 Lolli (lhs_syn, rhs_syn))) => (* XXX MATCH ERROR - RJS *)
             let
               val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
+              exception RobDoesntKnowWhatToDoHere
               val rhs = 
-                case rhs_syn of App (One (), []) => []
+                case rhs_syn of One () => raise RobDoesntKnowWhatToDoHere
                    | _ => extractRHS rhs_syn residual
               (* external syntax *)
               val erule = {name = name, lhs = lhs, rhs = rhs}
@@ -309,7 +310,7 @@ struct
   fun extractTop sg top =
     case top of
          Stage _ => CStage (extractStage sg top)
-       | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
+       | Decl (Ascribe (Id _, Lolli _)) => CRule (declToRule sg top)
        | Decl s => (extractDecl sg top
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext top)
