@@ -37,14 +37,15 @@ struct
 
 
 type ctx_var = int
+datatype value = Var of ctx_var | Rule of Ceptre.pred * value list
 
 type transition =
-   {r: Ceptre.ident, tms : Ceptre.term option vector, S: ctx_var list}
+   {r: Ceptre.ident, tms : Ceptre.term option vector, Vs: value list}
 
 fun vectorToList v = 
    List.tabulate (Vector.length v, fn i => valOf (Vector.sub (v, i)))
 
-fun transitionToString {r, tms, S} =
+fun transitionToString {r, tms, Vs} =
    Ceptre.withArgs r (map Ceptre.termToString (vectorToList tms))
 
 local
@@ -93,6 +94,8 @@ struct
               (fn t => (case bind t f of N => NONE | t => SOME t))
               (ts))
 
+   fun require x (ts: unit -> 'a t): 'a t = if x then ts () else N
+
    fun fromOpt NONE = N
      | fromOpt (SOME x) = L x
 
@@ -111,6 +114,11 @@ struct
    val flatten = fn t => flatten' (t, [])
 
    fun append f (a, t) = t @ f a
+
+   (* Okay these actually have the right names *)
+   fun guard false = N
+     | guard true = L ()
+
 end
 
 structure C = Ceptre
@@ -124,7 +132,7 @@ type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
 (* RHSes are just mapped from their names *)
 type 'a prog = 
   {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
-   bwds: Ceptre.bwd_rule list,
+   bwds: Ceptre.bwd_rule list M.dict,
    lmap: fast_ruleset M.dict,
    rmap: C.atom list M.dict}
 
@@ -146,15 +154,23 @@ let
           (fn {name, pivars, lhs, rhs} => 
               {name = name, pivars = pivars, lhs = lhs})
           body)
+
    fun compile_rhses ({name, body}: C.stage, map) = 
       List.foldl 
           (fn ({name, rhs, ...}, rmap) => 
               M.insert rmap name rhs)
           map body
+
+   fun insert_bwd_rule (rule: Ceptre.bwd_rule, m) =
+   let val key = (#1 (#head rule)) 
+   in M.insertMerge m key [ rule ] (fn rules => rule :: rules)
+   end
+
    val prog: fastctx prog = 
       {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
                    M.empty senses,
-       bwds = #rules sigma,
+       bwds = List.foldl (fn (rule, m) => insert_bwd_rule (rule, m))
+                 M.empty (#rules sigma),
        lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
                  M.empty (map compile_lhses prog),
        rmap = List.foldl compile_rhses 
@@ -172,33 +188,17 @@ end
                         
 fun context (FC {ctx = {concrete, ...}, ...}) = map #2 concrete
 
+
+(****** Variable substitutions ******)
+
 type msubst = C.term option vector
 
-(* Matching of a pattern (C.term) against a ground or partially-ground
- * term.  If the "ground" term t is not fully ground, then we will 
- * treat any variable occurances as complete wildcards (no unification 
- * is performed). *)
-fun match_term (p: C.term, t: C.term) (subst: msubst): msubst Tree.t = 
-   case (p, t) of 
-      (C.Var n, t) =>
-        (case Vector.sub (subst, n) of 
-            NONE => Tree.L (Vector.update (subst, n, SOME t))
-          | SOME t' => match_term (t', t) subst)
-    | (C.Fn (f, ps), C.Fn (g, ts)) => 
-         if f = g then match_terms (f, ps, ts) subst else Tree.N
-    | (p, C.Var n) => Tree.L subst (* Variable found: imprecise *)
 
-and match_terms (f, ps, ts) subst: msubst Tree.t = 
-   case (ps, ts) of
-      ([], []) => Tree.L subst
-    | (p :: ps, t :: ts) => 
-         Tree.bind
-            (match_term (p, t) subst)
-            (match_terms (f, ps, ts)) 
-    | _ => raise Fail ("Arity error for "^f)
+(* apply_subst subst term = subst(term)
+ * 
+ * Applies substitution as far as possible, leaving variables if any
+ * occur. *)
 
-(* Applies the substitution as far as possible, leaving variables if
- * any occur *)
 fun apply_subst (subst: msubst) (t: C.term) = 
    case t of 
       C.Var n => 
@@ -207,51 +207,63 @@ fun apply_subst (subst: msubst) (t: C.term) =
           | SOME t' => t')
     | C.Fn (f, ts) => C.Fn (f, List.map (apply_subst subst) ts)
 
-fun is_in x exclude = List.exists (fn y => x = y) exclude
+
+(* match_term {pat, term} subst ~~> zero or one new substs
+ * match_terms {pat, term} subst ~~> zero or one new substs
+ * 
+ * Matching of a pattern against a ground or partially-ground
+ * term.  
+ * 
+ * The substitution sigma provides information about the pattern: in 
+ * other words, we're really trying to match subst(pat) against term.
+ * 
+ * This definitely makes sense if term is completely ground. If term
+ * is not ground any variables it contains are treated as complete
+ * unknowns, so we say that the match succeeds and we don't learn
+ * anything about the structure of the corresponding pattern. I'm less
+ * confident that makes sense. *)
+
+fun match_term {pat = p, term = t} (subst: msubst): msubst Tree.t = 
+   case (p, t) of 
+      (C.Var n, t) =>
+        (case Vector.sub (subst, n) of 
+            NONE => Tree.L (Vector.update (subst, n, SOME t))
+          | SOME ground_pat => match_term {pat = ground_pat, term = t} subst)
+    | (C.Fn (f, ps), C.Fn (g, ts)) => 
+        (Tree.bind (Tree.guard (f = g))
+           (fn () =>
+         match_terms {f = f, pat = ps, term = ts} subst))
+    | (p, C.Var n) => 
+        (Tree.L subst) (* Variable found: imprecise (but still sound?) *)
+
+and match_terms {f, pat = ps, term = ts} subst: msubst Tree.t = 
+   case (ps, ts) of
+      ([], []) => Tree.L subst
+    | (p :: ps, t :: ts) => 
+         Tree.bind
+            (match_term {pat = p, term = t} subst)
+            (match_terms {f = f, pat = ps, term = ts}) 
+    | _ => raise Fail ("Arity error for "^f)
+
+
+fun is_in x exclude = List.exists (fn y => Var x = y) exclude
  
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
-
-fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
-   if a = b andalso not (is_in x exclude)
-      then Tree.map (fn subst => (x, subst)) (match_terms (a, ps, ts) subst)
-   else Tree.N
 
 
 
 (****** Logic programming engine ******)
 
-(* Trying to find ways to match a partially instantiated proposition ts,
- * with the goal of getting a fully-instantiated version that has a proof,
- * and returning a suitably updated substitution.
- * 
- *   ctx [ name : subgoals -o b ps ] |- a ts 
- * 
- * Assumes we've already applied the substitution subst to ts as much 
- * as possible; assumes backward chaining rule is reasonably moded. *) 
+fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
+   Tree.bind (Tree.guard (a = b andalso not (is_in x exclude)))
+     (fn () =>
+   Tree.bind (match_terms {f = a, pat = ps, term = ts} subst)
+     (fn subst =>
+   Tree.L (Var x, subst)))
 
-fun search_bwd bwds ctx Vs subst (a, ts) bwd = 
-let
-   val {name, pivars, head = (b, ps), subgoals} = bwd
-   val subst' = unknown pivars
-in
-   if a = b
-      then Tree.bind (match_terms (a, ps, ts) subst')
-             (fn subst' => 
-           (* Okay, we partially match the head of the rule! *)
-           Tree.bind (search_premises name bwds ctx Vs subst' subgoals)
-             (fn {r, tms, S} => 
-           (* And satisfy the subgoals! *)
-           Tree.letOne (map (apply_subst tms) ps)
-             (fn ss => 
-           (* (a, ss) is the fact we've proven *)
-           Tree.bind (match_terms (a, ts, ps) subst)
-             (fn sigma => 
-           (* Which taught us new things about our orig. substitution *)
-           Tree.L (~1, sigma)))))
-   else Tree.N
-end
-
-(* Trying to complete a right focus that is in service of some left focus:
+(* search_premises r bwds ctx Vs subst prems ~~~> some enabled transitions
+ * 
+ * Trying to complete a right focus that is in service of some left focus:
  * 
  *    ctx |- [ subst(prems) ]
  *    ------------------------
@@ -267,61 +279,85 @@ end
  * We learn more about the substitution "subst" as we go along, 
  * so we return both substitutions and the proof term we built. *)
 
-and search_premises r bwds ctx Vs subst prems = 
+fun search_premises r bwds ctx (Vs: value list) subst prems = 
    case prems of 
-      [] => Tree.L {r = r, tms = subst, S = rev Vs}
+      [] => Tree.L {r = r, tms = subst, Vs = rev Vs}
     | prem :: prems => 
          Tree.bind 
             (search_prem bwds ctx Vs subst prem)
-            (fn (x, subst) => 
+            (fn (x: value, subst) => 
                search_premises r bwds ctx (x :: Vs) subst prems)
 
-(* Trying to complete an atomic right focus
+(* search_bwd bwds ctx (ts_subst, ts) bwd ~~> some extended ts_substs 
+ * 
+ * Trying to find ways to match a partially instantiated proposition ts,
+ * with the goal of getting a fully-instantiated version that has a proof,
+ * and returning a suitably updated substitution.
+ * 
+ *   ctx [ name : subgoals -o a ps ] |- a ts 
+ * 
+ * Assumes ts_subst(ts) = ts -- in other words, assumes that this is
+ * already a partially-instantiated list of terms.
+ * 
+ * Assumes backward chaining rule is reasonably moded; should have as a
+ * postcondition that the atoms it returns are fully instantiated. *) 
+
+and search_bwd bwds ctx (ts_subst, ts) bwd = 
+let val {name, pivars, head = (a, ps), subgoals} = bwd
+in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
+     (* Okay, we partially match the head of the rule, giving subst *)
+     (fn subst => 
+   Tree.bind (search_premises name bwds ctx [] subst subgoals)
+     (* Here's a way to satisfy all subgoals! *)
+     (fn {r, tms = subst, Vs} =>
+   Tree.letOne (map (apply_subst subst) ps)
+     (* (a, ss) is the fact we've established using backward chaining;
+      * it has the proof term r(Vs). We're counting on ss being ground; 
+      * this should always be the case if the backward chaining logic
+      * programs are well moded.
+      *
+      * (a, ss) is definitely a provable fact in the current program,
+      * so now we're in the position we're in with match_hyp: we want
+      * to match this new fact against the subgoal ts that we started
+      * with. *)
+     (fn ss => 
+   Tree.bind (match_terms {f = a, pat = ts, term = ss} ts_subst) 
+     (* Now we have learned things about our original substitution, 
+      * and can return *) 
+     (fn ts_subst => 
+   Tree.L (Rule (a, Vs), ts_subst)))))
+end
+
+(* search_prem bwds ctx Vs subst prem ~~~> some extended substitutions
+ *
+ * Trying to complete an atomic right focus
  * 
  *    ctx |- [ mode (a, subst(ps)) ]        *)
 
-and search_prem bwds ctx Vs subst (mode, a, ps) = 
+and search_prem bwds ctx (Vs: value list) subst (mode, a, ps) = 
 let 
    (* Try to satisfy the premise by looking it up in the context *)
-   val matched: (ctx_var * msubst) Tree.t = 
+   val matched: (value * msubst) Tree.t = 
       case mode of 
          C.Lin => Tree.letMany ctx (fn hyp => match_hyp Vs subst (a, ps) hyp) 
        | C.Pers => Tree.letMany ctx (fn hyp => match_hyp [] subst (a, ps) hyp)
 
    (* Try to satisfy the premise by finding rules that match it *)
-   val tsx = map (apply_subst subst) ps 
-   val derived: (ctx_var * msubst) Tree.t =
-      Tree.letMany bwds (fn bwd => search_bwd bwds ctx Vs subst (a, tsx) bwd)
+   val derived: (value * msubst) Tree.t =
+      case M.find bwds a of
+         NONE => Tree.N
+       | SOME bwds_for_a => 
+         let val tsx = map (apply_subst subst) ps
+         in Tree.letMany bwds_for_a
+               (* A rule! Does it give us a ground instance of our atom? *)
+               (fn bwd => 
+            search_bwd bwds ctx (subst, tsx) bwd)
+         end
 in
    Tree.@ (derived, matched)
 end
 
 
-
-(*
-(* tsubst(t) is a term that may not be fully ground *)
-(* Try to learn as much about psubst as possible from t(tsubst) *)
-fun partial_match_term (p, psubst) (t, tsubst) = 
-   case p of
-      
-
-fun partial_match_termss f ([], psubst) ([], tsubst) = SOME psubst
-  | partial_matches f (p :: ps, psubst) (t :: ts, tsubst) = 
-      (Option.mapPartial 
-         (fn subst => partial_matches f (ps, subst) (ts, tsubst))
-         (partial_match (p, psubst) (t, tsubst)))
-  | partial_matches _ _ = 
-      (raise Fail ("partial_matches: arities don't match for "^f))
-
- *)
-(*
-fun backward_chain_rule {name, pivars, head, subgoals} term subst =
-let
-   val t = 
-  (case partial_match pivars head (prem, subst) of
-      NONE => Tree.N
-    | SOME subst => 
-*)
 
 fun possible_steps stage (FC {prog = {lmap, bwds, ...}, ctx = {concrete, ...}}) =
    case M.find lmap stage of
@@ -338,12 +374,12 @@ fun add_to_ctx gsubst ((mode, a, ps), ({next, concrete}, xs)) =
     concrete = (next, (mode, a, map (apply_subst gsubst) ps)) :: concrete},
    next :: xs)
 
-fun apply_transition (FC {prog, ctx = {concrete, next}}) {r, tms, S} =
+fun apply_transition (FC {prog, ctx = {concrete, next}}) {r, tms, Vs} =
 let
 
    (* Remove linear identifiers from context *)
    val concrete = 
-      List.filter (fn (x, a) => C.Pers = #1 a orelse not (is_in x S)) concrete
+      List.filter (fn (x, a) => C.Pers = #1 a orelse not (is_in x Vs)) concrete
 
    (* Find right hand side pattern hand side *)
    val rhs = 
