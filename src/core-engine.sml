@@ -81,6 +81,8 @@ struct
        | [ t ] => t
        | _ => M ts  
 
+   fun letOne (t: 'a) (f: 'a -> 'b t): 'b t = f t
+
    fun letMany (ts: 'a list) (f: 'a -> 'b t): 'b t =
       many (List.mapPartial 
               (fn t => (case f t of N => NONE | t => SOME t)) 
@@ -214,25 +216,38 @@ fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
       then Tree.map (fn subst => (x, subst)) (match_terms (a, ps, ts) subst)
    else Tree.N
 
-(* Search the context for all (non-excluded) matches *)
 
-(* Trying to find ways to match a partially instantiated proposition ts
- * If rules are reasonably moded, we will return 
+
+(****** Logic programming engine ******)
+
+(* Trying to find ways to match a partially instantiated proposition ts,
+ * with the goal of getting a fully-instantiated version that has a proof,
+ * and returning a suitably updated substitution.
  * 
- *   ctx [ name : subgoals -o b ps ] |- a ts *)
+ *   ctx [ name : subgoals -o b ps ] |- a ts 
+ * 
+ * Assumes we've already applied the substitution subst to ts as much 
+ * as possible; assumes backward chaining rule is reasonably moded. *) 
 
 fun search_bwd bwds ctx Vs subst (a, ts) bwd = 
 let
-   val ts = map (apply_subst subst) ts
    val {name, pivars, head = (b, ps), subgoals} = bwd
+   val subst' = unknown pivars
 in
    if a = b
-      then Tree.N
-           (* Tree.bind (match_terms (a, ts, ps) (unknown pivars))
-             (fn subst => 
-           Tree.bind (search_premises name bwds ctx Vs subst subgoals) 
-             (fn {r, tms, Vs} =>
-           Tree.L (~1, map (apply_subst tms) ps))) *)
+      then Tree.bind (match_terms (a, ps, ts) subst')
+             (fn subst' => 
+           (* Okay, we partially match the head of the rule! *)
+           Tree.bind (search_premises name bwds ctx Vs subst' subgoals)
+             (fn {r, tms, S} => 
+           (* And satisfy the subgoals! *)
+           Tree.letOne (map (apply_subst tms) ps)
+             (fn ss => 
+           (* (a, ss) is the fact we've proven *)
+           Tree.bind (match_terms (a, ts, ps) subst)
+             (fn sigma => 
+           (* Which taught us new things about our orig. substitution *)
+           Tree.L (~1, sigma)))))
    else Tree.N
 end
 
