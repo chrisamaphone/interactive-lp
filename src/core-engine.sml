@@ -214,10 +214,12 @@ fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
       then Tree.map (fn subst => (x, subst)) (match_terms (a, ps, ts) subst)
    else Tree.N
 
-fun match_ruleres subst ps (a, ts) = 
-   Tree.map (fn subst => (~1, subst)) (match_terms (a, ps, ts) subst)
-
 (* Search the context for all (non-excluded) matches *)
+
+(* Trying to find ways to match a partially instantiated proposition ts
+ * If rules are reasonably moded, we will return 
+ * 
+ *   ctx [ name : subgoals -o b ps ] |- a ts *)
 
 fun search_bwd bwds ctx Vs subst (a, ts) bwd = 
 let
