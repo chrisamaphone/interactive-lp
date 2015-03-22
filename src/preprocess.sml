@@ -1,8 +1,8 @@
 structure Preprocess =
 struct
 
-  open Parse
   open Ceptre
+  open Parse
 
   exception IllFormed
   exception Unimp
@@ -150,7 +150,6 @@ struct
               externalToInternal sg erule
             end
         | _ => raise IllFormed
-  
 
   fun separate f l =
   let
@@ -206,18 +205,113 @@ struct
               (NONE, stage, ctx) (* XXX someday first elt should be limit *)
        | _ => raise IllFormed
 
+  fun extractID (Id f) = f
+    | extractID (App (Id f, [])) = f
+    | extractID _ = raise IllFormed
+
+  fun extractPredDecl data predclass =
+    let
+      val Fn (id, args) = extractGroundTerm data
+    in
+      (id, Ceptre.Pred (predclass, args))
+    end
+
+  fun extractIDTms (Fn (i, [])) = i
+    | extractIDTms _ = raise IllFormed
+
+  (* XXX need ceptre fn to extract pivars from bwd rules *)
+
+  (* return a {name,lhs,rhs} in external_rule syntax *)
+  fun extractBwd syn name subgoals =
+    case syn of
+         Arrow (lhs, rhs) =>
+         let
+           val (subgoal, _) = extractAtom lhs []
+         in
+           extractBwd rhs name (subgoal::subgoals)
+         end
+       | (Id _ | App _)  =>
+           let
+             val (pred, dollars) = extractAtom syn []
+             val () = (case pred of EPers _ => () | _ => raise IllFormed)
+             val () = (case dollars of [] => () | _ => raise IllFormed)
+           in
+             {name=name, lhs=subgoals, rhs=[pred]} : Ceptre.rule_external
+           end
+       | _ => raise IllFormed
+  
   datatype csyn = CStage of stage | CRule of rule_internal 
                 | CNone of syn
                 | CError of top 
                 | CCtx of ident * context  (* named ctx *)
                 | CProg of (int option) * ident * ident 
                     (* limit, initial phase & initial ctx *)
+                | CDecl of decl
+                | CBwd of bwd_rule
+
+  (* checks decl wrt sg *)
+  (* returns a csyn, either a CDecl or a CBwd *)
+  fun extractDecl sg top =
+    case top of
+         Decl (Ascribe (data, class)) =>
+         (case class of
+               App (class, []) => extractDecl sg (Decl (Ascribe (data, class)))
+            (* first-order types *)
+             | Id "type" => 
+               (case data of
+                     (Id id) => CDecl (id, Ceptre.Type)
+                   | (App (Id id, [])) => CDecl (id, Ceptre.Type)
+                   | _ => raise IllFormed)
+            (* predicates *)
+             | Pred () => (* parse data as f t...t *)
+                CDecl (extractPredDecl data Ceptre.Prop)
+             | Id "bwd" =>
+                 CDecl (extractPredDecl data Ceptre.Bwd)
+             | Id "sense" => (* Parse as a Ceptre.Pred Bwd *)
+                 CDecl (extractPredDecl data Ceptre.Sense)
+             | Id "action" => (* parse as Ceptre.pred Act *)
+                 CDecl (extractPredDecl data Ceptre.Act)
+            (* first-order terms *)
+             | Id ident => (* data : ident *)
+                (* Look up ident in sg.
+                 * if it's a type, parse data as name * argtp list and
+                 * return a (name, Ceptre.Tp (argtps, ident)) *)
+                 (case lookup ident sg of
+                      SOME Ceptre.Type =>
+                        let
+                          val Fn (name, argtps) = extractGroundTerm data
+                          val idents = map extractIDTms argtps
+                        in
+                          CDecl (name, Ceptre.Tp (idents, ident))
+                        end
+                 (* if it's a bwd pred, data should just be an id. *)
+                      | SOME (Ceptre.Pred (Bwd, arg_tps)) =>
+                        let
+                          val name = extractID data 
+                          val ebwd = extractBwd class name [] 
+                          val bwd = externalToBwd sg ebwd
+                        in
+                          CBwd bwd
+                        end
+                    | _ => raise IllFormed)
+            (* backward chaining rules *)
+             | Arrow rule =>
+                 let
+                   val name = extractID data
+                   val ebwd = extractBwd class name []
+                   val bwd = externalToBwd sg ebwd
+                 in
+                   CBwd bwd
+                 end
+             | _ => raise IllFormed)
+      | _ => raise IllFormed
 
   fun extractTop sg top =
     case top of
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
-       | Decl s => CNone s (* XXX not handled yet *)
+       | Decl s => (extractDecl sg top
+                      handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext top)
        | Special _ => CProg (extractProgram top)
 
@@ -227,9 +321,10 @@ struct
     | csynToString (CError _) = "(parse error!)"
     | csynToString (CCtx (name, ctx)) = name ^ " : " ^ (contextToString ctx)
     | csynToString (CProg (_,stg,ctx)) = "#trace * " ^ stg ^ " " ^ ctx ^ "."
+    | csynToString (CDecl (name,class)) = 
+          name ^ " : " ^ (classToString class) ^ "."
+    | csynToString (CBwd bwd) = "bwd" (* XXX *)
 
-
-  (* XXX handle signatures *)
 
   fun stage_exists s (stages : Ceptre.stage list) =
     List.exists (fn {name, body} => name = s) stages
@@ -252,6 +347,10 @@ struct
                | CError _ => process' tops sg contexts stages links progs
                             (* XXX error? *)
                | CCtx c => process' tops sg (c::contexts) stages links progs
+               | CDecl d =>
+                   process' tops (d::sg) contexts stages links progs
+               | CBwd bwd => (* XXX *)
+                   process' tops sg contexts stages links progs 
                | CProg (limit, init_stage, init_ctx_name) =>
                    (* XXX ignore limit for now *)
                    case (stage_exists init_stage stages, 

@@ -28,6 +28,7 @@ structure Rand = RandFromRandom(structure Random = AESRandom)
 (* pick one element from a list *)
 fun pick L = List.nth (L, Rand.randInt (List.length L))
 
+val qui = (Ceptre.Lin, "qui", [])
 
 (* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
@@ -41,32 +42,47 @@ let
   let
     (* XXX debugging *)
     val ctx_string = Ceptre.contextToString (CoreEngine.context fastctx)
-    val () = print ("\n\nCurrent state: " ^ ctx_string)
+    val () = print ("\n---- " ^ ctx_string ^ "\n")
   in
      case CoreEngine.possible_steps stage fastctx of
         [] => 
-        (case CoreEngine.possible_steps "outer_level" fastctx of 
-            [] => fastctx (* DONE *)
-          | L => 
-            let 
-               val T = pick L
-               val (fastctx', _) = CoreEngine.apply_transition fastctx T
-               (* READ OUT NEW PHASE FROM PROGRAM *)
-               val stage_id = currentPhase (CoreEngine.context fastctx')
-               (* XXX there's probably a more efficient way to do that. *)
-               (* val stage' = lookupPhase stage_id program *)
-            in
-               loop stage_id fastctx'
-            end)
-      | L => loop stage (#1 (CoreEngine.apply_transition fastctx (pick L)))
+        let
+          val (fastctx, var) = CoreEngine.insert fastctx qui
+        in
+          (case CoreEngine.possible_steps "outer_level" fastctx of 
+              [] => fastctx (* DONE *)
+            | L => 
+              let 
+                val T = pick L
+                val () = print "Applying stage transition "
+                val () = print (CoreEngine.transitionToString T) 
+
+                val (fastctx', _) = CoreEngine.apply_transition fastctx T
+                
+                (* READ OUT NEW PHASE FROM PROGRAM *)
+                val [(x, [Ceptre.Fn (stage_id, [])])] = 
+                  CoreEngine.lookup fastctx' "stage"
+              in
+                loop stage_id fastctx'
+              end)
+        end
+      | L => 
+          let
+            val T = pick L
+            val () = print "\nApplying transition "
+            val () = print (CoreEngine.transitionToString T)
+          in
+             loop stage 
+             (#1 (CoreEngine.apply_transition fastctx T))
+          end
   end
 
-  (* XXX doesn't this need to have more stuff going on? The init
-   * function is expecting just a list of rulesets, not a structured
-   * Ceptre program with states - RJS *)
   val (stages, ctx) = Ceptre.progToRulesets program
+
+  (*  XXX MAKE THIS THE REAL SIGMA *)
+  val sigma = {header = [], rules = []}
 in
-   CoreEngine.context (loop init_stage (CoreEngine.init [] stages ctx))
+   CoreEngine.context (loop init_stage (CoreEngine.init sigma [] stages ctx))
 end
 
 fun run (program as {init_state,...} : Ceptre.program) = 

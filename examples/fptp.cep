@@ -1,0 +1,23 @@
+%% First-past-the-post voting.
+
+context init =
+{ballot alice, ballot alice, ballot charlie, ballot bob,
+ballot bob, ballot alice,
+hopeful alice z,
+hopeful bob z,
+hopeful charlie z,
+undecided}.
+
+stage count = {
+  count_ballot : ballot C * hopeful C N -o hopeful C (s N).
+}
+
+- : qui * stage count -o stage pick.
+
+stage pick = {
+  % XXX no comparison yet.
+  elect : hopeful C K * undecided -o elected C.
+  reject : elected C * hopeful C' _ -o elected C.
+}
+
+#trace _ count init.

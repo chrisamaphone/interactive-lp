@@ -14,12 +14,16 @@ structure Ceptre = struct
   type context = atom list
 
   (* Const term declarations *)
+  datatype predClass = Prop | Bwd | Sense | Act
   datatype classifier = 
-     Type | Tp of term | LinPred | PersPred | Bwd | Sense | Act
+      Type | Tp of (ident list) * ident | Pred of predClass * term list
+
   type decl = ident * classifier
 
   (* Backward chaining persistent rules *)
-  type bwd_rule = {head : pred * term list, subgoals : atom list}
+  type bwd_rule = 
+    {name : ident, pivars : int, 
+     head : pred * term list, subgoals : atom list}
 
   type tp_header = decl list
   type sigma = {header:tp_header, rules:bwd_rule list}
@@ -37,6 +41,25 @@ structure Ceptre = struct
 
   fun atomToString (Lin, p, args) = withArgs p (map termToString args)
     | atomToString (Pers, p, args) = withArgs ("!"^p) (map termToString args)
+
+
+  fun classToString class =
+    case class of
+         Type => "type"
+       | Tp (tp_args, tp) => (String.concatWith " -> " tp_args) ^ tp
+       | Pred (pclass, term_args) =>
+           let
+             val predstring =
+               (case pclass of
+                     Prop => "pred"
+                   | Bwd => "bwd"
+                   | Sense => "sense"
+                   | Act => "act")
+             val term_strings = map termToString term_args
+           in
+             withArgs predstring term_strings
+           end
+
 
   fun contextToString x = 
     "{" ^ (String.concatWith ", " (map atomToString x)) ^ "}"
@@ -121,8 +144,8 @@ structure Ceptre = struct
       case epred of
           ELin (p, tms) =>
             (case lookup p sg of
-                SOME LinPred => (Lin, p, map termMapper tms)
-              | SOME PersPred => (Pers, p, map termMapper tms)
+                SOME (Pred (class, tps)) => (Lin, p, map termMapper tms)
+                (* XXX check tms match tps? *)
              (* | _ => raise IllFormed) *)
               | _ => (Lin, p, map termMapper tms))
         | EPers (p, tms) =>
@@ -130,6 +153,26 @@ structure Ceptre = struct
                   SOME _ => (Pers, p, map termMapper tms)
                 | _ => raise IllFormed)
     end
+
+  fun externalToBwd sg ({name,lhs,rhs}:rule_external) =
+    case rhs of
+         [ehead as EPers(pred,eargs)] =>
+         if (List.all (fn EPers _ => true | _ => false) lhs)
+         then
+           let
+             val hd_and_subgoals = ehead::lhs
+             val (table, nvars) = walk_atoms hd_and_subgoals ([],0)
+             val atomMapper = eatomToAtom sg table
+           in
+             case map atomMapper hd_and_subgoals of
+                  ((Pers, head, head_args)::subgoals) =>
+                    {name=name, pivars=nvars, 
+                      head=(head,head_args),
+                      subgoals=subgoals} : bwd_rule
+                | _ => raise IllFormed
+           end
+         else raise IllFormed
+       | _ => raise IllFormed
 
   fun externalToInternal 
     (sg:tp_header) ({name,lhs,rhs}:rule_external) =
@@ -259,10 +302,12 @@ structure Ceptre = struct
     {name="r1", lhs=[ELin ("a", [EVar "X", EVar "Y"])],
                  rhs=[ELin ("b", [EVar "X"]), ELin ("c", [EVar "Y"])]}
 
+  val linpred = Pred (Prop, [])
+
   val sg1 =
-    [("a", LinPred),
-     ("b", LinPred),
-     ("c", LinPred)]
+    [("a", linpred),
+     ("b", linpred),
+     ("c", linpred)]
 
  val etoi_test1 = externalToInternal sg1 ext1
 
