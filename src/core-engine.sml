@@ -303,7 +303,9 @@ fun search_premises r bwds ctx (Vs: value list) subst prems =
  * postcondition that the atoms it returns are fully instantiated. *) 
 
 and search_bwd bwds ctx (ts_subst, ts) bwd = 
-let val {name, pivars, head = (a, ps), subgoals} = bwd
+let
+   (* val () = print "search_bwd\n" *)
+   val {name, pivars, head = (a, ps), subgoals} = bwd
 in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
      (* Okay, we partially match the head of the rule, giving subst *)
      (fn subst => 
@@ -321,7 +323,7 @@ in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
       * to match this new fact against the subgoal ts that we started
       * with. *)
      (fn ss => 
-   Tree.bind (match_terms {f = a, pat = ts, term = ss} ts_subst) 
+   Tree.bind (match_terms {f = a, pat = ts, term = ss} ts_subst)
      (* Now we have learned things about our original substitution, 
       * and can return *) 
      (fn ts_subst => 
@@ -336,6 +338,7 @@ end
 
 and search_prem bwds ctx (Vs: value list) subst (mode, a, ps) = 
 let 
+   (* val () = print "search_prem\n" *)
    (* Try to satisfy the premise by looking it up in the context *)
    val matched: (value * msubst) Tree.t = 
       case mode of 
