@@ -36,7 +36,8 @@ val qui = (Ceptre.Lin, "qui", [])
 *  [fwdchain initialDB program]
 *    runs [program] to global quiescence on [initialDB].
 *)
-fun fwdchain ctx (program as {init_stage,...} : Ceptre.program) = 
+fun fwdchain 
+  (sigma:Ceptre.sigma) ctx (program as {init_stage,...} : Ceptre.program) = 
 let
   fun loop stage fastctx = 
   let
@@ -78,14 +79,11 @@ let
   end
 
   val (stages, ctx) = Ceptre.progToRulesets program
-
-  (*  XXX MAKE THIS THE REAL SIGMA *)
-  val sigma = {header = [], rules = []}
 in
    CoreEngine.context (loop init_stage (CoreEngine.init sigma [] stages ctx))
 end
 
-fun run (program as {init_state,...} : Ceptre.program) = 
-  fwdchain init_state program
+fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program) = 
+  fwdchain sigma init_state program
 
 end

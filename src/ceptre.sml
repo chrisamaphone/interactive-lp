@@ -157,8 +157,9 @@ structure Ceptre = struct
   fun externalToBwd sg ({name,lhs,rhs}:rule_external) =
     case rhs of
          [ehead as EPers(pred,eargs)] =>
+         (* XXX this check might make sense but it isn't working atm
          if (List.all (fn EPers _ => true | _ => false) lhs)
-         then
+         then *)
            let
              val hd_and_subgoals = ehead::lhs
              val (table, nvars) = walk_atoms hd_and_subgoals ([],0)
@@ -171,7 +172,7 @@ structure Ceptre = struct
                       subgoals=subgoals} : bwd_rule
                 | _ => raise IllFormed
            end
-         else raise IllFormed
+         (* else raise IllFormed *)
        | _ => raise IllFormed
 
   fun externalToInternal 

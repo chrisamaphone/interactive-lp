@@ -7,6 +7,19 @@ struct
   exception IllFormed
   exception Unimp
 
+  (* gensym names *)
+
+  val gensym_ctr = ref 0
+
+  fun gensym () =
+  let
+    val count = !gensym_ctr
+    val name = "`anon" ^ (Int.toString count)
+    val () = gensym_ctr := count + 1
+  in
+    name
+  end
+
   (* translating from Parse.syn to Ceptre.external_rule *)
 
   fun caps s =
@@ -54,6 +67,7 @@ struct
            end
        | _ => raise IllFormed 
 
+  (* XXX should look up bwd stuff in the sig *)
   fun extractAtom syn rhs =
     case syn of
          Bang syn =>
@@ -227,7 +241,13 @@ struct
        | (Id _ | App _)  =>
            let
              val (pred, dollars) = extractAtom syn []
+             val pred =
+              (case pred of
+                    ELin p => EPers p
+                  | EPers p => EPers p)
+             (* this check might make sense if we change extractAtom
              val () = (case pred of EPers _ => () | _ => raise IllFormed)
+             *)
              val () = (case dollars of [] => () | _ => raise IllFormed)
            in
              {name=name, lhs=subgoals, rhs=[pred]} : Ceptre.rule_external
@@ -279,14 +299,14 @@ struct
                           CDecl (name, Ceptre.Tp (idents, ident))
                         end
                  (* if it's a bwd pred, data should just be an id. *)
-                      | SOME (Ceptre.Pred (Bwd, arg_tps)) =>
-                        let
-                          val name = extractID data 
-                          val ebwd = extractBwd class name [] 
-                          val bwd = externalToBwd sg ebwd
-                        in
-                          CBwd bwd
-                        end
+                    | SOME (Ceptre.Pred (Bwd, arg_tps)) =>
+                      let
+                        val name = extractID data 
+                        val ebwd = extractBwd class name [] 
+                        val bwd = externalToBwd sg ebwd
+                      in
+                        CBwd bwd
+                      end
                     | _ => raise IllFormed)
             (* backward chaining rules *)
              | Arrow rule =>
@@ -297,7 +317,28 @@ struct
                  in
                    CBwd bwd
                  end
-             | _ => raise IllFormed)
+             | App (pred, args) => (* data : pred arg1 .. argn *)
+                 let
+                   val name = extractID data
+                   val ebwd = extractBwd class name []
+                   val bwd = externalToBwd sg ebwd
+                 in
+                   CBwd bwd
+                 end
+             | _ => 
+                 let
+                   val error = "unable to parse decl " ^ (synToString data) ^
+                   " : " ^ (synToString class) ^ "\n"
+                   val () = print error
+                 in
+                   raise IllFormed
+                 end)
+      | Decl unnamed => 
+          let
+            val id = gensym ()
+          in
+            extractDecl sg (Decl (Ascribe (Id id, unnamed)))
+          end
       | _ => raise IllFormed
 
   fun extractTop sg top =
@@ -324,27 +365,28 @@ struct
     List.exists (fn {name, body} => name = s) stages
 
   (* turn a whole list of top-level decls into a list of progs. *)
-  fun process' tops sg contexts stages links progs =
+  fun process' tops sg bwds contexts stages links progs =
     case tops of
-         [] => progs
+         [] => ({header=sg,rules=bwds} : Ceptre.sigma, progs)
        | (top::tops) => 
            (case extractTop sg top of
                  CStage stage => 
-                  process' tops sg contexts (stage::stages) links progs
+                  process' tops sg bwds contexts (stage::stages) links progs
                | CRule rule => 
                    (case ruleToStageRule rule of 
                          SOME link => 
-                          process' tops sg contexts stages (link::links) progs
+                          process' tops sg bwds contexts stages 
+                            (link::links) progs
                        | NONE => (* XXX error? *)
-                          process' tops sg contexts stages links progs)
-               | CNone _ => process' tops sg contexts stages links progs
-               | CError _ => process' tops sg contexts stages links progs
+                          process' tops sg bwds contexts stages links progs)
+               | CNone _ => process' tops sg bwds contexts stages links progs
+               | CError _ => process' tops sg bwds contexts stages links progs
                             (* XXX error? *)
-               | CCtx c => process' tops sg (c::contexts) stages links progs
+               | CCtx c => process' tops sg bwds (c::contexts) stages links progs
                | CDecl d =>
-                   process' tops (d::sg) contexts stages links progs
+                   process' tops (d::sg) bwds contexts stages links progs
                | CBwd bwd => (* XXX *)
-                   process' tops sg contexts stages links progs 
+                   process' tops sg (bwd::bwds) contexts stages links progs 
                | CProg (limit, init_stage, init_ctx_name) =>
                    (* XXX ignore limit for now *)
                    case (stage_exists init_stage stages, 
@@ -354,13 +396,14 @@ struct
                             val prog = {stages=stages, links=links, 
                               init_stage=init_stage, init_state = init_ctx}
                           in
-                            process' tops sg contexts stages links (prog::progs)
+                            process' tops sg bwds contexts stages links 
+                              (prog::progs)
                           end
-                      | _ => process' tops sg contexts stages links progs
+                      | _ => process' tops sg bwds contexts stages links progs
                               (* XXX some kind of error should happen...*)
              )
 
-  fun process tops = process' tops [] [] [] [] []
+  fun process tops = process' tops [] [] [] [] [] []
 
   (* testing *)
   

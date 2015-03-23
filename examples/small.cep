@@ -31,13 +31,17 @@ g : element.
 
 at location element location : pred.
 
-!lt element element : pred.
-lt r b.
-lt b g.
+lt element element : bwd.
+lt/rb : lt r b.
+lt/bg : lt b g.
 
-!leq element element : pred.
-leq X X.
-leq X Y <- lt X Y.
+lt/trans : lt X Z
+          <- lt X Y
+          <- lt Y Z.
+
+leq element element : bwd.
+leq/eq : leq X X.
+leq/lt : leq X Y <- lt X Y.
 
 stage sort = {
   swap : at L1 E1 L2 * at L2 E2 L * lt E2 E1
@@ -55,7 +59,7 @@ stage getmin = {
 }
 
 context sort_init = 
-{at l1 g l2, at l2 r l3, at l3 g l4,
+{at start g l2, at l2 r l3, at l3 g l4,
   at l4 b l5, at l5 r end}.
 
 #trace _ sort sort_init.
