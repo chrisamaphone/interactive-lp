@@ -127,13 +127,23 @@ structure Ceptre = struct
              walk_atoms atoms t
            end
 
+  exception IllFormed
+
   fun etermToTerm table term =
     case term of
          EFn (f, args) => Fn (f, map (etermToTerm table) args)
          (* XXX probably shouldn't valOf *)
-       | EVar id => Var (valOf (lookup id table))
+       | EVar id =>
+           (case lookup id table of
+                SOME x => Var x
+              | NONE =>
+                  let
+                    val error = "Couldn't match id "^id^"\n"
+                    val () = print error
+                  in
+                    raise IllFormed
+                  end)
 
-  exception IllFormed
   fun eatomToAtom sg table epred =
     let
       val termMapper = etermToTerm table
