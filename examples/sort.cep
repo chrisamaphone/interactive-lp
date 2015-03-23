@@ -1,0 +1,39 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+lt nat nat : bwd.
+lt/z : lt z N.
+lt/s : lt (s N) (s M)
+     <- lt N M.
+
+list : type.
+nil : list.
+cons nat list : list.
+
+at_index nat nat : pred.
+last nat : bwd.
+% "last I" means I is the last index.
+
+stage sort = {
+  swap : at_index I N0 * at_index (s I) N1 * lt N1 N0
+      -o at_index I N1 * at_index (s I) N0.
+}
+
+collect nat list : pred.
+return list : pred.
+
+- : qui * stage sort -o stage collect * collect z nil.
+
+stage collect = {
+  collect/at : collect I L * at_index I N -o collect (s I) (cons N L).
+  collect/last : collect I L * last I -o return L.
+}
+
+last/5 : last (s (s (s (s (s z))))).
+context ltest = % 4 1 3 0 0 2
+{at z (s(s(s(s z)))), at (s z) (s z), at (s (s z)) (s (s (s z))), 
+  at (s (s (s z))) z, at (s (s (s (s z)))) z, 
+  at (s (s (s (s (s z))))) (s (s z))}.
+
+#trace _ sort ltest.

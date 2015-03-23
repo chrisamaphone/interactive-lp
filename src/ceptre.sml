@@ -151,7 +151,13 @@ structure Ceptre = struct
         | EPers (p, tms) =>
             (case lookup p sg of
                   SOME _ => (Pers, p, map termMapper tms)
-                | _ => raise IllFormed)
+                | _ =>
+                    let
+                      val error = "Predicate "^p^" not found in signature.\n"
+                      val () = print error
+                    in
+                      raise IllFormed
+                    end)
     end
 
   fun externalToBwd sg ({name,lhs,rhs}:rule_external) =

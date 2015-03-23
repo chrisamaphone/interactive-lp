@@ -114,7 +114,14 @@ struct
            in
              (Lin, pred, argTerms)
            end
-       | _ => raise IllFormed
+       | _ => 
+           let
+             val error = "failed to parse "^(synToString syn)^
+              " as a ground atom.\n"
+             val () = print error
+           in
+             raise IllFormed
+           end
 
   fun extractLHS syn acc rhs =
     case syn of
