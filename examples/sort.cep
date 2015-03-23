@@ -3,7 +3,7 @@ z : nat.
 s nat : nat.
 
 lt nat nat : bwd.
-lt/z : lt z N.
+lt/z : lt z (s N).
 lt/s : lt (s N) (s M)
      <- lt N M.
 
@@ -11,13 +11,13 @@ list : type.
 nil : list.
 cons nat list : list.
 
-at_index nat nat : pred.
+at nat nat : pred.
 last nat : bwd.
 % "last I" means I is the last index.
 
 stage sort = {
-  swap : at_index I N0 * at_index (s I) N1 * lt N1 N0
-      -o at_index I N1 * at_index (s I) N0.
+  swap : at I N0 * at (s I) N1 * lt N1 N0
+      -o at I N1 * at (s I) N0.
 }
 
 collect nat list : pred.
@@ -26,7 +26,7 @@ return list : pred.
 - : qui * stage sort -o stage collect * collect z nil.
 
 stage collect = {
-  collect/at : collect I L * at_index I N -o collect (s I) (cons N L).
+  collect/at : collect I L * at I N -o collect (s I) (cons N L).
   collect/last : collect I L * last I -o return L.
 }
 

@@ -31,12 +31,14 @@ g : element.
 
 at location element location : pred.
 
-lt element element : bwd.
-lt/rb : lt r b.
-lt/bg : lt b g.
+succ element element : bwd.
+succ/rb : succ r b.
+succ/bg : succ b g.
 
+lt element element : bwd.
+lt/eq : lt X Y <- succ X Y.
 lt/trans : lt X Z
-          <- lt X Y
+          <- succ X Y
           <- lt Y Z.
 
 leq element element : bwd.
@@ -54,7 +56,7 @@ stage sort = {
 
 min element : pred.
 stage getmin = {
-  pluck : at start M -o min M.
+  pluck : at start M _ -o min M.
   cleanup : min M * at _ _ _ -o min M.
 }
 
