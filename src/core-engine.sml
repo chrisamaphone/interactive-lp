@@ -35,9 +35,8 @@ sig
 end = 
 struct
 
-
 type ctx_var = int
-datatype value = Var of ctx_var | Rule of Ceptre.pred * value list
+datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Sensed
 
 type transition =
    {r: Ceptre.ident * int, tms : Ceptre.term option vector, Vs: value list}
@@ -126,6 +125,20 @@ structure S = IntRedBlackSet
 structure M = StringRedBlackDict
 structure I = IntRedBlackDict
 
+fun ground tm = 
+   case tm of
+      C.Var _ => false
+    | C.Fn (_, tms) => List.all ground tms 
+
+fun ground_prefix' tms accum = 
+   case tms of 
+      [] => (rev accum, [])
+    | tm :: tms => if ground tm
+                      then ground_prefix' tms (tm :: accum)
+                   else (rev accum, tm :: tms)
+
+fun ground_prefix tms = ground_prefix' tms []
+
 type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.atom list} list
 
 (* LHSes are connected to a particluar ruleset *)
@@ -143,6 +156,11 @@ type ctx =
 datatype fastctx = 
    FC of {prog: fastctx prog, 
           ctx: ctx}
+
+fun fc_concrete (FC {ctx = {concrete, ...}, ...}) = concrete
+fun fc_bwds (FC {prog = {bwds, ...}, ...}) = bwds
+fun fc_lmap (FC {prog = {lmap, ...}, ...}) = lmap
+fun fc_senses (FC {prog = {senses, ...}, ...}) = senses
 
 type sense = fastctx * Ceptre.term list -> Ceptre.term list list
                                
@@ -292,14 +310,14 @@ fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
  * We learn more about the substitution "subst" as we go along, 
  * so we return both substitutions and the proof term we built. *)
 
-fun search_premises (r: Ceptre.ident * int) bwds ctx (Vs: value list) subst prems = 
+fun search_premises prog (r: Ceptre.ident * int) (Vs: value list) subst prems = 
    case prems of 
       [] => Tree.L {r = r, tms = subst, Vs = rev Vs}
     | prem :: prems => 
          Tree.bind 
-            (search_prem bwds ctx Vs subst prem)
+            (search_prem prog Vs subst prem)
             (fn (x: value, subst) => 
-               search_premises r bwds ctx (x :: Vs) subst prems)
+               search_premises prog r (x :: Vs) subst prems)
 
 (* search_bwd bwds ctx (ts_subst, ts) bwd ~~> some extended ts_substs 
  * 
@@ -315,14 +333,13 @@ fun search_premises (r: Ceptre.ident * int) bwds ctx (Vs: value list) subst prem
  * Assumes backward chaining rule is reasonably moded; should have as a
  * postcondition that the atoms it returns are fully instantiated. *) 
 
-and search_bwd bwds ctx (ts_subst, ts) (uid, bwd) = 
+and search_bwd prog (ts_subst, ts) (uid, bwd) = 
 let
-   (* val () = print "search_bwd\n" *)
    val {name, pivars, head = (a, ps), subgoals} = bwd
 in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
      (* Okay, we partially match the head of the rule, giving subst *)
      (fn subst => 
-   Tree.bind (search_premises (name, uid) bwds ctx [] subst subgoals)
+   Tree.bind (search_premises prog (name, uid) [] subst subgoals)
      (* Here's a way to satisfy all subgoals! *)
      (fn {r, tms = subst, Vs} =>
    Tree.letOne (map (apply_subst subst) ps)
@@ -349,10 +366,11 @@ end
  * 
  *    ctx |- [ mode (a, subst(ps)) ]        *)
 
-and search_prem bwds ctx (Vs: value list) subst (mode, a, ps) = 
+and search_prem prog (Vs: value list) subst (mode, a, ps) = 
 let 
    (* val () = print "search_prem\n" *)
    (* Try to satisfy the premise by looking it up in the context *)
+   val ctx = fc_concrete prog 
    val matched: (value * msubst) Tree.t = 
       case mode of 
          C.Lin => Tree.letMany ctx (fn hyp => match_hyp Vs subst (a, ps) hyp) 
@@ -360,29 +378,41 @@ let
 
    (* Try to satisfy the premise by finding rules that match it *)
    val derived: (value * msubst) Tree.t =
-      case M.find bwds a of
+      case M.find (fc_bwds prog) a of
          NONE => Tree.N
        | SOME bwds_for_a => 
          let val tsx = map (apply_subst subst) ps
          in Tree.letMany bwds_for_a
                (* A rule! Does it give us a ground instance of our atom? *)
                (fn bwd => 
-            search_bwd bwds ctx (subst, tsx) bwd)
+            search_bwd prog (subst, tsx) bwd)
+         end
+
+   val sensed: (value * msubst) Tree.t = 
+      case M.find (fc_senses prog) a of 
+         NONE => Tree.N
+       | SOME sense_for_a =>
+         let val (tsg, psng) = ground_prefix (map (apply_subst subst) ps)
+         in Tree.letMany (sense_for_a (prog, tsg))
+               (* Some outputs. Let's use them to extend the substitution. *)
+               (fn ts =>
+            Tree.bind (match_terms {f = a, pat = psng, term = ts} subst)
+               (* We've got the extended substitution! *)
+               (fn subst =>
+            Tree.L (Sensed, subst)))
          end
 in
-   Tree.@ (derived, matched)
+   Tree.@ (derived, Tree.@ (matched, sensed))
 end
 
-
-
-fun possible_steps stage (FC {prog = {lmap, bwds, ...}, ctx = {concrete, ...}}) =
-   case M.find lmap stage of
+fun possible_steps stage prog =
+   case M.find (fc_lmap prog) stage of
       NONE => raise Fail ("Stage "^stage^" unknown to the execution engine")
     | SOME ruleset => 
         (Tree.flatten
            (List.foldl 
               (Tree.append (fn {name, pivars, lhs} =>
-                 (search_premises name bwds concrete [] (unknown pivars) lhs)))
+                 (search_premises prog name [] (unknown pivars) lhs)))
               Tree.N ruleset))
 
 fun add_to_ctx gsubst ((mode, a, ps), ({next, concrete}, xs)) = 
