@@ -214,10 +214,19 @@ struct
         | _ => raise IllFormed
 
   (* interpret a Special "#trace" *)
-  fun extractProgram top =
+  fun extractProgram top ctxs  =
     case top of
-         Special ("trace", [limit, Id stage, Id ctx]) =>
-              (NONE, stage, ctx) (* XXX someday first elt should be limit *)
+         Special ("trace", [limit, Id stage, ctx]) =>
+         (case ctx of
+               Id ctx => 
+                (case lookup ctx ctxs of
+                      NONE => raise IllFormed
+                    | SOME ctx => (NONE, stage, ctx)
+                        (* XXX someday first elt should be limit *)
+                )
+             | _ => raise IllFormed
+        (* XXX eventually maybe literal context forms will be parsed as well.*)
+        )
        | _ => raise IllFormed
 
   fun extractID (Id f) = f
@@ -265,7 +274,7 @@ struct
                 | CNone of syn
                 | CError of top 
                 | CCtx of ident * context  (* named ctx *)
-                | CProg of (int option) * ident * ident 
+                | CProg of (int option) * ident * context 
                     (* limit, initial phase & initial ctx *)
                 | CDecl of decl
                 | CBwd of bwd_rule
@@ -348,21 +357,22 @@ struct
           end
       | _ => raise IllFormed
 
-  fun extractTop sg top =
+  fun extractTop sg ctxs top =
     case top of
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
        | Decl s => (extractDecl sg top
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext top)
-       | Special _ => CProg (extractProgram top)
+       | Special _ => CProg (extractProgram top ctxs)
 
   fun csynToString (CStage stage) = stageToString stage
     | csynToString (CRule rule) = ruleToString rule
     | csynToString (CNone s) = "(" ^ (synToString s) ^ " doesn't parse yet)"
     | csynToString (CError _) = "(parse error!)"
     | csynToString (CCtx (name, ctx)) = name ^ " : " ^ (contextToString ctx)
-    | csynToString (CProg (_,stg,ctx)) = "#trace * " ^ stg ^ " " ^ ctx ^ "."
+    | csynToString (CProg (_,stg,ctx)) = 
+        "#trace * " ^ stg ^ " " ^ (contextToString ctx) ^ "."
     | csynToString (CDecl (name,class)) = 
           name ^ " : " ^ (classToString class) ^ "."
     | csynToString (CBwd bwd) = "bwd" (* XXX *)
@@ -376,7 +386,7 @@ struct
     case tops of
          [] => ({header=sg,rules=bwds} : Ceptre.sigma, progs)
        | (top::tops) => 
-           (case extractTop sg top of
+           (case extractTop sg contexts top of
                  CStage stage => 
                   process' tops sg bwds contexts (stage::stages) links progs
                | CRule rule => 
@@ -394,11 +404,10 @@ struct
                    process' tops (d::sg) bwds contexts stages links progs
                | CBwd bwd => (* XXX *)
                    process' tops sg (bwd::bwds) contexts stages links progs 
-               | CProg (limit, init_stage, init_ctx_name) =>
+               | CProg (limit, init_stage, init_ctx) =>
                    (* XXX ignore limit for now *)
-                   case (stage_exists init_stage stages, 
-                         lookup init_ctx_name contexts) of
-                        (true, SOME init_ctx) =>
+                   case stage_exists init_stage stages of
+                        true =>
                           let
                             val prog = {stages=stages, links=links, 
                               init_stage=init_stage, init_state = init_ctx}
