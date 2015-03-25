@@ -107,10 +107,17 @@ structure Ceptre = struct
         if s = id then SOME n
         else lookup id table
 
+  (* assigns numbers to named terms for the sake of translating between external
+  * representation and internal. *)
   fun walk_terms (tms : external_term list) (table, ctr) =
     (case tms of 
           [] => (table, ctr)
-        | ((EFn _)::tms) => walk_terms tms (table, ctr)
+        | ((EFn (id,args))::tms) => 
+            let
+              val (table,ctr) = walk_terms args (table,ctr)
+            in
+              walk_terms tms (table, ctr)
+            end
         | ((EVar id)::tms) =>
             (case lookup id table of
                   NONE => walk_terms tms ((id,ctr)::table, ctr+1)
