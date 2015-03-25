@@ -1,0 +1,10 @@
+% Permute a list by removing all elements and then readding them.
+% Reaches quiescence in linear time.
+
+list(cons X Xs) -o elem(X), list(Xs).
+list(nil) -o list'(nil).
+elem(X) -o ().  % allow throwing away elements
+elem(X), list'(Xs) -o list'(cons X Xs).
+
+% implementation always returns empty list -- always throws away elements.
+#trace _ list (cons 1 (cons 2 (cons 3 nil))).

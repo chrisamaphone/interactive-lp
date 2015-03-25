@@ -1,0 +1,26 @@
+% Model of blocks world using linear logic
+%
+%   ontb x      block x is on the table
+%   on x y      block x is on block y
+%   clear x     block x has nothing on top of it
+%   empty       the robot arm is empty
+%   holds x     the robot arm holds block x
+
+% pick up X from on top of Y
+empty, on X Y, clear X
+    -o holds X, clear Y.
+
+% pick up X from the table
+empty, ontb X, clear X
+    -o holds X.
+
+% drop X onto Y
+holds X, clear Y
+    -o empty, on X Y, clear X.
+
+% drop X onto the table
+holds X
+    -o empty, ontb X, clear X.
+
+% doesn't really do much interesting, because it always picks the same rule
+#trace 10 (on a b, ontb c, clear a, clear c, empty).

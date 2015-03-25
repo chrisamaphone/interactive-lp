@@ -167,9 +167,10 @@ struct
             let
               val name = extractID rname
               val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
+              exception RobDoesntKnowWhatToDoHere
               val rhs = 
-                case rhs_syn of NONE => []
-                   | SOME rhs_syn => extractRHS rhs_syn residual
+                case rhs_syn of One () => raise RobDoesntKnowWhatToDoHere
+                   | _ => extractRHS rhs_syn residual
               (* external syntax *)
               val erule = {name = name, lhs = lhs, rhs = rhs}
               val () = wild_gensym := 0 (* reset for each rule *)
@@ -204,9 +205,15 @@ struct
         | _ => NONE)
         | _ => NONE
 
+  fun extractContextAtoms syn = 
+    case syn of 
+         Comma (syn1, syn2) => 
+           extractContextAtoms syn1 @ extractContextAtoms syn2
+       | _ => [ extractGroundAtom syn ]
+
   fun extractContext top =
     case top of
-         Context (name, atoms) => (name, map extractGroundAtom atoms)
+         Context (name, atoms) => (name, extractContextAtoms atoms)
        | _ => raise IllFormed
 
   fun extractStage sg syntax =

@@ -5,51 +5,67 @@ open Coord
 open Pos
 
 datatype token = 
-   PRED | STAGE | CONTEXT | IDENT of string | HASHDENT of string
+   PRED | STAGE | CONTEXT 
+ | IDENT of string | NUM of IntInf.int | HASHDENT of string
  | LBRACE | RBRACE | LPAREN | RPAREN
  | PERIOD | COLON | COMMA | EQUALS | USCORE
+ | UNIFY | DIFFER
  | BANG | DOLLAR | STAR | LARROW | RARROW | LLOLLI | RLOLLI
 
 fun toString tok = 
    case tok of 
       PRED => "PRED" | STAGE => "STAGE" | CONTEXT => "CONTEXT"
-    | IDENT s => s | HASHDENT s => ("#"^s)
+    | IDENT s => s | NUM n => IntInf.toString n | HASHDENT s => ("#"^s)
     | LBRACE => "{" | RBRACE => "}" | LPAREN => "(" | RPAREN => ")"
     | PERIOD => "." | COLON => ":" | COMMA => "," | EQUALS => "="
-    | USCORE => "_" | BANG => "!" | DOLLAR => "$" | STAR => "*" 
+    | USCORE => "_" 
+    | UNIFY => "==" | DIFFER => "<>"
+    | BANG => "!" | DOLLAR => "$" | STAR => "*" 
     | LARROW => "<-" | RARROW => "->" | LLOLLI => "o-" | RLOLLI => "-o"
 
 datatype syn = 
-   Ascribe of syn * syn   (* t : t *)
- | Lolli of syn * syn option (* t -o t *)
- | Arrow of syn * syn     (* t -> t *) 
- | Star of syn * syn      (* t * t *)
- | Bang of syn            (* !t *)
- | Dollar of syn          (* $t *)
- | App of syn * syn list  (* t t1...tn *)
- | Pred of unit           (* pred *)
- | Wild of unit           (* _ *)
- | Id of string          (* x or X *)
-                
+   Ascribe of syn * syn      (* t : t *)
+ | Lolli of syn * syn        (* t -o t *)
+ | Arrow of syn * syn        (* t -> t *) 
+ | Star of syn * syn         (* t * t *)
+ | Unify of syn * syn        (* t == t *)
+ | Differ of syn * syn       (* t <> t *)
+ | Comma of syn * syn        (* t , t *)
+ | Bang of syn               (* !t *)
+ | Dollar of syn             (* $t *)
+ | One of unit               (* () *)
+ | App of syn * syn list     (* t t1...tn *)
+                             (* Parser will only allow t = Id, Wild *)
+ | Pred of unit              (* pred *)
+ | Wild of unit              (* _ *)
+ | Id of string              (* x or X *)
+ | Num of IntInf.int         (* x or X *)
+ | Braces of syn             (* { t } *)                
+
 fun synToString syn =
   (case syn of 
       Ascribe (x, y) => "("^synToString x^" : "^synToString y^")" 
-    | Lolli (x, NONE) => "("^synToString x^" -o )" 
-    | Lolli (x, SOME y) => "("^synToString x^" -o "^synToString y^")" 
+    | Lolli (x, y) => "("^synToString x^" -o "^synToString y^")" 
     | Arrow (x, y) => "("^synToString x^" -> "^synToString y^")" 
     | Star (x, y) => "("^synToString x^" * "^synToString y^")" 
+    | Unify (x, y) => "("^synToString x^" == "^synToString y^")" 
+    | Differ (x, y) => "("^synToString x^" <> "^synToString y^")" 
+    | Comma (x, y) => "("^synToString x^" , "^synToString y^")"
     | Bang x => "(!"^synToString x^")"
     | Dollar x => "($"^synToString x^")"
+    | One () => "()" 
     | App (x, []) => synToString x
     | App (x, xs) => "("^String.concatWith " " (map synToString (x::xs))^")"
     | Pred () => "pred"
     | Wild () => "_"
-    | Id x => x)
+    | Id x => x
+    | Num n => IntInf.toString n
+    | Braces x => "{"^synToString x^"}")
 
 datatype top = 
    Decl of syn                  (* something. *)
  | Stage of string * top list   (* stage x {decl1, ..., decln} *)
- | Context of string * syn list (* context x {t1, ..., tn} *)
+ | Context of string * syn      (* context x {t} *)
  | Special of string * syn list (* #whatever t1...tn *) 
 
 fun topToString pre top =
@@ -58,8 +74,8 @@ fun topToString pre top =
     | Stage (id, tops) => pre^"stage "^id^" {\n"^
                           String.concat (map (topToString (pre^"  ")) tops)^
                           pre^"}\n"
-    | Context (id, syns) => pre^"context "^id^" {"^
-                            String.concatWith ", " (map synToString syns)
+    | Context (id, syn) => pre^"context "^id^" {"^
+                            synToString syn
                             ^"}\n"
     | Special (name, syns) => pre^"#"^name^" "^
                               String.concatWith " " (map synToString syns)
@@ -90,11 +106,24 @@ LexFn
 
    fun eof _ = Stream.Nil
 
+   val error = 
+     (fn ({match, ...}: info) => 
+        (case match of
+            [] => raise Fail ("Encountered unexpected error with lexing")
+          | _ => raise Fail ("Encountered error lexing \""^stringrange match^
+                             "\" at "^Pos.toString (posrange match))))
+
    fun skip ({self, follow, ...}: info) = #lexmain self follow
 
    fun ident ({self, match, follow, ...}: info) =
       Stream.Cons ((IDENT (stringrange match), posrange match),
          Stream.lazy (fn () => #lexmain self follow))
+
+   fun num ({self, match, follow, ...}: info) =
+     (case IntInf.fromString (stringrange match) of 
+         NONE => raise Fail ("Couldn't parse '"^stringrange match^"' as an int")
+       | SOME n => Stream.Cons ((NUM n, posrange match),
+                      Stream.lazy (fn () => #lexmain self follow)))
 
    fun hashident ({self, match, follow, ...}: info) =
       Stream.Cons ((HASHDENT (stringrange (List.tl match)), posrange match),
@@ -123,12 +152,9 @@ LexFn
    val rarrow = simple RARROW
    val llolli = simple LLOLLI
    val rlolli = simple RLOLLI
-   val error = 
-     (fn ({match, ...}: info) => 
-        (case match of
-            [] => raise Fail ("Encountered unexpected error with lexing")
-          | _ => raise Fail ("Encountered error lexing \""^stringrange match^
-                             "\" at "^Pos.toString (posrange match))))
+   val differ = simple DIFFER
+   val unify = simple UNIFY
+
  end)
 
 structure Parser = 
@@ -142,6 +168,7 @@ ParseFn
 
    type string = string
    type ign = unit
+   type int = IntInf.int
 
    val Ign = ignore
    val Nil  = fn () => []
@@ -155,11 +182,19 @@ ParseFn
 
    val parens = fn x => x
    val swap = fn (x, y) => (y, x)
-   val LolliNONE = fn x => Lolli (x, NONE)
-   val LolliSOME = fn (x, y) => Lolli (x, SOME y)
-   val LolliL = LolliSOME o swap
+   val LolliOne = fn x => Lolli (x, One ())
+   val LolliL = Lolli o swap
    val ArrowL = Arrow o swap
    val StagePred = fn x => App (Id "stage", [Id x])
+   fun app (x, ys) = 
+      case (x, ys) of 
+         (App (x, xs), ys) => app (x, xs @ ys)
+       | (x, []) => x
+       | (Id x, ys) => App (Id x, ys)
+       | (Wild x, ys) => App (Wild x, ys)
+       | _ => raise Fail ("It never makes sense to give arguments to '"^
+                          synToString x^"', but this was given "^
+                          Int.toString (length ys)^" argument(s).")
 
    type tops = top list
    type syns = syn list
@@ -209,7 +244,7 @@ let
 
    (* Debug: print out all tokens *)
    val () = 
-      if false then ()
+      if true then ()
       else Stream.app
              (fn (tok, pos) =>
                  print (toString tok^
