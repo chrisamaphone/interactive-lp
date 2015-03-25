@@ -273,8 +273,12 @@ struct
          in
            extractBwd rhs name (subgoal::subgoals)
          end
-       | (Id _ | App _)  =>
+       | _  =>
            let
+             val () = case syn of 
+                          Id _ => () 
+                        | App _ => () 
+                        | _ => raise IllFormed 
              val (pred, dollars) = extractAtom syn []
              val pred =
               (case pred of
@@ -287,7 +291,6 @@ struct
            in
              {name=name, lhs=subgoals, rhs=[pred]} : Ceptre.rule_external
            end
-       | _ => raise IllFormed
   
   datatype csyn = CStage of stage | CRule of rule_internal 
                 | CNone of syn
@@ -375,9 +378,7 @@ struct
   fun extractTop sg ctxs top =
     case top of
          Stage _ => CStage (extractStage sg top)
-       | (Decl (Ascribe (Id _, Lolli _)) 
-       | Decl (Ascribe (App (Id _, []), Lolli _))) 
-            => CRule (declToRule sg top)
+       | Decl (Ascribe (Id _, Lolli _)) => CRule (declToRule sg top)            
        | Decl (Lolli rule) =>
            let
              val name = gensym ()

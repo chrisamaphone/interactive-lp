@@ -126,8 +126,13 @@ structure Ceptre = struct
   fun walk_atoms (atoms:epred list) (table : ((ident*int)list) * int) =
     case atoms of
          [] => table
-       | ((EPers (p, terms))::atoms
-       | (ELin (p, terms))::atoms) => 
+       | (EPers (p, terms))::atoms =>
+           let
+             val t = walk_terms terms table
+           in
+             walk_atoms atoms t
+           end
+       | (ELin (p, terms))::atoms => 
            let
              val t = walk_terms terms table
            in
