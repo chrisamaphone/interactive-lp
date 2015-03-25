@@ -361,6 +361,13 @@ struct
     case top of
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
+       | Decl (Lolli rule) =>
+           let
+             val name = gensym ()
+             val named_syn = Ascribe (App (Id name,[]), Lolli rule)
+           in
+             extractTop sg ctxs (Decl named_syn)
+           end
        | Decl s => (extractDecl sg top
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext top)
