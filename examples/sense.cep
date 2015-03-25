@@ -1,7 +1,7 @@
 % testing sensing predicates
 
 stage accept = {
-  foo : input X -o process X.
+  foo : tok * input X -o process X.
 }
 - : qui * stage accept -o stage process.
 
@@ -11,9 +11,9 @@ stage process = {
   process/default : process X -o tryagain.
 }
 
-- : qui * stage process * tryagain -o stage accept.
+- : qui * stage process * tryagain -o stage accept * tok.
 - : qui * stage process * hi -o done.
 - : qui * stage process * bye -o done.
 
-context init = {}.
+context init = {tok}.
 #trace _ accept init.
