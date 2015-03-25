@@ -107,10 +107,17 @@ structure Ceptre = struct
         if s = id then SOME n
         else lookup id table
 
+  (* assigns numbers to named terms for the sake of translating between external
+  * representation and internal. *)
   fun walk_terms (tms : external_term list) (table, ctr) =
     (case tms of 
           [] => (table, ctr)
-        | ((EFn _)::tms) => walk_terms tms (table, ctr)
+        | ((EFn (id,args))::tms) => 
+            let
+              val (table,ctr) = walk_terms args (table,ctr)
+            in
+              walk_terms tms (table, ctr)
+            end
         | ((EVar id)::tms) =>
             (case lookup id table of
                   NONE => walk_terms tms ((id,ctr)::table, ctr+1)
@@ -127,13 +134,23 @@ structure Ceptre = struct
              walk_atoms atoms t
            end
 
+  exception IllFormed
+
   fun etermToTerm table term =
     case term of
          EFn (f, args) => Fn (f, map (etermToTerm table) args)
          (* XXX probably shouldn't valOf *)
-       | EVar id => Var (valOf (lookup id table))
+       | EVar id =>
+           (case lookup id table of
+                SOME x => Var x
+              | NONE =>
+                  let
+                    val error = "Couldn't match id "^id^"\n"
+                    val () = print error
+                  in
+                    raise IllFormed
+                  end)
 
-  exception IllFormed
   fun eatomToAtom sg table epred =
     let
       val termMapper = etermToTerm table
@@ -151,14 +168,21 @@ structure Ceptre = struct
         | EPers (p, tms) =>
             (case lookup p sg of
                   SOME _ => (Pers, p, map termMapper tms)
-                | _ => raise IllFormed)
+                | _ =>
+                    let
+                      val error = "Predicate "^p^" not found in signature.\n"
+                      val () = print error
+                    in
+                      raise IllFormed
+                    end)
     end
 
   fun externalToBwd sg ({name,lhs,rhs}:rule_external) =
     case rhs of
          [ehead as EPers(pred,eargs)] =>
+         (* XXX this check might make sense but it isn't working atm
          if (List.all (fn EPers _ => true | _ => false) lhs)
-         then
+         then *)
            let
              val hd_and_subgoals = ehead::lhs
              val (table, nvars) = walk_atoms hd_and_subgoals ([],0)
@@ -171,7 +195,7 @@ structure Ceptre = struct
                       subgoals=subgoals} : bwd_rule
                 | _ => raise IllFormed
            end
-         else raise IllFormed
+         (* else raise IllFormed *)
        | _ => raise IllFormed
 
   fun externalToInternal 

@@ -1,0 +1,44 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+lt nat nat : bwd.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+     <- lt N M.
+
+at nat nat : pred.
+null nat : bwd.
+% "null I" means I is successor of the last
+% defined index.
+
+stage sort = {
+  swap : at I N0 * at (s I) N1 * lt N1 N0
+      -o at I N1 * at (s I) N0.
+}
+
+collect nat list : pred.
+return list : pred.
+
+sort-collect : qui * stage sort -o stage collect * collect z nil.
+
+
+list : type.
+nil : list.
+snoc list nat : list.
+
+stage collect = {
+  collect/at : collect I L * at I N -o collect (s I) (snoc L N).
+  collect/null : collect I L * null I -o return L.
+}
+
+collect-done : qui * stage collect -o stage done.
+stage done = {}
+
+null/6 : null (s (s (s (s (s (s z)))))).
+context ltest = % 4 1 3 0 0 2
+{at z (s(s(s(s z)))), at (s z) (s z), at (s (s z)) (s (s (s z))), 
+  at (s (s (s z))) z, at (s (s (s (s z)))) z, 
+  at (s (s (s (s (s z))))) (s (s z))}.
+
+#trace _ sort ltest.

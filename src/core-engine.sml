@@ -40,12 +40,12 @@ type ctx_var = int
 datatype value = Var of ctx_var | Rule of Ceptre.pred * value list
 
 type transition =
-   {r: Ceptre.ident, tms : Ceptre.term option vector, Vs: value list}
+   {r: Ceptre.ident * int, tms : Ceptre.term option vector, Vs: value list}
 
 fun vectorToList v = 
    List.tabulate (Vector.length v, fn i => valOf (Vector.sub (v, i)))
 
-fun transitionToString {r, tms, Vs} =
+fun transitionToString {r = (r, _), tms, Vs} =
    Ceptre.withArgs r (map Ceptre.termToString (vectorToList tms))
 
 local
@@ -126,15 +126,15 @@ structure S = IntRedBlackSet
 structure M = StringRedBlackDict
 structure I = IntRedBlackDict
 
-type fast_ruleset = {name: C.ident, pivars: int, lhs: C.atom list} list
+type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.atom list} list
 
 (* LHSes are connected to a particluar ruleset *)
 (* RHSes are just mapped from their names *)
 type 'a prog = 
   {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
-   bwds: Ceptre.bwd_rule list M.dict,
+   bwds: (int * Ceptre.bwd_rule) list M.dict,
    lmap: fast_ruleset M.dict,
-   rmap: C.atom list M.dict}
+   rmap: C.atom list I.dict}
 
 type ctx = 
   {next: ctx_var,
@@ -148,33 +148,46 @@ type sense = fastctx * Ceptre.term list -> Ceptre.term list list
                                
 fun init (sigma: C.sigma) senses prog initial_ctx: fastctx = 
 let
+   (* Add unique identifiers to all forward-chaining rules *)
+   fun number_list uid [] = []
+     | number_list uid (x :: xs) =
+          (uid, x) :: number_list (uid+1) xs
+
+   fun number_prog uid [] = []
+     | number_prog uid ({name, body} :: stages) =  
+          {name = name, body = number_list uid body}
+          :: number_prog (uid + length body) stages
+
+   val bwd_rules = number_list 0 (#rules sigma)
+   val prog = number_prog (length bwd_rules) prog
+
    fun compile_lhses {name, body} = 
       (name, 
        List.map
-          (fn {name, pivars, lhs, rhs} => 
-              {name = name, pivars = pivars, lhs = lhs})
+          (fn (uid, {name, pivars, lhs, rhs}) => 
+              {name = (name, uid), pivars = pivars, lhs = lhs})
           body)
 
-   fun compile_rhses ({name, body}: C.stage, map) = 
+   fun compile_rhses ({name, body}, map) = 
       List.foldl 
-          (fn ({name, rhs, ...}, rmap) => 
-              M.insert rmap name rhs)
+          (fn ((uid, {rhs, ...}: Ceptre.rule_internal), rmap) => 
+              I.insert rmap uid rhs)
           map body
 
-   fun insert_bwd_rule (rule: Ceptre.bwd_rule, m) =
+   fun insert_bwd_rule ((id, rule: Ceptre.bwd_rule), m) =
    let val key = (#1 (#head rule)) 
-   in M.insertMerge m key [ rule ] (fn rules => rule :: rules)
+   in M.insertMerge m key [ (id, rule) ] (fn rules => (id, rule) :: rules)
    end
 
    val prog: fastctx prog = 
       {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
                    M.empty senses,
        bwds = List.foldl (fn (rule, m) => insert_bwd_rule (rule, m))
-                 M.empty (#rules sigma),
+                 M.empty bwd_rules,
        lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
                  M.empty (map compile_lhses prog),
        rmap = List.foldl compile_rhses 
-                 M.empty prog}
+                 I.empty prog}
 
    val ctx: ctx = 
       List.foldl 
@@ -279,7 +292,7 @@ fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
  * We learn more about the substitution "subst" as we go along, 
  * so we return both substitutions and the proof term we built. *)
 
-fun search_premises r bwds ctx (Vs: value list) subst prems = 
+fun search_premises (r: Ceptre.ident * int) bwds ctx (Vs: value list) subst prems = 
    case prems of 
       [] => Tree.L {r = r, tms = subst, Vs = rev Vs}
     | prem :: prems => 
@@ -302,12 +315,14 @@ fun search_premises r bwds ctx (Vs: value list) subst prems =
  * Assumes backward chaining rule is reasonably moded; should have as a
  * postcondition that the atoms it returns are fully instantiated. *) 
 
-and search_bwd bwds ctx (ts_subst, ts) bwd = 
-let val {name, pivars, head = (a, ps), subgoals} = bwd
+and search_bwd bwds ctx (ts_subst, ts) (uid, bwd) = 
+let
+   (* val () = print "search_bwd\n" *)
+   val {name, pivars, head = (a, ps), subgoals} = bwd
 in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
      (* Okay, we partially match the head of the rule, giving subst *)
      (fn subst => 
-   Tree.bind (search_premises name bwds ctx [] subst subgoals)
+   Tree.bind (search_premises (name, uid) bwds ctx [] subst subgoals)
      (* Here's a way to satisfy all subgoals! *)
      (fn {r, tms = subst, Vs} =>
    Tree.letOne (map (apply_subst subst) ps)
@@ -321,7 +336,7 @@ in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
       * to match this new fact against the subgoal ts that we started
       * with. *)
      (fn ss => 
-   Tree.bind (match_terms {f = a, pat = ts, term = ss} ts_subst) 
+   Tree.bind (match_terms {f = a, pat = ts, term = ss} ts_subst)
      (* Now we have learned things about our original substitution, 
       * and can return *) 
      (fn ts_subst => 
@@ -336,6 +351,7 @@ end
 
 and search_prem bwds ctx (Vs: value list) subst (mode, a, ps) = 
 let 
+   (* val () = print "search_prem\n" *)
    (* Try to satisfy the premise by looking it up in the context *)
    val matched: (value * msubst) Tree.t = 
       case mode of 
@@ -382,9 +398,10 @@ let
       List.filter (fn (x, a) => C.Pers = #1 a orelse not (is_in x Vs)) concrete
 
    (* Find right hand side pattern hand side *)
+   val (name, uid) = r
    val rhs = 
-      case M.find (#rmap prog) r of 
-         NONE => raise Fail ("Error lookuing up rhs of rule "^r)
+      case I.find (#rmap prog) uid of 
+         NONE => raise Fail ("Error lookuing up rhs of rule "^name)
        | SOME rhs => rhs
   
    (* Update context, get new identifiers *)
