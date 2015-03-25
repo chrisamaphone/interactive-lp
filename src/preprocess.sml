@@ -157,15 +157,13 @@ struct
 
   (* XXX no longer strictly necessary w/rob's change. *)
   fun extractID (Id f) = f
-    | extractID (App (Id f, [])) = f
     | extractID _ = raise IllFormed
 
 
   fun declToRule sg syntax =
     case syntax of
-          Decl (Ascribe (rname, Lolli (lhs_syn, rhs_syn))) =>
+          Decl (Ascribe (Id name, Lolli (lhs_syn, rhs_syn))) =>
             let
-              val name = extractID rname
               val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
               exception RobDoesntKnowWhatToDoHere
               val rhs = 
@@ -213,7 +211,8 @@ struct
 
   fun extractContext top =
     case top of
-         Context (name, atoms) => (name, extractContextAtoms atoms)
+         Context (name, NONE) => (name, [])
+       | Context (name, SOME atoms) => (name, extractContextAtoms atoms)
        | _ => raise IllFormed
 
   fun extractStage sg syntax =
@@ -227,19 +226,30 @@ struct
         | _ => raise IllFormed
 
   (* interpret a Special "#trace" *)
-  fun extractProgram top ctxs  =
-    case top of
-         Special ("trace", [limit, Id stage, ctx]) =>
-         (case ctx of
-               Id ctx => 
+  fun extractSpecial args ctxs =
+    case args of
+         ("trace", [limit, Id stage, ctx]) =>
+         let 
+           val limit = 
+           (case limit of
+                 Wild () => NONE 
+               | Num n => SOME (IntInf.toInt n)
+               | _ => raise IllFormed
+           )  
+           val ctx = 
+           (case ctx of
+                Id ctx => 
                 (case lookup ctx ctxs of
                       NONE => raise IllFormed
-                    | SOME ctx => (NONE, stage, ctx)
-                        (* XXX someday first elt should be limit *)
+                    | SOME ctx => ctx
                 )
-             | _ => raise IllFormed
-        (* XXX eventually maybe literal context forms will be parsed as well.*)
-        )
+              | EmptyBraces () => []
+              | Braces syn => extractContextAtoms syn
+              | _ => raise IllFormed
+           )
+         in
+           (limit, stage, ctx)
+         end
        | _ => raise IllFormed
 
   fun extractPredDecl data predclass =
@@ -378,7 +388,7 @@ struct
        | Decl s => (extractDecl sg top
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext top)
-       | Special _ => CProg (extractProgram top ctxs)
+       | Special args => CProg (extractSpecial args ctxs)
 
   fun csynToString (CStage stage) = stageToString stage
     | csynToString (CRule rule) = ruleToString rule

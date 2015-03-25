@@ -30,7 +30,7 @@ start Tops
 nonterminal Top: top = 
    1:Syn PERIOD                                                 => Decl
    STAGE 1:IDENT OpEquals LBRACE 2:Tops RBRACE OpPeriod         => Stage
-   CONTEXT 1:IDENT OpEquals LBRACE 2:Syn RBRACE OpPeriod        => Context
+   CONTEXT 1:IDENT OpEquals LBRACE 2:OpSyn RBRACE OpPeriod      => Context
    1:HASHDENT 2:Atomics PERIOD                                  => Special
 
 nonterminal Tops: tops =       => NilT
@@ -61,6 +61,7 @@ nonterminal Atomic: syn =
    LPAREN 1:Syn RPAREN         => parens
    LBRACE 1:Syn RBRACE         => Braces
    LPAREN RPAREN               => One
+   LBRACE RBRACE               => EmptyBraces
    1:IDENT                     => Id
    USCORE                      => Wild
    PRED                        => Pred
@@ -71,3 +72,7 @@ nonterminal OpEquals: ign =    => Ign
 
 nonterminal OpPeriod: ign =    => Ign
    PERIOD                      => Ign
+
+nonterminal OpSyn: synopt =    => noneSyn
+   1:Syn                       => someSyn
+
