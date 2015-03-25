@@ -155,11 +155,17 @@ struct
                | _ => raise IllFormed)
 
 
+  (* XXX no longer strictly necessary w/rob's change. *)
+  fun extractID (Id f) = f
+    | extractID (App (Id f, [])) = f
+    | extractID _ = raise IllFormed
+
+
   fun declToRule sg syntax =
     case syntax of
-          Decl (Ascribe (App (Id name, []), 
-                Lolli (lhs_syn, rhs_syn))) => (* XXX MATCH ERROR - RJS *)
+          Decl (Ascribe (rname, Lolli (lhs_syn, rhs_syn))) =>
             let
+              val name = extractID rname
               val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
               val rhs = 
                 case rhs_syn of NONE => []
@@ -229,10 +235,6 @@ struct
         )
        | _ => raise IllFormed
 
-  fun extractID (Id f) = f
-    | extractID (App (Id f, [])) = f
-    | extractID _ = raise IllFormed
-
   fun extractPredDecl data predclass =
     let
       val Fn (id, args) = extractGroundTerm data
@@ -287,11 +289,7 @@ struct
          (case class of
                App (class, []) => extractDecl sg (Decl (Ascribe (data, class)))
             (* first-order types *)
-             | Id "type" => 
-               (case data of
-                     (Id id) => CDecl (id, Ceptre.Type)
-                   | (App (Id id, [])) => CDecl (id, Ceptre.Type)
-                   | _ => raise IllFormed)
+             | Id "type" => CDecl (extractID data, Ceptre.Type)
             (* predicates *)
              | Pred () => (* parse data as f t...t *)
                 CDecl (extractPredDecl data Ceptre.Prop)
@@ -360,11 +358,13 @@ struct
   fun extractTop sg ctxs top =
     case top of
          Stage _ => CStage (extractStage sg top)
-       | Decl (Ascribe (App (Id _, []), Lolli _)) => CRule (declToRule sg top)
+       | (Decl (Ascribe (Id _, Lolli _)) 
+       | Decl (Ascribe (App (Id _, []), Lolli _))) 
+            => CRule (declToRule sg top)
        | Decl (Lolli rule) =>
            let
              val name = gensym ()
-             val named_syn = Ascribe (App (Id name,[]), Lolli rule)
+             val named_syn = Ascribe (Id name, Lolli rule)
            in
              extractTop sg ctxs (Decl named_syn)
            end

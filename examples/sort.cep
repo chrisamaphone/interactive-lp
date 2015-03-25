@@ -20,7 +20,7 @@ stage sort = {
 collect nat list : pred.
 return list : pred.
 
-- : qui * stage sort -o stage collect * collect z nil.
+qui * stage sort -o stage collect * collect z nil.
 
 
 list : type.
