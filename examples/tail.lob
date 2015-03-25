@@ -1,0 +1,4 @@
+!tail Xs (cons Y Ys) -o !tail Xs Ys.
+!list Xs -o !tail Xs Xs.
+
+#exec _ (!list (cons 1 (cons 2 (cons 3 (cons 4 nil))))).
