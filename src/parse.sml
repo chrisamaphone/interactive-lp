@@ -40,7 +40,8 @@ datatype syn =
  | Wild of unit              (* _ *)
  | Id of string              (* x or X *)
  | Num of IntInf.int         (* x or X *)
- | Braces of syn             (* { t } *)                
+ | Braces of syn             (* { t } *)   
+ | EmptyBraces of unit       (* {} *)             
 
 fun synToString syn =
   (case syn of 
@@ -60,13 +61,14 @@ fun synToString syn =
     | Wild () => "_"
     | Id x => x
     | Num n => IntInf.toString n
-    | Braces x => "{"^synToString x^"}")
+    | Braces x => "{"^synToString x^"}"
+    | EmptyBraces () => "{}")
 
 datatype top = 
-   Decl of syn                  (* something. *)
- | Stage of string * top list   (* stage x {decl1, ..., decln} *)
- | Context of string * syn      (* context x {t} *)
- | Special of string * syn list (* #whatever t1...tn *) 
+   Decl of syn                    (* something. *)
+ | Stage of string * top list     (* stage x {decl1, ..., decln} *)
+ | Context of string * syn option (* context x {t} *)
+ | Special of string * syn list   (* #whatever t1...tn *) 
 
 fun topToString pre top =
   (case top of 
@@ -74,7 +76,8 @@ fun topToString pre top =
     | Stage (id, tops) => pre^"stage "^id^" {\n"^
                           String.concat (map (topToString (pre^"  ")) tops)^
                           pre^"}\n"
-    | Context (id, syn) => pre^"context "^id^" {"^
+    | Context (id, NONE) => pre^"context "^id^" {}\n"
+    | Context (id, SOME syn) => pre^"context "^id^" {"^
                             synToString syn
                             ^"}\n"
     | Special (name, syns) => pre^"#"^name^" "^
@@ -176,9 +179,12 @@ ParseFn
    val Single = fn x => [x]
    val Cons  = fn (x, xs) => x :: xs
    val ConsT = fn (x, xs) => x :: xs
+   val noneSyn = fn () => NONE
+   val someSyn = SOME
 
    datatype top = datatype top
    datatype syn = datatype syn
+   type synopt = syn option
 
    val parens = fn x => x
    val swap = fn (x, y) => (y, x)
