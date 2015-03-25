@@ -79,8 +79,10 @@ let
   end
 
   val (stages, ctx) = Ceptre.progToRulesets program
+  val senses = PullSensors.all (* XXX more? *)
+  val fastctx = CoreEngine.init sigma senses stages ctx
 in
-   CoreEngine.context (loop init_stage (CoreEngine.init sigma [] stages ctx))
+   CoreEngine.context (loop init_stage fastctx)
 end
 
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program) = 
