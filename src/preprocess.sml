@@ -145,7 +145,8 @@ struct
 
   fun extractRHS syn acc =
     case syn of
-         Star (a, rhs) =>
+         One () => acc
+       | Star (a, rhs) =>
          (case extractAtom a [] of
                (atom, []) => extractRHS rhs (atom::acc)
               | _ => raise IllFormed)
@@ -165,10 +166,7 @@ struct
           Decl (Ascribe (Id name, Lolli (lhs_syn, rhs_syn))) =>
             let
               val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
-              exception RobDoesntKnowWhatToDoHere
-              val rhs = 
-                case rhs_syn of One () => raise RobDoesntKnowWhatToDoHere
-                   | _ => extractRHS rhs_syn residual
+              val rhs = extractRHS rhs_syn residual
               (* external syntax *)
               val erule = {name = name, lhs = lhs, rhs = rhs}
               val () = wild_gensym := 0 (* reset for each rule *)
