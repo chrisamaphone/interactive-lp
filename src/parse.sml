@@ -39,7 +39,7 @@ datatype syn =
  | Pred of unit              (* pred *)
  | Wild of unit              (* _ *)
  | Id of string              (* x or X *)
- | Num of IntInf.int         (* x or X *)
+ | Num of IntInf.int         (* 3 *)
  | Braces of syn             (* { t } *)   
  | EmptyBraces of unit       (* {} *)             
 

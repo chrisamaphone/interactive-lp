@@ -29,7 +29,11 @@ struct
        val ans = Exec.run sigma (List.nth (progs, index))
      in
        print ("\n\nFinal state:\n" ^ (Ceptre.contextToString ans) ^ "\n")
+       ; SOME ans
      end
+     handle Subscript => 
+       (print ((Int.toString index)^" is an invalid program index!\n")
+       ; NONE)
 
 
 end

@@ -407,7 +407,7 @@ struct
   (* turn a whole list of top-level decls into a list of progs. *)
   fun process' tops sg bwds contexts stages links progs =
     case tops of
-         [] => ({header=sg,rules=bwds} : Ceptre.sigma, progs)
+         [] => ({header=rev sg,rules=rev bwds} : Ceptre.sigma, rev progs)
        | (top::tops) => 
            (case extractTop sg contexts top of
                  CStage stage => 
@@ -443,6 +443,7 @@ struct
              )
 
   fun process tops = process' tops [] [] [] [] [] []
+    : (Ceptre.sigma * (Ceptre.program list))
 
   (* testing *)
   
