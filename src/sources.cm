@@ -11,3 +11,4 @@ Group is
   parse.sml
   preprocess.sml
   top.sml
+  test-harness.sml
