@@ -201,16 +201,29 @@ struct
         | _ => NONE)
         | _ => NONE
 
-  fun extractContextAtoms syn = 
+  (* XXX todo add ctxs and sg args to call sites *)
+  fun extractContextAtoms ctxs sg syn = 
     case syn of 
          Comma (syn1, syn2) => 
-           extractContextAtoms syn1 @ extractContextAtoms syn2
-       | _ => [ extractGroundAtom syn ]
+           (extractContextAtoms ctxs sg syn1) 
+           @ (extractContextAtoms ctxs sg syn2)
+       (* extract single identifiers as either names of contexts
+       *  or atoms *)
+       | Id id =>
+           (case lookup id ctxs of
+                 NONE =>
+                 (case lookup id sg of
+                       SOME (Ceptre.Pred (_,[])) => [extractGroundAtom syn]
+                     | _ => raise IllFormed)
+              | SOME c => c)
+       | _ => [ extractGroundAtom syn ] 
+        (* XXX check for presence in sg? *)
 
-  fun extractContext top =
+  fun extractContext ctxs sg top =
     case top of
          Context (name, NONE) => (name, [])
-       | Context (name, SOME atoms) => (name, extractContextAtoms atoms)
+       | Context (name, SOME atoms) => 
+            (name, extractContextAtoms ctxs sg atoms)
        | _ => raise IllFormed
 
   fun extractStage sg syntax =
@@ -224,7 +237,7 @@ struct
         | _ => raise IllFormed
 
   (* interpret a Special "#trace" *)
-  fun extractSpecial args ctxs =
+  fun extractSpecial args ctxs sg =
     case args of
          ("trace", [limit, Id stage, ctx]) =>
          let 
@@ -242,7 +255,7 @@ struct
                     | SOME ctx => ctx
                 )
               | EmptyBraces () => []
-              | Braces syn => extractContextAtoms syn
+              | Braces syn => extractContextAtoms ctxs sg syn
               | _ => raise IllFormed
            )
          in
@@ -386,8 +399,8 @@ struct
            end
        | Decl s => (extractDecl sg top
                       handle IllFormed => CNone s)
-       | Context _ => CCtx (extractContext top)
-       | Special args => CProg (extractSpecial args ctxs)
+       | Context _ => CCtx (extractContext ctxs sg top)
+       | Special args => CProg (extractSpecial args ctxs sg)
 
   fun csynToString (CStage stage) = stageToString stage
     | csynToString (CRule rule) = ruleToString rule

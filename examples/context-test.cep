@@ -1,0 +1,13 @@
+red : pred.
+blue : pred.
+
+context reds = {red, red, red, red}.
+context blues = {blue, blue, blue}.
+
+context rbs = {reds, blues}.
+context init = {reds, red, blues}.
+
+stage emp = {
+}
+
+#trace _ emp init.
