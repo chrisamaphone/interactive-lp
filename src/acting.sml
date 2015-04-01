@@ -1,4 +1,4 @@
-structure Action =
+structure Acting =
 struct
   
   open Ceptre
@@ -10,7 +10,7 @@ struct
   fun unaryToDecimal n =
     case n of
          Fn ("z", []) => 0
-       | Fn ("s", n') => 1 + (unaryToDecimal n')
+       | Fn ("s", [n']) => 1 + (unaryToDecimal n')
        | _ => raise IllFormed
 
   fun render_cell (ewall, swall) =
@@ -35,6 +35,7 @@ struct
              ctxToCellsWalls ctx cells (((xn,yn),dir)::walls)
            end
        | [] => (cells, walls)
+       | (other::rest) => ctxToCellsWalls rest cells walls
 
        (*
        let

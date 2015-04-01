@@ -3,6 +3,7 @@ Group is
 
   ceptre.sml
   sensing.sml
+  acting.sml
   core-engine.sml
   exec.sml
 
