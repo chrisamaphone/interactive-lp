@@ -107,6 +107,16 @@ structure Ceptre = struct
         if s = id then SOME n
         else lookup id table
 
+  fun lookupSplit id table =
+  let
+    fun lookupSplit' id nil cont = NONE
+      | lookupSplit' id ((k,v)::table) cont =
+          if k = id then SOME (v, cont table)
+          else lookupSplit' id table (fn suffix => cont ((k,v)::suffix))
+  in
+    lookupSplit' id table (fn x => x)
+  end
+
   (* assigns numbers to named terms for the sake of translating between external
   * representation and internal. *)
   fun walk_terms (tms : external_term list) (table, ctr) =
