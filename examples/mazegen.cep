@@ -40,19 +40,29 @@ wall_dir : type.
 south : dir.
 east : dir.
 wall nat nat wall_dir : pred.
+not_in_maze nat nat : pred.
+
+adjacent nat nat dir nat nat : bwd.
+adjacent/e : adjacent X Y east (s X) Y.
+adjacent/w : adjacent (s X) Y west X Y.
+adjacent/s : adjacent X Y south X (s Y).
+adjacent/n : adjacent X (s Y) north X Y.
 
 qui * stage unvisit -o stage allWalls.
 stage allWalls = {
-  addWall : unvisited X Y -o cell X Y * wall X Y south * wall X Y east.
+  addWall : unvisited X Y -o cell X Y * not_in_maze X Y * wall X Y south * wall X Y east.
 }
 
-wall_walker nat nat : pred.
-context init_walker = {wall_walker z z}.
+unpicked : pred.
+in_wall_list nat nat dir : pred.
 
-qui * stage allWalls -o stage traverse * wall_walker z z.
+qui * stage allWalls -o unpicked * stage traverse.
 
 stage traverse = {
-  
+  pickFirst : not_in_maze X Y * unpicked -o cell X Y.
+  pick : in_wall_list X Y Dir * adjacent X Y Dir X' Y' * not_in_maze X' Y'
+         -o cell X' Y'.
+  walls : $cell X Y * wall X Y Dir -o in_wall_list X Y Dir. 
 }
 
 #trace _ makeSquareGrid {init_size, cell z z, last z z}.
