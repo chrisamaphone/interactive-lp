@@ -50,10 +50,10 @@ struct
   end
 
   fun compare ((x1,y1), (x2,y2)) =
-    if y1 < y2 then LESS
-    else if x1 < x2 then LESS
-    else if x1 = x2 andalso y1 = y2 then EQUAL
-    else GREATER
+    case (Int.compare (x1,x2), Int.compare (y1,y2)) of
+      (LESS,_) => LESS
+    | (EQUAL,o2) => o2
+    | (GREATER,_) => GREATER
 
   fun compare_entries ((c1,w1),(c2,w2)) = compare (c1,c2)
 
@@ -72,6 +72,13 @@ struct
   (String.concat (map render_cell (sort cwMap)))
   ^ "\n"
 
+  fun filter_ctx c =
+    List.filter 
+      (fn (Lin, "wall",_) => true 
+        | (Lin,"cell",_) => true
+        | _ => false)
+      c
+
 
   (* render_maze : action
   *
@@ -80,10 +87,12 @@ struct
   * and prints out the corresponding maze. *)
   fun render_maze ctx =
   let
-    val (cells, walls) = ctxToCellsWalls ctx [] []
+    val relevant_ctx = filter_ctx ctx
+    val (cells, walls) = ctxToCellsWalls relevant_ctx [] []
     val cwMap = cellsWallsToMap cells walls
+    val sorted = sort cwMap
   in
-    render_table cwMap
+    render_table sorted
   end
 
  (* for testing *)

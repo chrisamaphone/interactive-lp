@@ -29,24 +29,30 @@ done : size (s N) * last N N -o ().
 
 }
 
+unvisited nat nat : pred.
+
+qui * stage makeSquareGrid -o stage unvisit.
+stage unvisit = {
+  unvisit/i : cell X Y -o unvisited X Y.
+}
+
 wall_dir : type.
 south : dir.
 east : dir.
-
 wall nat nat wall_dir : pred.
+
+qui * stage unvisit -o stage allWalls.
+stage allWalls = {
+  addWall : unvisited X Y -o cell X Y * wall X Y south * wall X Y east.
+}
+
 wall_walker nat nat : pred.
 context init_walker = {wall_walker z z}.
 
-qui * stage makeSquareGrid -o stage addWalls * wall_walker z z.
+qui * stage allWalls -o stage traverse * wall_walker z z.
 
-stage addWalls = {
-  % if there's a cell to my east, either walk there or put a wall there.
-  east_go   : wall_walker X Y * $cell (s X) Y -o wall_walker (s X) Y.
-  east_add  : $wall_walker X Y * $cell (s X) Y -o wall X Y east.
-
-  % if there's a cell to my south, either walk there or put a wall there.
-  south_go  : wall_walker X Y * $cell X (s Y) -o wall_walker X (s Y).
-  south_add : $wall_walker X Y * $cell X (s Y) -o wall X Y south.
+stage traverse = {
+  
 }
 
 #trace _ makeSquareGrid {init_size, cell z z, last z z}.
