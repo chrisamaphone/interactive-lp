@@ -1,0 +1,14 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+leq nat nat : bwd.
+leqz : leq z N.
+leqs : leq (s N) (s M)
+  <- leq N M.
+
+widget : type.
+
+count widget nat : pred.
+
+user_choice nat : sense.
