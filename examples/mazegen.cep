@@ -50,7 +50,7 @@ adjacent/n : adjacent X (s Y) north X Y.
 
 qui * stage unvisit -o stage allWalls.
 stage allWalls = {
-  addWall : unvisited X Y -o cell X Y * not_in_maze X Y * wall X Y south * wall X Y east.
+  addWall : unvisited X Y -o not_in_maze X Y * wall X Y south * wall X Y east.
 }
 
 unpicked : pred.
