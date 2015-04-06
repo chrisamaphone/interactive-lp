@@ -1,0 +1,76 @@
+% Maze generation
+
+nat : type.
+z : nat.
+s : nat -> nat.
+
+lt nat nat : bwd.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+  <- lt N M.
+
+cell nat nat : pred.
+
+size nat : pred.
+last nat nat : pred.
+
+% set size to 10
+context init_size = {size (s (s (s (s (s (s (s (s (s (s z))))))))))}.
+
+stage makeSquareGrid = {
+  
+new_cell : $size (s N) * last X Y * lt X N
+             -o cell (s X) Y * last (s X) Y.
+  
+new_row : $size (s N) * last N Y * lt Y N
+         -o cell z (s Y) * last z (s Y).
+
+done : size (s N) * last N N -o ().
+
+}
+
+unvisited nat nat : pred.
+
+qui * stage makeSquareGrid -o stage unvisit.
+stage unvisit = {
+  unvisit/i : cell X Y -o unvisited X Y.
+}
+
+wall_dir : type.
+south : dir.
+east : dir.
+wall nat nat wall_dir : pred.
+not_in_maze nat nat : pred.
+
+qui * stage unvisit -o stage allWalls.
+stage allWalls = {
+  addWall : unvisited X Y -o not_in_maze X Y * wall X Y south * wall X Y east.
+}
+
+unpicked : pred.
+in_wall_list nat nat dir : pred.
+in_maze nat nat : pred.
+
+qui * stage allWalls -o unpicked * stage traverse.
+
+stage traverse = {
+  pickFirst : not_in_maze X Y * unpicked -o in_maze X Y.
+  pick/e : in_wall_list X Y Dir * not_in_maze (s X) Y
+         -o in_maze (s X) Y.
+  pick/w : in_wall_list (s X) Y Dir * not_in_maze X Y
+         -o in_maze X Y.
+  pick/s : in_wall_list X Y Dir * not_in_maze X (s Y)
+         -o in_maze X (s Y).
+  pick/n : in_wall_list X (s Y) Dir * not_in_maze X Y
+         -o in_maze X Y.
+  walls : $in_maze X Y * wall X Y Dir -o in_wall_list X Y Dir. 
+}
+
+qui * stage traverse -o stage renderCells.
+
+stage renderCells = {
+  render/cell : in_maze X Y -o cell X Y.
+  render/wall : in_wall_list X Y Dir -o wall X Y Dir.
+}
+
+#trace _ makeSquareGrid {init_size, cell z z, last z z}.
