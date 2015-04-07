@@ -8,15 +8,15 @@ development:
 
 - Get SML/NJ and rlwrap.
 - From the /src directory, run
-    rlwrap sml
+    <code>rlwrap sml</code>
 - From the SML/NJ REPL, do
-    CM.make "sources.cm"
+    <code>CM.make "sources.cm"</code>,
   Then
-    open Top;
+    <code>open Top;</code>
 - Run one of the shown functions on the path to a file. "runFirst" runs the
 first program given. Examples live in available in
-    ../examples/
+    <code>../examples/</code>
   So you might try
-    runFirst "../examples/small.cep";
+    <code>runFirst "../examples/small.cep";</code>
 
     
