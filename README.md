@@ -18,9 +18,7 @@ development:
   
     <code>open Top;</code>
 - Run one of the shown functions on the path to a file. "runFirst" runs the
-first program given. Examples live in available in
-    
-    <code>../examples/</code>
+first program given. Examples live in <code>../examples/</code>.
   
   So you might try
   
