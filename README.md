@@ -26,4 +26,4 @@ first program given. Examples live in available in
   
     <code>runFirst "../examples/small.cep";</code>
 
-    
+  Which will run the first <code>#trace</code> command given in that file. 
