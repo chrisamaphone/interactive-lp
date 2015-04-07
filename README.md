@@ -7,7 +7,10 @@ Ad-hoc instructions for anyone who wants to play while Ceptre is in
 development:
 
 - Get SML/NJ and rlwrap.
-- Get cmlib into the lib/cmlib directory (something like git clone https://github.com/standardml/cmlib.git)
+- Get cmlib into the lib/cmlib directory:
+
+    <code>git submodule update --init --recursive</code>
+
 - From the /src directory, run
 
     <code>rlwrap sml</code>
