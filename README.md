@@ -7,12 +7,13 @@ Ad-hoc instructions for anyone who wants to play while Ceptre is in
 development:
 
 - Get SML/NJ and rlwrap.
+- Get cmlib into the lib/cmlib directory (something like git clone https://github.com/standardml/cmlib.git)
 - From the /src directory, run
 
     <code>rlwrap sml</code>
 - From the SML/NJ REPL, do
 
-    <code>CM.make "sources.cm"</code>,
+    <code>CM.make "sources.cm";</code>,
   
   Then
   
