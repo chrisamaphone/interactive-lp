@@ -7,7 +7,7 @@ Ad-hoc instructions for anyone who wants to play while Ceptre is in
 development:
 
 - Get SML/NJ and rlwrap.
-- Get cmlib into the lib/cmlib directory:
+- Clone the repo, and get cmlib into the lib/cmlib directory:
 
     <code>git submodule update --init --recursive</code>
 
