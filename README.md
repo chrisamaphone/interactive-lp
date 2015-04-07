@@ -21,8 +21,10 @@ development:
   Then
   
     <code>open Top;</code>
-- Run one of the shown functions on the path to a file. "runFirst" runs the
-first program given. Examples live in <code>../examples/</code>.
+- Run one of the shown functions on the path to a file.
+<code>runFirst</code> runs the first program given. Examples live in
+<code>../examples/</code> and the relevant ones to Ceptre are those that
+end in <code>.cep</code>.
   
   So you might try
   
