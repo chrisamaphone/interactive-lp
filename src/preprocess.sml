@@ -123,19 +123,20 @@ struct
              raise IllFormed
            end
 
+  (* rhs tracks $'d args *)
   fun extractLHS syn acc rhs =
     case syn of
          Star (a, lhs) =>
            let
              val (atom, rhs) = extractAtom a rhs
            in
-               extractLHS lhs (fn x => atom::(acc x)) rhs
+               extractLHS lhs (fn x => acc (atom::x)) rhs
            end
        | syn => 
            let
              val (atom, rhs) = extractAtom syn rhs
            in
-             (acc atom, rhs)
+             (acc [atom], rhs)
            end
 
   fun extractRHSAtom syn =
@@ -145,7 +146,7 @@ struct
 
   fun extractRHS syn acc =
     case syn of
-         One () => acc
+         One () => rev acc
        | Star (a, rhs) =>
          (case extractAtom a [] of
                (atom, []) => extractRHS rhs (atom::acc)
@@ -165,7 +166,7 @@ struct
     case syntax of
           Decl (Ascribe (Id name, Lolli (lhs_syn, rhs_syn))) =>
             let
-              val (lhs, residual) = extractLHS lhs_syn (fn x => [x]) []
+              val (lhs, residual) = extractLHS lhs_syn (fn x => x) []
               val rhs = extractRHS rhs_syn residual
               (* external syntax *)
               val erule = {name = name, lhs = lhs, rhs = rhs}
