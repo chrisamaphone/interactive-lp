@@ -301,7 +301,7 @@ struct
              *)
              val () = (case dollars of [] => () | _ => raise IllFormed)
            in
-             {name=name, lhs=subgoals, rhs=[pred]} : Ceptre.rule_external
+             {name=name, lhs=rev subgoals, rhs=[pred]} : Ceptre.rule_external
            end
   
   datatype csyn = CStage of stage | CRule of rule_internal 
@@ -355,8 +355,8 @@ struct
                       end
                     | _ => raise IllFormed)
             (* backward chaining rules *)
-             | Arrow rule =>
-                 let
+             | Arrow (lhs, rhs) =>
+                 let (* n.b. lhs and rhs are parsed in extractBwd as class *)
                    val name = extractID data
                    val ebwd = extractBwd class name []
                    val bwd = externalToBwd sg ebwd
