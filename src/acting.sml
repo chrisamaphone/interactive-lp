@@ -13,6 +13,13 @@ struct
        | Fn ("s", [n']) => 1 + (unaryToDecimal n')
        | _ => raise IllFormed
 
+
+  fun predToDecimal (_, name, [n]) = name ^ " " ^ (Int.toString (unaryToDecimal n))
+    | predToDecimal _ = raise IllFormed
+
+  fun ctxToDecimal ctx =
+    map (fn x => predToDecimal x handle IllFormed => atomToString x) ctx
+
   fun ctxToCellsWalls ctx cells walls =
     case ctx of
          (Lin, "cell", [x,y])::ctx =>
