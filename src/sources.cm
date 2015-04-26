@@ -1,6 +1,9 @@
 Group is
   ../lib/cmlib/cmlib.cm
 
+  nondet-sig.sml
+  nondet-eager.sml
+
   ceptre.sml
   sensing.sml
   acting.sml
