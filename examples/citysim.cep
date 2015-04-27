@@ -1,0 +1,68 @@
+
+person : pred.
+food : pred.
+hunger : pred.
+money : pred.
+mill : pred.
+crop : pred.
+
+%% player actions
+
+action : type.
+add_person : action.
+add_mill : action.
+add_crop : action.
+
+step : pred.
+
+stage sim = {
+
+  person/eat : step * person * hunger * food -o person.
+  person/hunger : step * person -o person * hunger.
+  person/die : step * person * hunger * hunger * hunger * hunger -o ().
+  person/work : step * $person * mill -o 
+                  money * money * hunger * hunger.
+  person/reproduce : step * $person * $person -o person * hunger * hunger.
+  person/buy_crop : step * $person * money -o crop.
+
+  crop/food : step * crop -o food.
+
+%  disaster : step * crop -o ().
+
+}
+
+- : qui * stage sim -o stage cleanup.
+
+selected action : pred.
+stage cleanup = {
+  cleanup/step : step -o ().
+  cleanup/select : selected _ -o ().
+}
+
+tok : pred.
+- : qui * stage cleanup -o stage accept * tok.
+
+stage accept = {
+  do/accept : tok * input X -o selected X.
+}
+
+- : qui * stage accept -o stage process.
+
+stage process = {
+
+  % do/add_mill : money * money * money * money * money * money * money * money
+  %            * selected add_mill
+  %            -o !mill.
+
+  do/add_crop : money * money * money
+              * selected add_crop
+              -o crop * crop * crop * crop * crop.
+
+  do/add_person : money * money * money * selected add_person -o person.
+}
+
+- : qui * stage process -o stage sim * step.
+
+context init = {money, money, money, money, money, money, tok, !mill}.
+
+#trace _ accept init.
