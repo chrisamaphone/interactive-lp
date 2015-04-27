@@ -301,7 +301,7 @@ struct
              *)
              val () = (case dollars of [] => () | _ => raise IllFormed)
            in
-             {name=name, lhs=rev subgoals, rhs=[pred]} : Ceptre.rule_external
+             {name=name, lhs=subgoals, rhs=[pred]} : Ceptre.rule_external
            end
   
   datatype csyn = CStage of stage | CRule of rule_internal 
