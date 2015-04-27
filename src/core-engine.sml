@@ -35,8 +35,8 @@ sig
 end = 
 struct
 
-(* fun debug f = () (* Not-trace-mode *) *)
-fun debug f = f () (* Trace mode *)
+fun debug f = () (* Not-trace-mode *)
+(* fun debug f = f () (* Trace mode *) *)
 
 type ctx_var = int
 datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Sensed

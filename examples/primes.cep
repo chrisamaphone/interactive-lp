@@ -28,7 +28,7 @@ qui * stage gen -o stage primes.
 
 % annihilate multiples
 stage primes = {
-  collide : $here N * here M * mult N _ M -o ().
+  collide : $here N * here M * mult _ N M -o ().
 }
 
 #trace _ gen init.
