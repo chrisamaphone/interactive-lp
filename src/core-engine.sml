@@ -35,6 +35,9 @@ sig
 end = 
 struct
 
+(* fun debug f = () (* Not-trace-mode *) *)
+fun debug f = f () (* Trace mode *)
+
 type ctx_var = int
 datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Sensed
 
@@ -55,70 +58,8 @@ val gen = fn () => (!i before i := !i + 1)
 (* XXX do our own numbering *)
 end
 
-(* Little data structure of result trees *)
-structure Tree = 
-struct
-   datatype 'a t = N | L of 'a | M of 'a t list
-   fun N @ t = t
-     | t @ N = t
-     | t @ s = M [ t, s ] 
+structure ND = NondetEager
 
-   fun flatten' (t, acc) = 
-      case t of 
-         N => acc
-       | L x => (x :: acc)
-       | M ts => List.foldr flatten' acc ts
-
-   fun bind (t: 'a t) (f: 'a -> 'b t): 'b t  = 
-      case t of 
-         N => N
-       | L x => f x
-       | M xs => M (map (fn y => bind y f) xs) 
-
-   fun many (ts: 'a t list) = 
-      case ts of 
-         [] => N
-       | [ t ] => t
-       | _ => M ts  
-
-   fun letOne (t: 'a) (f: 'a -> 'b t): 'b t = f t
-
-   fun letMany (ts: 'a list) (f: 'a -> 'b t): 'b t =
-      many (List.mapPartial 
-              (fn t => (case f t of N => NONE | t => SOME t)) 
-              (ts)) 
-
-   fun bindMany (ts: 'a t list) (f: 'a -> 'b t): 'b t =
-      many (List.mapPartial 
-              (fn t => (case bind t f of N => NONE | t => SOME t))
-              (ts))
-
-   fun require x (ts: unit -> 'a t): 'a t = if x then ts () else N
-
-   fun fromOpt NONE = N
-     | fromOpt (SOME x) = L x
-
-   fun map f t =
-      case t of
-         N => N
-       | L x => L (f x)
-       | M xs => M (List.map (map f) xs)
-
-   (* Ad-hoc merge of List.mapPartial and bind... *)
-   fun mapList f xs = 
-      case xs of
-         [] => N
-       | x :: xs => f x @ mapList f xs
-
-   val flatten = fn t => flatten' (t, [])
-
-   fun append f (a, t) = t @ f a
-
-   (* Okay these actually have the right names *)
-   fun guard false = N
-     | guard true = L ()
-
-end
 
 structure C = Ceptre
 structure S = IntRedBlackSet
@@ -219,6 +160,7 @@ end
                         
 fun context (FC {ctx = {concrete, ...}, ...}) = map #2 concrete
 
+fun guard b = if b then ND.return () else ND.fail
 
 (****** Variable substitutions ******)
 
@@ -254,24 +196,26 @@ fun apply_subst (subst: msubst) (t: C.term) =
  * anything about the structure of the corresponding pattern. I'm less
  * confident that makes sense. *)
 
-fun match_term {pat = p, term = t} (subst: msubst): msubst Tree.t = 
+fun match_term {pat = p, term = t} (subst: msubst): msubst ND.m = 
    case (p, t) of 
       (C.Var n, t) =>
         (case Vector.sub (subst, n) of 
-            NONE => Tree.L (Vector.update (subst, n, SOME t))
+            NONE => if ground t
+                    then ND.return (Vector.update (subst, n, SOME t))
+                    else ND.return subst (* Non-ground match: imprecise (but still sound?) *)
           | SOME ground_pat => match_term {pat = ground_pat, term = t} subst)
     | (C.Fn (f, ps), C.Fn (g, ts)) => 
-        (Tree.bind (Tree.guard (f = g))
+        (ND.bind (guard (f = g))
            (fn () =>
          match_terms {f = f, pat = ps, term = ts} subst))
     | (p, C.Var n) => 
-        (Tree.L subst) (* Variable found: imprecise (but still sound?) *)
+        (ND.return subst) (* Variable found: imprecise (but still sound?) *)
 
-and match_terms {f, pat = ps, term = ts} subst: msubst Tree.t = 
+and match_terms {f, pat = ps, term = ts} subst: msubst ND.m = 
    case (ps, ts) of
-      ([], []) => Tree.L subst
+      ([], []) => ND.return subst
     | (p :: ps, t :: ts) => 
-         Tree.bind
+         ND.bind
             (match_term {pat = p, term = t} subst)
             (match_terms {f = f, pat = ps, term = ts}) 
     | _ => raise Fail ("Arity error for "^f)
@@ -286,11 +230,11 @@ val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 (****** Logic programming engine ******)
 
 fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
-   Tree.bind (Tree.guard (a = b andalso not (is_in x exclude)))
+   ND.bind (guard (a = b andalso not (is_in x exclude)))
      (fn () =>
-   Tree.bind (match_terms {f = a, pat = ps, term = ts} subst)
+   ND.bind (match_terms {f = a, pat = ps, term = ts} subst)
      (fn subst =>
-   Tree.L (Var x, subst)))
+   ND.return (Var x, subst)))
 
 (* search_premises r bwds ctx Vs subst prems ~~~> some enabled transitions
  * 
@@ -310,14 +254,22 @@ fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
  * We learn more about the substitution "subst" as we go along, 
  * so we return both substitutions and the proof term we built. *)
 
-fun search_premises prog (r: Ceptre.ident * int) (Vs: value list) subst prems = 
+fun search_premises' prog (r: Ceptre.ident * int) (Vs: value list) subst prems =
    case prems of 
-      [] => Tree.L {r = r, tms = subst, Vs = rev Vs}
+      [] => ND.return {r = r, tms = subst, Vs = rev Vs}
     | prem :: prems => 
-         Tree.bind 
+         ND.bind
             (search_prem prog Vs subst prem)
             (fn (x: value, subst) => 
-               search_premises prog r (x :: Vs) subst prems)
+               search_premises' prog r (x :: Vs) subst prems)
+
+and search_premises prog (r: Ceptre.ident * int) subst prems = 
+let 
+   val () = debug (fn () =>
+      print ("Attempting to run rule "^(#1 r)^"\n"))
+in
+   search_premises' prog r [] subst prems
+end
 
 (* search_bwd bwds ctx (ts_subst, ts) bwd ~~> some extended ts_substs 
  * 
@@ -336,13 +288,13 @@ fun search_premises prog (r: Ceptre.ident * int) (Vs: value list) subst prems =
 and search_bwd prog (ts_subst, ts) (uid, bwd) = 
 let
    val {name, pivars, head = (a, ps), subgoals} = bwd
-in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
+in ND.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
      (* Okay, we partially match the head of the rule, giving subst *)
      (fn subst => 
-   Tree.bind (search_premises prog (name, uid) [] subst subgoals)
+   ND.bind (search_premises prog (name, uid) subst subgoals)
      (* Here's a way to satisfy all subgoals! *)
      (fn {r, tms = subst, Vs} =>
-   Tree.letOne (map (apply_subst subst) ps)
+   ND.letOne (map (apply_subst subst) ps)
      (* (a, ss) is the fact we've established using backward chaining;
       * it has the proof term r(Vs). We're counting on ss being ground; 
       * this should always be the case if the backward chaining logic
@@ -353,11 +305,16 @@ in Tree.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
       * to match this new fact against the subgoal ts that we started
       * with. *)
      (fn ss => 
-   Tree.bind (match_terms {f = a, pat = ts, term = ss} ts_subst)
+   let val () = debug (fn () => 
+                   print ("Matching derived fact "^a^"("^String.concatWith "," (map C.termToString ss)^")\n"^
+                          "              against "^a^"("^String.concatWith "," (map C.termToString ts)^")\n"))
+   in ND.bind (match_terms {f = a, pat = ts, term = ss} ts_subst)
      (* Now we have learned things about our original substitution, 
       * and can return *) 
      (fn ts_subst => 
-   Tree.L (Rule (a, Vs), ts_subst)))))
+   let val () = debug (fn () => 
+                   print ("Match was successful\n"))
+   in ND.return (Rule (a, Vs), ts_subst) end)end)))
 end
 
 (* search_prem bwds ctx Vs subst prem ~~~> some extended substitutions
@@ -368,52 +325,79 @@ end
 
 and search_prem prog (Vs: value list) subst (mode, a, ps) = 
 let 
+   val () = debug 
+      (fn () => print ("Current subgoal: "^a^"("^
+                       String.concatWith "," (map C.termToString ps)^")\n"))
+
+   val () = debug
+      (fn () => print ("Resolving subgoal "^a^"("^
+                       String.concatWith "," (map C.termToString ps)^")"^
+                       " from the context.\n"))
+
    (* val () = print "search_prem\n" *)
    (* Try to satisfy the premise by looking it up in the context *)
    val ctx = fc_concrete prog 
-   val matched: (value * msubst) Tree.t = 
+   val matched: (value * msubst) ND.m = 
       case mode of 
-         C.Lin => Tree.letMany ctx (fn hyp => match_hyp Vs subst (a, ps) hyp) 
-       | C.Pers => Tree.letMany ctx (fn hyp => match_hyp [] subst (a, ps) hyp)
+         C.Lin => ND.letMany ctx (fn hyp => match_hyp Vs subst (a, ps) hyp) 
+       | C.Pers => ND.letMany ctx (fn hyp => match_hyp [] subst (a, ps) hyp)
+
+   val () = debug
+      (fn () => print ("Resolving subgoal "^a^"("^
+                       String.concatWith "," (map (C.termToString o apply_subst subst) ps)^")"^
+                       " with backward chaining.\n"))
 
    (* Try to satisfy the premise by finding rules that match it *)
-   val derived: (value * msubst) Tree.t =
+   val derived: (value * msubst) ND.m =
       case M.find (fc_bwds prog) a of
-         NONE => Tree.N
+         NONE => ND.fail
        | SOME bwds_for_a => 
          let val tsx = map (apply_subst subst) ps
-         in Tree.letMany bwds_for_a
+         in ND.letMany bwds_for_a
                (* A rule! Does it give us a ground instance of our atom? *)
                (fn bwd => 
             search_bwd prog (subst, tsx) bwd)
          end
 
-   val sensed: (value * msubst) Tree.t = 
+   val () = debug
+      (fn () => print ("Resolving subgoal "^a^"("^
+                       String.concatWith "," (map C.termToString ps)^")"^
+                       " with sensing predicates.\n"))
+
+   val sensed: (value * msubst) ND.m = 
       case M.find (fc_senses prog) a of 
-         NONE => Tree.N
+         NONE => ND.fail
        | SOME sense_for_a =>
          let val (tsg, psng) = ground_prefix (map (apply_subst subst) ps)
-         in Tree.letMany (sense_for_a (prog, tsg))
+         in ND.letMany (sense_for_a (prog, tsg))
                (* Some outputs. Let's use them to extend the substitution. *)
                (fn ts =>
-            Tree.bind (match_terms {f = a, pat = psng, term = ts} subst)
+            ND.bind (match_terms {f = a, pat = psng, term = ts} subst)
                (* We've got the extended substitution! *)
                (fn subst =>
-            Tree.L (Sensed, subst)))
+            ND.return (Sensed, subst)))
          end
+
+   val () = debug
+      (fn () => print ("Done resolving subgoal "^a^"("^
+                       String.concatWith "," (map C.termToString ps)^").\n"))
+             
 in
-   Tree.@ (derived, Tree.@ (matched, sensed))
+   (* This is a unique place in the code, because we **might** want to
+    * determinstically order the consideration of derived, matched, and
+    * sensed predicates, so we might want a definitely-ordered choice
+    * here. *)
+   ND.combine [ derived, matched, sensed ]
 end
 
 fun possible_steps stage prog =
    case M.find (fc_lmap prog) stage of
       NONE => raise Fail ("Stage "^stage^" unknown to the execution engine")
     | SOME ruleset => 
-        (Tree.flatten
-           (List.foldl 
-              (Tree.append (fn {name, pivars, lhs} =>
-                 (search_premises prog name [] (unknown pivars) lhs)))
-              Tree.N ruleset))
+        (ND.list
+           (ND.letMany ruleset
+               (fn {name, pivars, lhs} =>
+            search_premises prog name (unknown pivars) lhs)))
 
 fun add_to_ctx gsubst ((mode, a, ps), ({next, concrete}, xs)) = 
   ({next = next + 1, 
