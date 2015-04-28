@@ -30,6 +30,9 @@ sig
    (* Remove an atom from the context. Raises Subscript if it's not there. *)
    val remove: fastctx -> ctx_var -> fastctx
 
+   (* Remove all of a lis tof atoms from the context. *)
+   val removeAll: fastctx -> ctx_var list -> fastctx
+
    (* Look up all atoms with a particular name *)
    val lookup: fastctx -> Ceptre.ident -> (ctx_var * Ceptre.term list) list
 
@@ -439,6 +442,9 @@ fun remove (FC {prog, ctx = {concrete, next}}) x =
    FC {prog = prog,
        ctx = {next = next,
               concrete = List.filter (fn (y, a) => x <> y) concrete}}
+
+fun removeAll c0 xs =
+  foldl (fn (x,c) => remove c x) c0 xs
 
 fun lookup (FC {prog, ctx}) a = 
   (List.mapPartial 

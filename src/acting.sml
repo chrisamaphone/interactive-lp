@@ -25,7 +25,8 @@ struct
          ("cloakroom", "The cloakroom: a room for hanging cloaks."),
          ("bar", "The bar: a tawdry place."),
          ("cloak", "An inky black cloak you picked up at a yard sale."),
-         ("hook", "A brass hook fit for hanging things on.")]
+         ("hook", "A brass hook fit for hanging things on."),
+         ("player", "Dashing as ever.")]
     in
     case args of
          [Fn (noun, [])] =>
@@ -34,6 +35,13 @@ struct
              | _ => prompt_with "You don't see that here.")
         | _ => raise IllFormed
     end
+
+  fun reportFailure (_, args) =
+    case args of
+         [] => prompt_with "That doesn't make sense here."
+       | _ => raise IllFormed
+
+  (* mazegen example *)
 
   (* unary to digit *)
   fun unaryToDecimal n =
@@ -169,7 +177,8 @@ struct
    ((9,9),(true,true))]
 
   val action_table =
-    [ ("describe", getAndPrintDescription)
+    [ ("describe", getAndPrintDescription),
+      ("report_fail", reportFailure)
     ]
 
   fun run ((action_id,args), ctx) =

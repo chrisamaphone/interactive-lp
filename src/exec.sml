@@ -30,6 +30,11 @@ fun pick L = List.nth (L, Rand.randInt (List.length L))
 
 val qui = (Ceptre.Lin, "qui", [])
 
+fun unzip1_2' ((x,y,z)::l) xs yzs =
+      unzip1_2' l (x::xs) ((y,z)::yzs)
+  | unzip1_2' nil xs yzs = (xs, yzs)
+fun unzip1_2 l = unzip1_2' l [] []
+
 (* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
 *  
@@ -49,46 +54,49 @@ let
     (* Write out the context *)
     val ctx_string = Ceptre.contextToString ctx
     val () = print ("\n---- " ^ ctx_string ^ "\n")
-    (* Check for action predicates; run them and remove them *) 
-    (* XXX removing them is going to be super annoying.
-    val actions = List.filter
-        (fn (_,pred,_args) => 
-          case lookup pred Actions.actionTable of
-               SOME _ => true
-             | NONE => false)
-    (* XXX val ctx' = removeAll ctx ctx' *)
-    val () = List.app (fn a => Acting.run (a, ctx)) actions
-
-    *)
-
-
-    val () = List.app (fn p => Acting.maybe_run (p, ctx)) ctx
-    (* XXX the above is probably not the most efficient way to implement action
-    * predicates!!! *)
-    (* n.b. this doesn't remove anything yet. *)
+    (* general transition handling *)
+    fun take_transition T =
+      let
+        (* XXX todo: use second output for trace term *)
+        val (fastctx', newvars) = 
+          CoreEngine.apply_transition fastctx T
+        val actions =
+          List.mapPartial
+          (fn (x, (_,p,args)) =>
+            case Acting.lookup p Acting.action_table of
+                  SOME action => SOME (x, action, args)
+                | NONE => NONE)
+          newvars
+        (* debug: *)
+        val () = print 
+          ("\n About to run "
+          ^Int.toString(List.length actions)^" actions\n")
+        val (xs, actions) = unzip1_2 actions 
+        val () = List.app (fn (f,args) => f (ctx, args)) actions
+        val fastctx' = CoreEngine.removeAll fastctx' xs
+        
+        (* READ OUT NEW PHASE FROM PROGRAM *)
+        val [(x, [Ceptre.Fn (stage_id, [])])] = 
+          CoreEngine.lookup fastctx' "stage"
+      in
+        loop stage_id fastctx'
+      end
   in
      case CoreEngine.possible_steps stage fastctx of
         [] => 
         let
           val (fastctx, var) = CoreEngine.insert fastctx qui
         in
-          (case CoreEngine.possible_steps "outer_level" fastctx of 
+          case CoreEngine.possible_steps "outer_level" fastctx of 
               [] => fastctx (* DONE *)
             | L => 
               let 
                 val T = pick L
                 val () = print "Applying stage transition "
                 val () = print (CoreEngine.transitionToString T) 
-
-                (* XXX todo: use second output for trace term *)
-                val (fastctx', _) = CoreEngine.apply_transition fastctx T
-                
-                (* READ OUT NEW PHASE FROM PROGRAM *)
-                val [(x, [Ceptre.Fn (stage_id, [])])] = 
-                  CoreEngine.lookup fastctx' "stage"
               in
-                loop stage_id fastctx'
-              end)
+                take_transition T
+              end
         end
       | L => 
           let
@@ -96,8 +104,7 @@ let
             val () = print "\nApplying transition "
             val () = print (CoreEngine.transitionToString T)
           in
-             loop stage 
-             (#1 (CoreEngine.apply_transition fastctx T))
+            take_transition T
           end
   end
 

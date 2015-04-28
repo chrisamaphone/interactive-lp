@@ -25,20 +25,27 @@ struct
         | _ => [] (* ill-formed *)
 
   (* interactive fiction primitives *)
-  val north = "north"
-  val east = "east"
-  val west = "west"
-  val south = "south"
-  val quit = "quit"
+  
+  fun unary s = SOME (Ceptre.cnst s)
+  fun multiary s args = SOME (Ceptre.Fn (s, map Ceptre.cnst args))
 
   fun cmd s =
-    case s of
-         ("n" | "N" | "north" | "North" | "NORTH") => SOME north
-       | ("s" | "S" | "south" | "South" | "SOUTH") => SOME south
-       | ("e" | "E" | "east" | "East" | "EAST") => SOME east
-       | ("w" | "W" | "west" | "West" | "WEST") => SOME west
-       | ("q" | "Q" | "quit" | "Quit" | "QUIT") => SOME quit
-       | _ => NONE
+  case String.tokens Char.isSpace s of
+       [] => NONE
+     | [s] =>
+        (case s of
+            ("n" | "N" | "north" | "North" | "NORTH") => unary "north"
+          | ("s" | "S" | "south" | "South" | "SOUTH") => unary "south"
+          | ("e" | "E" | "east" | "East" | "EAST") => unary "east"
+          | ("w" | "W" | "west" | "West" | "WEST") => unary "west"
+          | ("q" | "Q" | "quit" | "Quit" | "QUIT") => unary "quit"
+          | ("l" | "L" | "look" | "Look" | "LOOK") => unary "look"
+          | ("x" | "X" | "examine") => unary "examine"
+          | _ => NONE)
+    | (c::args) => (* multi-word cmd *) 
+      (case cmd c of
+            SOME (Ceptre.Fn (c, [])) => multiary c args
+          | _ => NONE)
 
   fun inputCmd (fastctx, terms) =
     case terms of
@@ -47,7 +54,7 @@ struct
                    | SOME s => 
                        (case cmd s of
                              NONE => []
-                           | SOME cmd => [[Ceptre.cnst cmd]]))
+                           | SOME cmd => [[cmd]]))
        | _ => [] (* ill-formed *)
 
   val readline = ("input", inputString)

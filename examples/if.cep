@@ -1,0 +1,75 @@
+% testing move dir sensing pred
+
+noun : type.
+cloak : noun.
+hook : noun.
+player : noun.
+
+cmd : type.
+north : cmd.
+south : cmd.
+west : cmd.
+east : cmd.
+quit : cmd.
+take noun : cmd.
+drop noun : cmd.
+put_on noun noun : cmd.
+examine noun : cmd.
+look : cmd.
+
+dir cmd : bwd.
+dir north.
+dir south.
+dir west.
+dir east.
+
+% world map
+
+place : type.
+bar : place.
+cloakroom : place.
+foyer : place.
+
+at noun place : pred.
+inventory noun : pred.
+
+adj place cmd place : bwd.
+adj foyer west bar.
+adj bar east foyer.
+adj foyer east cloakroom.
+adj cloakroom west foyer.
+
+go dir : pred.
+success : pred.
+
+% describe [place/noun] : action.
+
+stage process = {
+  do/go : do Dir * dir Dir * at player Place1 * adj Place1 Dir Place2
+             -o at player Place2 * describe Place2 * success.
+  do/look : do look * $at player Place -o describe Place * success.
+  do/examine : do (examine Noun) * $at player Place * $at Noun Place
+            -o describe Noun * success.
+  do/q  : do quit -o done.
+}
+
+process_succeed : qui * stage process * success -o stage accept_input * listen.
+process_fail : 
+  qui * stage process * do _ 
+  -o stage accept_input * listen * report_fail.
+process_done : qui * stage process * done -o ().
+
+listen : pred.
+got : pred.
+
+stage accept_input = {
+  accept : listen * inputCmd Cmd -o do Cmd * got.
+}
+
+accept_succeed : qui * stage accept_input * got -o stage process.
+accept_fail : qui * stage accept_input * listen -o stage accept_input * listen.
+
+context init = {at player foyer, at hook cloakroom, inventory cloak, listen}.
+
+#trace _ accept_input init.
+
