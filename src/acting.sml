@@ -6,6 +6,35 @@ struct
 
   type action = Ceptre.context * (Ceptre.term list) -> unit
 
+    (* IF reporting/prompting *)
+
+  fun prompt_with s = (print s; print "\n> ")
+
+  (* action: print a description to the screen followed by prompt. *)
+  fun printDescription (_, args) =
+    case args of
+         [Fn (description, [])] => prompt_with description
+       | _ => raise IllFormed
+
+  (* action: same as the above, but without strings in the language yet,
+  *  we need a builtin description table. *)
+  fun getAndPrintDescription (_, args) =
+    let
+      val table =
+        [("foyer", "You are in a modest foyer."),
+         ("cloakroom", "The cloakroom: a room for hanging cloaks."),
+         ("bar", "The bar: a tawdry place."),
+         ("cloak", "An inky black cloak you picked up at a yard sale."),
+         ("hook", "A brass hook fit for hanging things on.")]
+    in
+    case args of
+         [Fn (noun, [])] =>
+         (case lookup noun table of
+               SOME desc => prompt_with desc
+             | _ => prompt_with "You don't see that here.")
+        | _ => raise IllFormed
+    end
+
   (* unary to digit *)
   fun unaryToDecimal n =
     case n of
@@ -138,5 +167,26 @@ struct
    ((9,3),(true,true)),((9,4),(true,true)),((9,5),(true,true)),
    ((9,6),(true,true)),((9,7),(true,true)),((9,8),(true,true)),
    ((9,9),(true,true))]
+
+  val action_table =
+    [ ("describe", getAndPrintDescription)
+    ]
+
+  fun run ((action_id,args), ctx) =
+    case lookup action_id action_table of
+         SOME f => f (ctx, args) 
+       | NONE => raise IllFormed (* XXX print error? *)
+
+  (*
+  fun lookup_pred (_,pred,args) =>
+    case lookup pred action_table of
+         SOME f => SOME (f,args)
+       | NONE => NONE
+       *)
+
+  fun maybe_run ((_,pred,args), ctx) =
+    case lookup pred action_table of
+         SOME f => f (ctx, args)
+       | NONE => ()
 
 end

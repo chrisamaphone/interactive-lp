@@ -37,13 +37,35 @@ val qui = (Ceptre.Lin, "qui", [])
 *    runs [program] to global quiescence on [initialDB].
 *)
 fun fwdchain 
-  (sigma:Ceptre.sigma) ctx (program as {init_stage,...} : Ceptre.program) = 
+  (sigma : Ceptre.sigma)
+  (ctx : Ceptre.atom list) 
+  (program as {init_stage,...} : Ceptre.program) 
+  (print : string -> unit)
+=
 let
   fun loop stage fastctx = 
   let
-    (* XXX debugging *)
-    val ctx_string = Ceptre.contextToString (CoreEngine.context fastctx)
+    val ctx = CoreEngine.context fastctx
+    (* Write out the context *)
+    val ctx_string = Ceptre.contextToString ctx
     val () = print ("\n---- " ^ ctx_string ^ "\n")
+    (* Check for action predicates; run them and remove them *) 
+    (* XXX removing them is going to be super annoying.
+    val actions = List.filter
+        (fn (_,pred,_args) => 
+          case lookup pred Actions.actionTable of
+               SOME _ => true
+             | NONE => false)
+    (* XXX val ctx' = removeAll ctx ctx' *)
+    val () = List.app (fn a => Acting.run (a, ctx)) actions
+
+    *)
+
+
+    val () = List.app (fn p => Acting.maybe_run (p, ctx)) ctx
+    (* XXX the above is probably not the most efficient way to implement action
+    * predicates!!! *)
+    (* n.b. this doesn't remove anything yet. *)
   in
      case CoreEngine.possible_steps stage fastctx of
         [] => 
@@ -89,8 +111,12 @@ end
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program) = 
 let
   (* val senses = asfasdf (* XXX set up sensors *) *)
+  val logfile = TextIO.openOut "log.txt"
+  fun print s = (TextIO.output (logfile, s); TextIO.flushOut logfile)
 in
-  fwdchain sigma init_state program (* senses *)
+  fwdchain sigma init_state program (* senses *) print
+  before
+  TextIO.closeOut logfile
 end
 
 end
