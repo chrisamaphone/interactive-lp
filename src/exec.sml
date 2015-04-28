@@ -58,6 +58,7 @@ let
                 val () = print "Applying stage transition "
                 val () = print (CoreEngine.transitionToString T) 
 
+                (* XXX todo: use second output for trace term *)
                 val (fastctx', _) = CoreEngine.apply_transition fastctx T
                 
                 (* READ OUT NEW PHASE FROM PROGRAM *)
@@ -79,13 +80,17 @@ let
   end
 
   val (stages, ctx) = Ceptre.progToRulesets program
-  val senses = PullSensors.all (* XXX more? *)
+  val senses = PullSensors.builtins (* XXX fix *)
   val fastctx = CoreEngine.init sigma senses stages ctx
 in
    CoreEngine.context (loop init_stage fastctx)
 end
 
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program) = 
-  fwdchain sigma init_state program
+let
+  (* val senses = asfasdf (* XXX set up sensors *) *)
+in
+  fwdchain sigma init_state program (* senses *)
+end
 
 end

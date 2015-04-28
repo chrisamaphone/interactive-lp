@@ -50,10 +50,11 @@ struct
                            | SOME cmd => [[Ceptre.cnst cmd]]))
        | _ => [] (* ill-formed *)
 
-  (* XXX ask for names for these from the input program? *)
-  val inputSense = ("input", inputString)
-  val inputCmdSense = ("inputCmd", inputCmd)
+  val readline = ("READLINE", inputString)
+    (* XXX this was called "input" in example progs *)
+  val if_command = ("IF_COMMAND", inputCmd)
+    (* XXX this was called "inputCmd" in example progs *)
   
-  val all = [inputSense, inputCmdSense]
+  val builtins = [readline, if_command]
 
 end

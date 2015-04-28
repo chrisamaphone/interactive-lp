@@ -6,6 +6,7 @@ input str : pred.
 % XXX todo make this parse and get passed to the sensing pred part of prog
 % #builtin READLINE input.
 
+% another example of builtin; nats are not used though.
 nat : type.
 z : nat.
 s nat : nat.

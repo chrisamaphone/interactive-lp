@@ -237,10 +237,10 @@ struct
           end
         | _ => raise IllFormed
 
-  (* interpret a Special "#trace" *)
-  fun extractSpecial args ctxs sg =
+  (* interpret a "#trace" *)
+  fun extractTrace args ctxs sg =
     case args of
-         ("trace", [limit, Id stage, ctx]) =>
+         [limit, Id stage, ctx] =>
          let 
            val limit = 
            (case limit of
@@ -312,6 +312,7 @@ struct
                     (* limit, initial phase & initial ctx *)
                 | CDecl of decl
                 | CBwd of bwd_rule
+                | CBuiltin of string * Ceptre.ident * (Ceptre.ident list)
 
   (* checks decl wrt sg *)
   (* returns a csyn, either a CDecl or a CBwd *)
@@ -387,6 +388,12 @@ struct
           end
       | _ => raise IllFormed
 
+  fun extractBuiltin args sg = 
+    case args of
+         (bultin::predicate::constructors) =>
+          (* XXX continue here *) raise IllFormed
+       | _ => raise IllFormed
+
   fun extractTop sg ctxs top =
     case top of
          Stage _ => CStage (extractStage sg top)
@@ -401,7 +408,11 @@ struct
        | Decl s => (extractDecl sg top
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext ctxs sg top)
-       | Special args => CProg (extractSpecial args ctxs sg)
+       | Special (directive, args) =>
+           case directive of
+                "trace" => CProg (extractTrace args ctxs sg)
+              | "builtin" => CBuiltin (extractBuiltin args sg)
+              | _ => raise IllFormed (* XXX put builtin here *)
 
   fun csynToString (CStage stage) = stageToString stage
     | csynToString (CRule rule) = ruleToString rule

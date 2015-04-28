@@ -21,7 +21,8 @@ sig
    val possible_steps: Ceptre.ident -> fastctx -> transition list
 
    (* Run a given transition *)
-   val apply_transition: fastctx -> transition -> fastctx * ctx_var list
+   val apply_transition: fastctx -> transition 
+          -> fastctx * (ctx_var * Ceptre.atom) list
 
    (* Insert a ground atom into the context *)
    val insert: fastctx -> Ceptre.atom -> fastctx * ctx_var
@@ -400,9 +401,13 @@ fun possible_steps stage prog =
             search_premises prog name (unknown pivars) lhs)))
 
 fun add_to_ctx gsubst ((mode, a, ps), ({next, concrete}, xs)) = 
-  ({next = next + 1, 
-    concrete = (next, (mode, a, map (apply_subst gsubst) ps)) :: concrete},
-   next :: xs)
+  let
+    val atom = (mode, a, map (apply_subst gsubst) ps)
+  in
+    ({next = next + 1, 
+      concrete = (next, atom) :: concrete},
+    (next, atom) :: xs)
+  end
 
 fun apply_transition (FC {prog, ctx = {concrete, next}}) {r, tms, Vs} =
 let
