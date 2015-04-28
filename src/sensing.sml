@@ -40,8 +40,10 @@ struct
           | ("w" | "W" | "west" | "West" | "WEST") => unary "west"
           | ("q" | "Q" | "quit" | "Quit" | "QUIT") => unary "quit"
           | ("l" | "L" | "look" | "Look" | "LOOK") => unary "look"
+          | ("take" | "get" | "GET") => unary "take"
+          | ("drop" | "DROP") => unary "drop"
           | ("x" | "X" | "examine") => unary "examine"
-          | _ => NONE)
+          | _ => unary s (* alternatively, NONE *))
     | (c::args) => (* multi-word cmd *) 
       (case cmd c of
             SOME (Ceptre.Fn (c, [])) => multiary c args

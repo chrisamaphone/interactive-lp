@@ -41,6 +41,30 @@ struct
          [] => prompt_with "That doesn't make sense here."
        | _ => raise IllFormed
 
+  fun reportDropping (_, args) =
+    case args of
+         [Fn (noun, [])] => prompt_with (noun^" dropped.")
+       | _ => raise IllFormed
+
+  fun reportTaking (_, args) =
+    case args of
+         [Fn (noun, [])] => prompt_with (noun^" taken.")
+       | _ => raise IllFormed
+
+  fun listInventory (ctx,args) =
+    case args of
+         [] => 
+         let
+           fun inv (_,"inventory",[Ceptre.Fn(noun,[])]) = SOME noun
+             | inv _ = NONE
+           val inv = List.mapPartial inv ctx 
+           val inv_string = String.concatWith ", " inv
+         in
+           prompt_with ("You are carrying: "^inv_string)
+         end
+      | _ => raise IllFormed
+                    
+
   (* mazegen example *)
 
   (* unary to digit *)
@@ -178,7 +202,10 @@ struct
 
   val action_table =
     [ ("describe", getAndPrintDescription),
-      ("report_fail", reportFailure)
+      ("report_fail", reportFailure),
+      ("report_dropping", reportDropping),
+      ("report_taking", reportTaking),
+      ("list_inventory", listInventory)
     ]
 
   fun run ((action_id,args), ctx) =

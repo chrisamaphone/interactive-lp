@@ -5,6 +5,9 @@ cloak : noun.
 hook : noun.
 player : noun.
 
+portable noun : bwd.
+portable cloak.
+
 cmd : type.
 north : cmd.
 south : cmd.
@@ -16,6 +19,7 @@ drop noun : cmd.
 put_on noun noun : cmd.
 examine noun : cmd.
 look : cmd.
+inventory : cmd.
 
 dir cmd : bwd.
 dir north.
@@ -31,7 +35,7 @@ cloakroom : place.
 foyer : place.
 
 at noun place : pred.
-inventory noun : pred.
+inv noun : pred.
 
 adj place cmd place : bwd.
 adj foyer west bar.
@@ -43,13 +47,30 @@ go dir : pred.
 success : pred.
 
 % describe [place/noun] : action.
+% report_dropping noun : action.
+% report_taking noun : action.
+% report_fail : action.
+% list_inventory : action.
+% list_things_at place : action
 
 stage process = {
   do/go : do Dir * dir Dir * at player Place1 * adj Place1 Dir Place2
              -o at player Place2 * describe Place2 * success.
-  do/look : do look * $at player Place -o describe Place * success.
+  do/look : do look * $at player Place -o 
+                      describe Place 
+                    * list_things_at Place  
+                    * success.
   do/examine : do (examine Noun) * $at player Place * $at Noun Place
             -o describe Noun * success.
+  do/x'      : do (examine Noun) * $inventory Noun
+            -o describe Noun * success.
+  do/xme     : do (examine player) -o describe player * success.
+  do/take    : do (take Noun) * $at player Place * at Noun Place
+              * portable Noun
+            -o inventory Noun * report_taking Noun * success.
+  do/drop    : do (drop Noun) * inventory Noun * $at player Place
+              -o at Noun Place * report_dropping Noun * success.
+  do/inv     : do inv -o list_inventory * success.
   do/q  : do quit -o done.
 }
 
@@ -58,6 +79,7 @@ process_fail :
   qui * stage process * do _ 
   -o stage accept_input * listen * report_fail.
 process_done : qui * stage process * done -o ().
+
 
 listen : pred.
 got : pred.
