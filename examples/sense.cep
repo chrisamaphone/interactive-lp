@@ -1,5 +1,17 @@
 % testing sensing predicates
 
+str : type.
+input str : pred.
+
+% XXX todo make this parse and get passed to the sensing pred part of prog
+% #builtin READLINE input.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+% #builtin NAT nat z s.
+
 stage accept = {
   foo : tok * input X -o process X.
 }
