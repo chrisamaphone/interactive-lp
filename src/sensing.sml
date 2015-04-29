@@ -29,21 +29,28 @@ struct
   fun unary s = SOME (Ceptre.cnst s)
   fun multiary s args = SOME (Ceptre.Fn (s, map Ceptre.cnst args))
 
+  val cmdmap =
+     List.foldr 
+        (fn ((ks, v), d) => 
+            List.foldr (fn (k, d) => StringRedBlackDict.insert d k v) d ks)
+        StringRedBlackDict.empty
+        [ (["n", "N", "north", "North", "NORTH"], "north"),
+          (["s", "S", "south", "Sorth", "SOUTH"], "south"),
+          (["e", "E", "east",  "East",  "EAST" ], "east"),
+          (["w", "W", "west",  "West",  "WEST" ], "west"),
+          (["q", "Q", "quit",  "Quit",  "QUIT" ], "quit"),
+          (["l", "L", "look",  "Look",  "LOOK" ], "look"),
+          (["take", "get", "GET"],                "take"),
+          (["drop", "DROP"],                      "drop"),
+          (["x", "X", "examine"],                 "examine") ]
+
   fun cmd s =
   case String.tokens Char.isSpace s of
        [] => NONE
-     | [s] =>
-        (case s of
-            ("n" | "N" | "north" | "North" | "NORTH") => unary "north"
-          | ("s" | "S" | "south" | "South" | "SOUTH") => unary "south"
-          | ("e" | "E" | "east" | "East" | "EAST") => unary "east"
-          | ("w" | "W" | "west" | "West" | "WEST") => unary "west"
-          | ("q" | "Q" | "quit" | "Quit" | "QUIT") => unary "quit"
-          | ("l" | "L" | "look" | "Look" | "LOOK") => unary "look"
-          | ("take" | "get" | "GET") => unary "take"
-          | ("drop" | "DROP") => unary "drop"
-          | ("x" | "X" | "examine") => unary "examine"
-          | _ => unary s (* alternatively, NONE *))
+     | [s] => 
+        (case StringRedBlackDict.find cmdmap s of 
+            SOME s => unary s
+          | NONE => unary s) (* alternatively, NONE *)
     | (c::args) => (* multi-word cmd *) 
       (case cmd c of
             SOME (Ceptre.Fn (c, [])) => multiary c args

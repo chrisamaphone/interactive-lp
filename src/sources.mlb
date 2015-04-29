@@ -1,7 +1,11 @@
 ../lib/cmlib/cmlib.mlb
 
+nondet-sig.sml
+nondet-eager.sml
+
 ceptre.sml
 sensing.sml
+acting.sml
 core-engine.sml
 exec.sml
 
