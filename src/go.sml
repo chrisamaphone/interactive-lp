@@ -1,4 +1,6 @@
+val () = print ("Ceptre!\n")
+
 val () = 
    case CommandLine.arguments () of
-      [ fname ] => Top.runFirst fname
+      [ fname ] => ignore (Top.runFirst fname)
     | _ => print ("Usage: "^CommandLine.name ()^" CEPTREFILE.cep\n")
