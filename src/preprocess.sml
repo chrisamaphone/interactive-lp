@@ -475,9 +475,9 @@ struct
   fun catch f = (fn x => f x handle IllFormed => CError x)
   fun mapcatch f = map (catch f)
     
-  val [tiny1, tiny2] = Parse.parsefile ("../examples/tiny.cep")
+  (* val [tiny1, tiny2] = Parse.parsefile ("../examples/tiny.cep") *)
 
-  val small = Parse.parsefile ("../examples/small.cep")
+  (* val small = Parse.parsefile ("../examples/small.cep") *)
 
   fun sub l n = List.nth(l,n)
 
