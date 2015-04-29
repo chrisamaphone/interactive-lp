@@ -35,5 +35,4 @@ struct
        (print ((Int.toString index)^" is an invalid program index!\n")
        ; NONE)
 
-
 end
