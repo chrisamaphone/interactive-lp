@@ -5,7 +5,11 @@ structure Ceptre = struct
   (* internal rule syntax *)
   type var = int
   type ident = string
-  datatype term = Fn of ident * term list | Var of var
+  datatype term 
+   = Fn of ident * term list 
+   | Var of var
+   | SLit of string
+   | ILit of IntInf.int
   type pred = ident
   datatype mode = Pers | Lin
   type atom = mode * pred * (term list)
@@ -38,6 +42,8 @@ structure Ceptre = struct
 
   fun termToString (Fn (p, args)) = withArgs p (map termToString args)
     | termToString (Var i) = "(Var "^(varToString i)^")"
+    | termToString (SLit s) = "\""^String.toCString s^"\""
+    | termToString (ILit i) = IntInf.toString i  
 
   fun atomToString (Lin, p, args) = withArgs p (map termToString args)
     | atomToString (Pers, p, args) = withArgs ("!"^p) (map termToString args)
@@ -262,6 +268,7 @@ structure Ceptre = struct
 
   (* program is a set of stages, a set of stage rules, and an identifier for an
   * initial stage *)
+  datatype builtin = NAT | NAT_ZERO | NAT_SUCC
   type program = {stages : stage list, 
                   links : stage_rule list,
                   init_stage : ident,

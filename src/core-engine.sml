@@ -9,6 +9,7 @@ sig
    
    (* Turns a program and a context into a fast context *)
    val init: Ceptre.sigma
+             -> (string * Ceptre.builtin) list
              -> (string * sense) list 
              -> Ceptre.stage list 
              -> Ceptre.context 
@@ -74,6 +75,8 @@ fun ground tm =
    case tm of
       C.Var _ => false
     | C.Fn (_, tms) => List.all ground tms 
+    | C.SLit _ => true
+    | C.ILit _ => true 
 
 fun ground_prefix' tms accum = 
    case tms of 
@@ -109,7 +112,7 @@ fun fc_senses (FC {prog = {senses, ...}, ...}) = senses
 
 type sense = fastctx * Ceptre.term list -> Ceptre.term list list
                                
-fun init (sigma: C.sigma) senses prog initial_ctx: fastctx = 
+fun init (sigma: C.sigma) builtins senses prog initial_ctx: fastctx = 
 let
    (* Add unique identifiers to all forward-chaining rules *)
    fun number_list uid [] = []
@@ -183,6 +186,8 @@ fun apply_subst (subst: msubst) (t: C.term) =
             NONE => t
           | SOME t' => t')
     | C.Fn (f, ts) => C.Fn (f, List.map (apply_subst subst) ts)
+    | C.SLit _ => t
+    | C.ILit _ => t  
 
 
 (* match_term {pat, term} subst ~~> zero or one new substs
@@ -212,8 +217,12 @@ fun match_term {pat = p, term = t} (subst: msubst): msubst ND.m =
         (ND.bind (guard (f = g))
            (fn () =>
          match_terms {f = f, pat = ps, term = ts} subst))
+    | (C.SLit s1, C.SLit s2) => if s1 = s2 then ND.return subst else ND.fail
+    | (C.ILit i1, C.ILit i2) => if i1 = i2 then ND.return subst else ND.fail
     | (p, C.Var n) => 
         (ND.return subst) (* Variable found: imprecise (but still sound?) *)
+    | _ => raise Fail ("Type error, matching "^C.termToString t^
+                       " against pattern "^C.termToString p)
 
 and match_terms {f, pat = ps, term = ts} subst: msubst ND.m = 
    case (ps, ts) of
