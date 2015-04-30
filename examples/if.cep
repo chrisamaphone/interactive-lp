@@ -2,11 +2,15 @@
 
 noun : type.
 cloak : noun.
+trinket : noun.
 hook : noun.
 player : noun.
 
 portable noun : bwd.
+fixed noun : bwd.
 portable cloak.
+portable trinket.
+fixed hook.
 
 cmd : type.
 north : cmd.
@@ -33,7 +37,9 @@ place : type.
 bar : place.
 cloakroom : place.
 foyer : place.
+on noun : place.
 
+dark place : pred.
 at noun place : pred.
 inv noun : pred.
 
@@ -45,40 +51,80 @@ adj cloakroom west foyer.
 
 go dir : pred.
 success : pred.
+failure : pred.
 
+%% XXX once builtins are a thing, do syntax for this.
 % describe [place/noun] : action.
 % report_dropping noun : action.
 % report_taking noun : action.
 % report_fail : action.
 % list_inventory : action.
-% list_things_at place : action
+% list_things_at place : action.
+% report_fooling : action.
+
+% if we're in the bar and it's dark, doing anything just increments a
+% counter of foolishness.
+% (i kind of want nested stages here.)
 
 stage process = {
+  % bardark : $at player bar * $dark bar * do _ -o handle_dark.
+}
+% XXX this makes it so we can't leave! arg...
+
+qui * stage process * $handle_dark -o stage bar_dark.
+qui * stage process * $do A -o stage try_action.
+
+stage bar_dark = {
+  do/anything : handle_dark -o fool * report_fooling * success.
+}
+
+qui * stage bar_dark -o stage accept_input * listen.
+
+stage try_action = {
+
   do/go : do Dir * dir Dir * at player Place1 * adj Place1 Dir Place2
              -o at player Place2 * describe Place2 * success.
+
   do/look : do look * $at player Place -o 
                       describe Place 
                     * list_things_at Place  
                     * success.
+
   do/examine : do (examine Noun) * $at player Place * $at Noun Place
-            -o describe Noun * success.
+            -o describe Noun * list_things_at (on Noun) * success.
+
   do/x'      : do (examine Noun) * $inventory Noun
-            -o describe Noun * success.
+            -o describe Noun * list_things_at (on Noun) * success.
+
   do/xme     : do (examine player) -o describe player * success.
+
   do/take    : do (take Noun) * $at player Place * at Noun Place
               * portable Noun
             -o inventory Noun * report_taking Noun * success.
+
+  do/take/on : do (take Noun) * $at player Place * at Noun (on Surface)
+              * $at Surface Place * portable Noun
+            -o inventory Noun * report_taking Noun * success.
+
   do/drop    : do (drop Noun) * inventory Noun * $at player Place
               -o at Noun Place * report_dropping Noun * success.
+
+  % e.g. hang coat on hook 
+  do/put_on  : do (put_on Top Bottom) * inventory Top * $at player Place
+                * $at Bottom Place
+              -o at Top (on Bottom) * report_putting_on Top Bottom * success.
+
   do/inv     : do inv -o list_inventory * success.
+
   do/q  : do quit -o done.
 }
 
-process_succeed : qui * stage process * success -o stage accept_input * listen.
-process_fail : 
-  qui * stage process * do _ 
+try_action_succeed : 
+  qui * stage try_action * success -o stage accept_input * listen.
+try_action_nonsense : 
+  qui * stage try_action * do _ 
   -o stage accept_input * listen * report_fail.
-process_done : qui * stage process * done -o ().
+try_action_done : qui * stage try_action * done -o ().
 
 
 listen : pred.
@@ -91,7 +137,8 @@ stage accept_input = {
 accept_succeed : qui * stage accept_input * got -o stage process.
 accept_fail : qui * stage accept_input * listen -o stage accept_input * listen.
 
-context init = {at player foyer, at hook cloakroom, inventory cloak, listen}.
+context init = 
+{at player foyer, at hook cloakroom, inventory cloak, at trinket bar, listen}.
 
 #trace _ accept_input init.
 

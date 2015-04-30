@@ -26,7 +26,8 @@ struct
          ("bar", "The bar: a tawdry place."),
          ("cloak", "An inky black cloak you picked up at a yard sale."),
          ("hook", "A brass hook fit for hanging things on."),
-         ("player", "Dashing as ever.")]
+         ("player", "Dashing as ever."),
+         ("trinket", "Nothing especially valuable.")]
     in
     case args of
          [Fn (noun, [])] =>
@@ -64,6 +65,27 @@ struct
          end
       | _ => raise IllFormed
                     
+  fun listThingsAt (ctx,args) =
+    case args of
+         [the_place] =>
+          let
+            fun at (_, "at", [Ceptre.Fn(noun,[]), its_place]) =
+                  if its_place = the_place andalso not (noun="player") 
+                  then SOME noun else NONE 
+              | at _ = NONE
+            val things_here = List.mapPartial at ctx
+            val here_string = String.concatWith ", " things_here
+          in
+            case things_here of
+                 [] => ()
+                | _ => prompt_with ("You see here: " ^ here_string)
+          end
+       | _ => raise IllFormed
+
+  fun reportFooling (ctx,args) =
+    case args of
+         [] => prompt_with "You knock some stuff over in the dark."
+       | _ => raise IllFormed
 
   (* mazegen example *)
 
@@ -205,7 +227,9 @@ struct
       ("report_fail", reportFailure),
       ("report_dropping", reportDropping),
       ("report_taking", reportTaking),
-      ("list_inventory", listInventory)
+      ("list_inventory", listInventory),
+      ("list_things_at", listThingsAt),
+      ("report_fooling", reportFooling)
     ]
 
   fun run ((action_id,args), ctx) =
