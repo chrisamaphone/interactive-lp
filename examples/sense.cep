@@ -5,13 +5,21 @@ input str : pred.
 
 % XXX todo make this parse and get passed to the sensing pred part of prog
 % #builtin READLINE input.
+% #sensing INTERACTIVE_FICTION (creates input, output, whatever..)
+% #sensing INTERACTIVE_FICTION renaming { input -> my_input }
+% #sensing INTERACTIVE_FICTION hiding input
+% #sensing INTERACTIVE_FICTION using { input, output }
 
 % another example of builtin; nats are not used though.
-nat : type.
-z : nat.
-s nat : nat.
+nat : type.   % #builtin NAT nat
+z : nat.      % #builtin NAT_ZERO z 
+s nat : nat.  % #builtin NAT_SUCC s
+
+% (s (s (s (s z)))) -----> 4 == (add 1 X)
 
 % #builtin NAT nat z s.
+% plus X Y Z: #builtin PLUS_PRED plus 
+% vs add X Y: #builtin PLUS_OP add 
 
 stage accept = {
   foo : tok * input X -o process X.
