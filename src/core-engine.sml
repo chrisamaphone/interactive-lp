@@ -95,7 +95,8 @@ type 'a prog =
   {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
    bwds: (int * Ceptre.bwd_rule) list M.dict,
    lmap: fast_ruleset M.dict,
-   rmap: C.atom list I.dict}
+   rmap: C.atom list I.dict, 
+   builtin: C.builtin M.dict}
 
 type ctx = 
   {next: ctx_var,
@@ -109,6 +110,7 @@ fun fc_concrete (FC {ctx = {concrete, ...}, ...}) = concrete
 fun fc_bwds (FC {prog = {bwds, ...}, ...}) = bwds
 fun fc_lmap (FC {prog = {lmap, ...}, ...}) = lmap
 fun fc_senses (FC {prog = {senses, ...}, ...}) = senses
+fun fc_builtin (FC {prog = {builtin, ...}, ...}) = builtin
 
 type sense = fastctx * Ceptre.term list -> Ceptre.term list list
                                
@@ -153,7 +155,9 @@ let
        lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
                  M.empty (map compile_lhses prog),
        rmap = List.foldl compile_rhses 
-                 I.empty prog}
+                 I.empty prog,
+       builtin = List.foldl (fn ((k, v), m) => M.insert m k v)
+                    M.empty builtins}
 
    val ctx: ctx = 
       List.foldl 
@@ -205,32 +209,34 @@ fun apply_subst (subst: msubst) (t: C.term) =
  * anything about the structure of the corresponding pattern. I'm less
  * confident that makes sense. *)
 
-fun match_term {pat = p, term = t} (subst: msubst): msubst ND.m = 
+fun match_term bi {pat = p, term = t} (subst: msubst): msubst ND.m = 
    case (p, t) of 
       (C.Var n, t) =>
         (case Vector.sub (subst, n) of 
-            NONE => if ground t
-                    then ND.return (Vector.update (subst, n, SOME t))
-                    else ND.return subst (* Non-ground match: imprecise (but still sound?) *)
-          | SOME ground_pat => match_term {pat = ground_pat, term = t} subst)
+            NONE =>
+              (if ground t
+               then ND.return (Vector.update (subst, n, SOME t))
+               else ND.return subst) (* Non-ground: imprecise (still sound?) *)
+          | SOME ground_pat => 
+              (match_term bi {pat = ground_pat, term = t} subst))
     | (C.Fn (f, ps), C.Fn (g, ts)) => 
         (ND.bind (guard (f = g))
            (fn () =>
-         match_terms {f = f, pat = ps, term = ts} subst))
+         match_terms bi {f = f, pat = ps, term = ts} subst))
     | (C.SLit s1, C.SLit s2) => if s1 = s2 then ND.return subst else ND.fail
     | (C.ILit i1, C.ILit i2) => if i1 = i2 then ND.return subst else ND.fail
     | (p, C.Var n) => 
-        (ND.return subst) (* Variable found: imprecise (but still sound?) *)
+        (ND.return subst) (* Variable found: imprecise (still sound?) *)
     | _ => raise Fail ("Type error, matching "^C.termToString t^
                        " against pattern "^C.termToString p)
 
-and match_terms {f, pat = ps, term = ts} subst: msubst ND.m = 
+and match_terms bi {f, pat = ps, term = ts} subst: msubst ND.m = 
    case (ps, ts) of
       ([], []) => ND.return subst
     | (p :: ps, t :: ts) => 
          ND.bind
-            (match_term {pat = p, term = t} subst)
-            (match_terms {f = f, pat = ps, term = ts}) 
+            (match_term bi {pat = p, term = t} subst)
+            (match_terms bi {f = f, pat = ps, term = ts}) 
     | _ => raise Fail ("Arity error for "^f)
 
 
@@ -242,10 +248,10 @@ val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
 (****** Logic programming engine ******)
 
-fun match_hyp exclude subst (a, ps) (x, (m, b, ts)) =
+fun match_hyp prog exclude subst (a, ps) (x, (m, b, ts)) =
    ND.bind (guard (a = b andalso not (is_in x exclude)))
      (fn () =>
-   ND.bind (match_terms {f = a, pat = ps, term = ts} subst)
+   ND.bind (match_terms (fc_builtin prog) {f = a, pat = ps, term = ts} subst)
      (fn subst =>
    ND.return (Var x, subst)))
 
@@ -300,8 +306,11 @@ end
 
 and search_bwd prog (ts_subst, ts) (uid, bwd) = 
 let
+   val bi = fc_builtin prog
    val {name, pivars, head = (a, ps), subgoals} = bwd
-in ND.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
+in ND.bind (match_terms bi
+               {f = a, pat = ps, term = ts} 
+               (unknown pivars))
      (* Okay, we partially match the head of the rule, giving subst *)
      (fn subst => 
    ND.bind (search_premises prog (name, uid) subst subgoals)
@@ -321,7 +330,7 @@ in ND.bind (match_terms {f = a, pat = ps, term = ts} (unknown pivars))
    let val () = debug (fn () => 
                    print ("Matching derived fact "^a^"("^String.concatWith "," (map C.termToString ss)^")\n"^
                           "              against "^a^"("^String.concatWith "," (map C.termToString ts)^")\n"))
-   in ND.bind (match_terms {f = a, pat = ts, term = ss} ts_subst)
+   in ND.bind (match_terms bi {f = a, pat = ts, term = ss} ts_subst)
      (* Now we have learned things about our original substitution, 
       * and can return *) 
      (fn ts_subst => 
@@ -352,8 +361,10 @@ let
    val ctx = fc_concrete prog 
    val matched: (value * msubst) ND.m = 
       case mode of 
-         C.Lin => ND.letMany ctx (fn hyp => match_hyp Vs subst (a, ps) hyp) 
-       | C.Pers => ND.letMany ctx (fn hyp => match_hyp [] subst (a, ps) hyp)
+         C.Lin => 
+           (ND.letMany ctx (fn hyp => match_hyp prog Vs subst (a, ps) hyp))
+       | C.Pers => 
+           (ND.letMany ctx (fn hyp => match_hyp prog [] subst (a, ps) hyp))
 
    val () = debug
       (fn () => print ("Resolving subgoal "^a^"("^
@@ -381,11 +392,13 @@ let
       case M.find (fc_senses prog) a of 
          NONE => ND.fail
        | SOME sense_for_a =>
-         let val (tsg, psng) = ground_prefix (map (apply_subst subst) ps)
+         let 
+            val (tsg, psng) = ground_prefix (map (apply_subst subst) ps)
+            val bi = fc_builtin prog
          in ND.letMany (sense_for_a (prog, tsg))
                (* Some outputs. Let's use them to extend the substitution. *)
                (fn ts =>
-            ND.bind (match_terms {f = a, pat = psng, term = ts} subst)
+            ND.bind (match_terms bi {f = a, pat = psng, term = ts} subst)
                (* We've got the extended substitution! *)
                (fn subst =>
             ND.return (Sensed, subst)))
