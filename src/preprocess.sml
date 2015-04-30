@@ -50,6 +50,7 @@ struct
                 | _ => raise IllFormed
            end
        | Wild () => EVar ("_X"^Int.toString (wild ()))
+       | Num i => EInt i
        | _ => raise IllFormed
 
   (* Stuff without vars can go directly into IL syntax *)
@@ -65,6 +66,7 @@ struct
                   Fn (f, []) => Fn (f, termArgs)
                 | _ => raise IllFormed
            end
+       | Num i => ILit i
        | _ => raise IllFormed 
 
   (* XXX should look up bwd stuff in the sig *)
@@ -312,7 +314,7 @@ struct
                     (* limit, initial phase & initial ctx *)
                 | CDecl of decl
                 | CBwd of bwd_rule
-                | CBuiltin of string * Ceptre.ident * (Ceptre.ident list)
+                | CBuiltin of string * Ceptre.builtin
 
   (* checks decl wrt sg *)
   (* returns a csyn, either a CDecl or a CBwd *)
@@ -390,8 +392,14 @@ struct
 
   fun extractBuiltin args sg = 
     case args of
-         (bultin::predicate::constructors) =>
-          (* XXX continue here *) raise IllFormed
+         (* XXX maybe check whether predicate is in the signature for all of
+         * these? *) 
+         ((Id "NAT")::[Id predicate]) =>
+            (predicate, NAT)
+       | ((Id "NAT_ZERO")::[Id predicate]) =>
+            (predicate, NAT_ZERO)
+       | ((Id "NAT_SUCC")::[Id predicate]) =>
+            (predicate, NAT_SUCC)
        | _ => raise IllFormed
 
   fun extractTop sg ctxs top =
@@ -424,50 +432,64 @@ struct
     | csynToString (CDecl (name,class)) = 
           name ^ " : " ^ (classToString class) ^ "."
     | csynToString (CBwd bwd) = "bwd" (* XXX *)
+    | csynToString (CBuiltin builtin) = "builtin" (* XXX *)
 
 
   fun stage_exists s (stages : Ceptre.stage list) =
     List.exists (fn {name, body} => name = s) stages
 
   (* turn a whole list of top-level decls into a list of progs. *)
-  fun process' tops sg bwds contexts stages links progs =
+  fun process' tops sg bwds contexts stages links progs builtins =
     case tops of
          [] => ({header=rev sg,rules=rev bwds} : Ceptre.sigma, rev progs)
        | (top::tops) => 
            (case extractTop sg contexts top of
                  CStage stage => 
                   process' tops sg bwds contexts (stage::stages) links progs
+                             builtins
                | CRule rule => 
                    (case ruleToStageRule rule of 
                          SOME link => 
                           process' tops sg bwds contexts stages 
                             (link::links) progs
+                             builtins
                        | NONE => (* XXX error? *)
-                          process' tops sg bwds contexts stages links progs)
+                          process' tops sg bwds contexts stages links progs
+                             builtins)
                | CNone _ => process' tops sg bwds contexts stages links progs
+                             builtins
                | CError _ => process' tops sg bwds contexts stages links progs
+                             builtins
                             (* XXX error? *)
                | CCtx c => process' tops sg bwds (c::contexts) stages links progs
+                             builtins
                | CDecl d =>
                    process' tops (d::sg) bwds contexts stages links progs
+                     builtins
                | CBwd bwd => (* XXX *)
                    process' tops sg (bwd::bwds) contexts stages links progs 
+                     builtins
                | CProg (limit, init_stage, init_ctx) =>
                    (* XXX ignore limit for now *)
-                   case stage_exists init_stage stages of
+                   (case stage_exists init_stage stages of
                         true =>
                           let
                             val prog = {stages=stages, links=links, 
                               init_stage=init_stage, init_state = init_ctx}
                           in
                             process' tops sg bwds contexts stages links 
-                              (prog::progs)
+                              (prog::progs) builtins
                           end
                       | _ => process' tops sg bwds contexts stages links progs
+                               builtins
                               (* XXX some kind of error should happen...*)
+                    )
+                | CBuiltin (pred, builtin) =>
+                    process' tops sg bwds contexts stages links progs 
+                      (builtin::builtins)
              )
 
-  fun process tops = process' tops [] [] [] [] [] []
+  fun process tops = process' tops [] [] [] [] [] [] []
     : (Ceptre.sigma * (Ceptre.program list))
 
   (* testing *)

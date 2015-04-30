@@ -98,7 +98,10 @@ structure Ceptre = struct
  
   (* external rule syntax *)
   datatype external_term =
-    EFn of ident * external_term list | EVar of ident
+      EFn of ident * external_term list 
+    | EVar of ident
+    | EInt of IntInf.int
+    | EString of string
   type eatom = pred * (external_term list)
   datatype epred = ELin of eatom | EPers of eatom
   type rule_external = {name : ident, lhs : epred list, rhs : epred list}
@@ -134,6 +137,8 @@ structure Ceptre = struct
             in
               walk_terms tms (table, ctr)
             end
+        | ((EInt i)::tms) => walk_terms tms (table, ctr)
+        | ((EString s)::tms) => walk_terms tms (table, ctr)
         | ((EVar id)::tms) =>
             (case lookup id table of
                   NONE => walk_terms tms ((id,ctr)::table, ctr+1)
@@ -161,6 +166,8 @@ structure Ceptre = struct
     case term of
          EFn (f, args) => Fn (f, map (etermToTerm table) args)
          (* XXX probably shouldn't valOf *)
+       | EInt i => ILit i
+       | EString s => SLit s
        | EVar id =>
            (case lookup id table of
                 SOME x => Var x
