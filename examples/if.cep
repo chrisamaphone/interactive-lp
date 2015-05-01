@@ -31,36 +31,26 @@ dir south.
 dir west.
 dir east.
 
+do cmd : pred.
+
 % world map
 
 place : type.
-bar : place.
-cloakroom : place.
-foyer : place.
-on noun : place.
+adj place cmd place : bwd.
 
 dark place : pred.
 at noun place : pred.
 inv noun : pred.
 
-adj place cmd place : bwd.
-adj foyer west bar.
-adj bar east foyer.
-adj foyer east cloakroom.
-adj cloakroom west foyer.
-
-go dir : pred.
-success : pred.
-failure : pred.
+outcome : type.
+success : outcome.
+failure : outcome.
 
 %% XXX once builtins are a thing, do syntax for this.
 % describe [place/noun] : action.
-% report_dropping noun : action.
-% report_taking noun : action.
-% report_fail : action.
+% report cmd outcome : action.
 % list_inventory : action.
 % list_things_at place : action.
-% report_fooling : action.
 
 % if we're in the bar and it's dark, doing anything just increments a
 % counter of foolishness.
@@ -136,6 +126,18 @@ stage accept_input = {
 
 accept_succeed : qui * stage accept_input * got -o stage process.
 accept_fail : qui * stage accept_input * listen -o stage accept_input * listen.
+
+% game specific stuff
+
+bar : place.
+cloakroom : place.
+foyer : place.
+on noun : place.
+
+adj foyer west bar.
+adj bar east foyer.
+adj foyer east cloakroom.
+adj cloakroom west foyer.
 
 context init = 
 {at player foyer, at hook cloakroom, inventory cloak, at trinket bar, listen}.
