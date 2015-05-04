@@ -24,6 +24,7 @@ struct
         [("foyer", "You are in a modest foyer."),
          ("cloakroom", "The cloakroom: a room for hanging cloaks."),
          ("bar", "The bar: a tawdry place."),
+         ("darkness", "It's dark, and you can't see a thing."),
          ("cloak", "An inky black cloak you picked up at a yard sale."),
          ("hook", "A brass hook fit for hanging things on."),
          ("player", "Dashing as ever."),
@@ -224,9 +225,11 @@ struct
 
   val action_table =
     [ ("describe", getAndPrintDescription),
+      (* ("report", report), (* XXX *) *)
       ("report_fail", reportFailure),
       ("report_dropping", reportDropping),
       ("report_taking", reportTaking),
+      (* ("list", listThings), (* XXX *) *)
       ("list_inventory", listInventory),
       ("list_things_at", listThingsAt),
       ("report_fooling", reportFooling)
