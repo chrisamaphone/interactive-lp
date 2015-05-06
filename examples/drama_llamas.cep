@@ -25,6 +25,8 @@ bored character : pred.
 % become friends, enemies, dating
 % break up, make up, break friendship
 
+resolution character : pred. % used to determine when the story should end.
+
 stage doStuff = {
 %% for each of attraction, affection, and anger, there are corresponding
 % states that imply a feedback loop (dating, friends, and enemies).
@@ -33,34 +35,62 @@ stage doStuff = {
 
 % actions dealing with attraction
 do/fallInLove : 
-  attraction C C' -o affection C C'.
+  $present C * attraction C C' -o affection C C'.
 
 do/eroticize : 
-  $affection C C' * affection C C' * affection C C'
+  $present C * $affection C C' * affection C C' * affection C C'
   -o attraction C C'.
+
+do/date :
+  $present C * $present C' * $affection C C' * $attraction C C'
+    * $affection C' C * $attraction C' C
+    -o resolution C * resolution C'.
 
 do/flirt :
   $present C * $present C' * $attraction C C' -o attraction C' C.
 
 do/flirt/conflict :
   $present C * $present C' * $present C'' * $attraction C C' * $attraction C'' C
-  -o eros C' C * anger C'' C * anger C'' C'.
+  -o eros C' C * anger C'' C * anger C'' C' 
+    * sad C''.
 
 % actions dealing with friendship
 
-%% placeholders for now:
+do/shareInterest :
+  $present C * $present C' * has_interest C Interest * has_interest C' Interest
+  -o affection C C' * affection C' C.
+
+do/comfort :
+  $present C * $present C' * sad C * $affection C' C
+    -o affection C C' * resolution C.
+
+% introducing some spontaneity
 do/like/bored :
   $present C * $present C' * bored C
     -o affection C C'.
 do/anger/bored :
   $present C * $present C' * bored C
     -o anger C C'.
+do/crush/bored :
+  $present C * $present C' * bored C
+    -o attraction C C'.
 
 % actions dealing with enmity/anger
 
+do/reject :
+  $present C * $present C' * attraction C C' * $anger C' C
+    -o sad C.
+
+do/bicker :
+  $present C * $present C' * $attraction C C' * $attraction C' C
+    -o anger C C' * anger C' C.
+
 do/insult :
   $present C * $present C' * $anger C C'
-  -o anger C' C * sad C.
+  -o anger C' C * sad C'.
+
+% termination
+do/end : resolution C * present C -o ().
   
 }
 
@@ -79,16 +109,16 @@ rocks : interest.
 trash : interest.
 anime : interest.
 
-% has_interest zack math.
-% has_interest zack trash.
-% has_interest melissa trash.
-% has_interest melissa anime.
-% has_interest zoe math.
-% has_interest zoe rocks.
-% has_interest lil rocks.
-% has_interest lil trash.
-% has_interest charles anime.
-% has_interest charles math.
+has_interest zack math.
+has_interest zack trash.
+has_interest melissa trash.
+has_interest melissa anime.
+has_interest zoe math.
+has_interest zoe rocks.
+has_interest lil rocks.
+has_interest lil trash.
+has_interest charles anime.
+has_interest charles math.
 
 context init =
 { present chloe,
@@ -99,7 +129,10 @@ context init =
   present charles,
   bored chloe,
   bored zack,
-  bored melissa
+  bored melissa,
+  bored zoe,
+  bored lil,
+  bored charles
 }.
 
 #trace _ doStuff init.
