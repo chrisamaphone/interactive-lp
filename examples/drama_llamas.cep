@@ -1,0 +1,105 @@
+%% prom week-inspired dating sim
+
+character : type.
+interest : type.
+
+% world state
+present character : pred.
+has_interest character interest : bwd.
+
+% social state
+affection character character : pred.
+attraction character character : pred.
+anger character character : pred.
+sad character : pred.
+bored character : pred.
+
+% actions:
+% share interest
+% bully
+% flirt
+% hit on
+% confide
+% bicker
+% insult
+% become friends, enemies, dating
+% break up, make up, break friendship
+
+stage doStuff = {
+%% for each of attraction, affection, and anger, there are corresponding
+% states that imply a feedback loop (dating, friends, and enemies).
+% also there should be at least one action that depends on that state
+% and one that nullifies it.
+
+% actions dealing with attraction
+do/fallInLove : 
+  attraction C C' -o affection C C'.
+
+do/eroticize : 
+  $affection C C' * affection C C' * affection C C'
+  -o attraction C C'.
+
+do/flirt :
+  $present C * $present C' * $attraction C C' -o attraction C' C.
+
+do/flirt/conflict :
+  $present C * $present C' * $present C'' * $attraction C C' * $attraction C'' C
+  -o eros C' C * anger C'' C * anger C'' C'.
+
+% actions dealing with friendship
+
+%% placeholders for now:
+do/like/bored :
+  $present C * $present C' * bored C
+    -o affection C C'.
+do/anger/bored :
+  $present C * $present C' * bored C
+    -o anger C C'.
+
+% actions dealing with enmity/anger
+
+do/insult :
+  $present C * $present C' * $anger C C'
+  -o anger C' C * sad C.
+  
+}
+
+% story instantiation
+
+chloe : character.
+zack : character.
+melissa : character.
+zoe : character.
+lil : character.
+charles : character.
+
+% interests
+math : interest.
+rocks : interest.
+trash : interest.
+anime : interest.
+
+% has_interest zack math.
+% has_interest zack trash.
+% has_interest melissa trash.
+% has_interest melissa anime.
+% has_interest zoe math.
+% has_interest zoe rocks.
+% has_interest lil rocks.
+% has_interest lil trash.
+% has_interest charles anime.
+% has_interest charles math.
+
+context init =
+{ present chloe,
+  present zack,
+  present melissa,
+  present zoe,
+  present lil,
+  present charles,
+  bored chloe,
+  bored zack,
+  bored melissa
+}.
+
+#trace _ doStuff init.
