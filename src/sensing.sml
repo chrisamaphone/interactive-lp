@@ -24,6 +24,23 @@ struct
                    | SOME s => [[Ceptre.cnst s]])
         | _ => [] (* ill-formed *)
 
+  (* parse strings of the form "head a1 a2 ... an"
+  *   as terms [head a1 .. an] *)
+  fun parseTerm s =
+    case String.tokens (Char.isSpace) s of
+         [] => NONE
+       | (t::args) => SOME (Ceptre.Fn (t, map Ceptre.cnst args))
+
+  fun inputTerm (fastctx, tms) =
+    case tms of
+         [] => (case inputChop () of
+                     NONE => []
+                   | SOME s =>
+                       (case parseTerm s of
+                             NONE => []
+                           | SOME t => [[t]]))
+       | _ => [] (* ill-formed *)
+
   (* interactive fiction primitives *)
   
   fun unary s = SOME (Ceptre.cnst s)
@@ -70,7 +87,8 @@ struct
     (* XXX rename to READLINE and map "input" to it *)
   val if_command = ("inputCmd", inputCmd)
     (* XXX rename to IF_COMMAND and map "inputCmd" to it *)
+  val readterm = ("inputTerm", inputTerm)
   
-  val builtins = [readline, if_command]
+  val builtins = [readterm, readline, if_command]
 
 end
