@@ -1,0 +1,21 @@
+
+treasure : pred.
+stamina : pred.
+damage : pred.
+skill : pred.
+alive : pred.
+
+stage rpg = {
+  train : stamina * $alive -o skill.
+  fight : skill * stamina * $alive -o treasure * damage * damage.
+  rest : $alive -o stamina.
+  buy_weapon : treasure * treasure * treasure * $alive -o skill.
+
+  get_tired : $damage * stamina * $alive -o ().
+  die : damage * damage * damage * alive -o ().
+}
+
+context init = { stamina, stamina, stamina, alive}.
+
+#trace _ rpg init.
+
