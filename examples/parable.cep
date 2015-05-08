@@ -1,0 +1,37 @@
+% segregation dynamics a la parable of the polygons
+% n.b. this example doesn't really work with ceptre out of the box.
+% like most graph algorithm stuff, it really wants a combination of
+% saturation and quiescence, and comprehension over all neighbors.
+% maybe something could be done with sensing predicates, though.
+
+id : type.
+triangle : id.
+square : id.
+
+neq id id : bwd.
+neq triangle square.
+neq square triangle.
+
+cell : type.
+has_shape cell id : pred.
+
+empty cell : pred.
+
+nbr cell cell : bwd.
+
+
+too_many_different_8
+  : nbr C C1 * nbr C C2 * nbr C C3 * nbr C C4
+  * nbr C C5 * nbr C C6 * nbr C C7 * nbr C C8
+  * has_shape C Triangle * neq Triangle Square
+  * $has_shape C1 Square
+  * $has_shape C2 Square
+  * $has_shape C3 Square
+  * empty NewCell
+  -o has_shape NewCell Triangle.
+
+% XXX many more cases...
+
+
+
+
