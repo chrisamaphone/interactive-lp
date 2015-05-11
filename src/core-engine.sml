@@ -44,7 +44,7 @@ struct
  fun debug f = f () (* Trace mode *)
 
 type ctx_var = int
-datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Sensed
+datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Pair of value * value | Inl of value | Inr of value | Unit
 
 type transition =
    {r: Ceptre.ident * int, tms : Ceptre.term option vector, Vs: value list}
@@ -87,7 +87,7 @@ fun ground_prefix' tms accum =
 
 fun ground_prefix tms = ground_prefix' tms []
 
-type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.atom list} list
+type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.prem} list
 
 (* LHSes are connected to a particluar ruleset *)
 (* RHSes are just mapped from their names *)
@@ -133,7 +133,10 @@ let
       (name, 
        List.map
           (fn (uid, {name, pivars, lhs, rhs}) => 
-              {name = (name, uid), pivars = pivars, lhs = lhs})
+              {name = (name, uid), pivars = pivars, 
+               lhs = 
+               (* XXX REPLACE WITH IDENTITY WHEN TYPES CHANGE *)
+               List.foldr (fn (a,p) => C.Tensor (C.Atom a, p)) C.One lhs})
           body)
 
    fun compile_rhses ({name, body}, map) = 
@@ -240,7 +243,15 @@ and match_terms bi {f, pat = ps, term = ts} subst: msubst ND.m =
     | _ => raise Fail ("Arity error for "^f)
 
 
-fun is_in x exclude = List.exists (fn y => Var x = y) exclude
+fun is_in_val x value = 
+   case value of
+      Unit => false
+    | Pair (t1, t2) => is_in_val x t1 orelse is_in_val x t2
+    | Inl t1 => is_in_val x t1
+    | Inr t1 => is_in_val x t1
+    | Var y => y = x 
+
+fun is_in x exclude = List.exists (is_in_val x) exclude
  
 val unknown = fn n => Vector.tabulate (n, fn _ => NONE)
 
@@ -267,27 +278,55 @@ fun match_hyp prog exclude subst (a, ps) (x, (m, b, ts)) =
  *    ------------------------------------------------------
  *         ctx [ r : old_prems -o A ] |- C
  * 
- * The argument Vs is an accumulator: 
+ * The argument Vs is an accumulator: given a proof term V of prems,
  * the proof terms we've already sorted out for rev(old_prems)
  * 
  * We learn more about the substitution "subst" as we go along, 
  * so we return both substitutions and the proof term we built. *)
 
-fun search_premises' prog (r: Ceptre.ident * int) (Vs: value list) subst prems =
-   case prems of 
-      [] => ND.return {r = r, tms = subst, Vs = rev Vs}
-    | prem :: prems => 
+fun search_premises' prog (r: Ceptre.ident * int) (Vs: value list) subst prem =
+   case prem of
+      C.Eq (t1, t2) =>
+        (ND.bind (if ground t1 (* ugh. *)
+                  then match_term (fc_builtin prog) {pat=t2, term=t1} subst
+                  else match_term (fc_builtin prog) {pat=t1, term=t2} subst)
+            (fn subst => ND.return (Unit, subst)))
+    | C.Neq (t1, t2) => 
+      let 
+         val t1 = apply_subst subst t1
+         val t2 = apply_subst subst t2
+      in
+        (if not (ground t1 andalso ground t2)
+         then raise Fail "Inequality between non ground terms"
+         else if t1 = t2 then ND.return (Unit, subst) else ND.fail)
+      end
+    | C.Tensor (prem1, prem2) =>
+        (ND.bind
+            (search_premises' prog r Vs subst prem1)
+            (fn (V1, subst) =>
          ND.bind
-            (search_prem prog Vs subst prem)
+            (search_premises' prog r (V1 :: Vs) subst prem2)
+            (fn (V2, subst) =>
+         ND.return (Pair (V1, V2), subst))))
+    | C.One => ND.return (Unit, subst)
+    | C.Or (prem1, prem2) => 
+         ND.combine
+          [ search_premises' prog r Vs subst prem1
+          , search_premises' prog r Vs subst prem2 ]
+    | C.Atom atom => 
+         ND.bind
+            (search_atom prog Vs subst atom)
             (fn (x: value, subst) => 
-               search_premises' prog r (x :: Vs) subst prems)
+               search_premises' prog r (x :: Vs) subst prem) 
 
 and search_premises prog (r: Ceptre.ident * int) subst prems = 
 let 
    val () = debug (fn () =>
       print ("\nAttempting to run rule "^(#1 r)^"\n"))
 in
-   search_premises' prog r [] subst prems
+  (ND.bind (search_premises' prog r [] subst prems)
+      (fn (value, subst) =>
+   ND.return {r = r, tms = subst, Vs = [value]}))
 end
 
 (* search_bwd bwds ctx (ts_subst, ts) bwd ~~> some extended ts_substs 
@@ -308,6 +347,8 @@ and search_bwd prog (ts_subst, ts) (uid, bwd) =
 let
    val bi = fc_builtin prog
    val {name, pivars, head = (a, ps), subgoals} = bwd
+   (* XXX REPLACE WITH IDENTITY ONCE TYPES FIXED *)
+   val subgoals = List.foldr (fn (a,p) => C.Tensor (C.Atom a, p)) C.One subgoals
 in ND.bind (match_terms bi
                {f = a, pat = ps, term = ts} 
                (unknown pivars))
@@ -328,8 +369,12 @@ in ND.bind (match_terms bi
       * with. *)
      (fn ss => 
    let val () = debug (fn () => 
-                   print ("Matching derived fact "^a^"("^String.concatWith "," (map C.termToString ss)^")\n"^
-                          "              against "^a^"("^String.concatWith "," (map C.termToString ts)^")\n"))
+                   print ("Matching derived fact "^a^
+                          "("^String.concatWith "," (map C.termToString ss)
+                          ^")\n"^
+                          "              against "^a^
+                          "("^String.concatWith "," (map C.termToString ts)
+                          ^")\n"))
    in ND.bind (match_terms bi {f = a, pat = ts, term = ss} ts_subst)
      (* Now we have learned things about our original substitution, 
       * and can return *) 
@@ -339,13 +384,13 @@ in ND.bind (match_terms bi
    in ND.return (Rule (a, Vs), ts_subst) end)end)))
 end
 
-(* search_prem bwds ctx Vs subst prem ~~~> some extended substitutions
+(* search_atom prog Vs subst prem ~~~> some extended substitutions
  *
  * Trying to complete an atomic right focus
  * 
- *    ctx |- [ mode (a, subst(ps)) ]        *)
+ *    prog |- [ mode (a, subst(ps)) ]        *)
 
-and search_prem prog (Vs: value list) subst (mode, a, ps) = 
+and search_atom prog (Vs: value list) subst (mode, a, ps) =
 let 
    val () = debug 
       (fn () => print ("Current subgoal: "^a^"("^
@@ -368,7 +413,8 @@ let
 
    val () = debug
       (fn () => print ("Resolving subgoal "^a^"("^
-                       String.concatWith "," (map (C.termToString o apply_subst subst) ps)^")"^
+                       String.concatWith "," 
+                          (map (C.termToString o apply_subst subst) ps)^")"^
                        " with backward chaining.\n"))
 
    (* Try to satisfy the premise by finding rules that match it *)
@@ -401,7 +447,7 @@ let
             ND.bind (match_terms bi {f = a, pat = psng, term = ts} subst)
                (* We've got the extended substitution! *)
                (fn subst =>
-            ND.return (Sensed, subst)))
+            ND.return (Unit, subst)))
          end
 
    val () = debug

@@ -13,6 +13,13 @@ structure Ceptre = struct
   type pred = ident
   datatype mode = Pers | Lin
   type atom = mode * pred * (term list)
+  datatype prem = 
+     Eq of term * term
+   | Neq of term * term
+   | Tensor of prem * prem
+   | Or of prem * prem
+   | One
+   | Atom of atom
   type rule_internal = 
     {name : ident, pivars : int, lhs : atom list, rhs : atom list}
   type context = atom list
