@@ -18,16 +18,24 @@ subtract/s/fail
   : subtract (s N) (s M) none
     <- subtract N M none.
 
-% capped addition
 lt nat nat : bwd.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+      <- lt N M.
+
 geq nat nat : bwd.
-% XXX define these next
-% then do cplus in terms of them
+geq/z : geq N z.
+geq/s : geq (s N) (s M)
+      <- geq N M.
+
+% capped addition
 cplus nat nat nat nat : bwd.
-cplus/z : cplus z N Cap N.
-cplus/cap : cplus _ Cap Cap Cap.
-cplus/s : cplus (s N) M Cap _
-          <- cplus N M Cap P 
+cplus/met : cplus N M T T
+          <- geq M T.
+cplus/s   : cplus (s N) M T P
+          <- lt M T
+          <- cplus N (s M) T P.
+cplus/z   : cplus z M T M.
 
 max_hp nat : bwd.
 - : max_hp (s (s (s (s (s (s (s (s (s z))))))))).
@@ -36,6 +44,15 @@ recharge_hp nat : bwd.
 
 health nat : pred.
 treasure nat : pred.
+
+init_tok : pred.
+context init_ctx = {init_tok}.
+
+stage init = {
+  i : init_tok * max_hp N
+      -o health N * treasure z.
+}
+qui * stage init -o stage main * main_screen.
 
 main_screen : pred.
 rest_screen : pred.
@@ -47,12 +64,29 @@ stage main = {
   shop : main_screen -o shop_screen.
 }
 
-qui * stage main * rest_screen -o stage rest.
-qui * stage main * shop_screen -o stage shop.
-qui * stage main * adventure_screen -o stage adventure.
+qui * stage main * $rest_screen -o stage rest.
+qui * stage main * $shop_screen -o stage shop.
+qui * stage main * $adventure_screen -o stage adventure.
 
 stage rest = {
-  recharge : health _ * max_hp N -o health N.
+  recharge : rest_screen
+               * health HP * max_hp Max * recharge_hp Recharge 
+               * cplus HP Recharge Max N
+              -o health N.
 }
+% XXX eventually enable this
+% qui * stage rest -o stage main * main_screen.
+
+stage shop = {
+
+}
+qui * stage shop -o stage main * main_screen.
+
+stage adventure = {
+
+}
+qui * stage adventure -o stage main * main_screen.
+
+#trace _ init init_ctx.
 
 
