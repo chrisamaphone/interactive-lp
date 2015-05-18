@@ -1,0 +1,28 @@
+
+
+brick : pred.
+lumber : pred.
+road : pred.
+wool : pred.
+grain : pred.
+settlement : pred.
+ore : pred.
+city : pred.
+development_card : pred.
+knight : pred.
+progress : pred.
+victory_point : pred.
+
+stage building = {
+
+build_road : brick * lumber -o road.
+build_settlement : brick * lumber * wool * grain -o settlement.
+build_city : ore * ore * ore * grain * grain -o city.
+build_development : ore * wool * grain -o development_card.
+
+dev_knight : development_card -o knight.
+dev_prog : development_card -o progress.
+dev_victory point : development_card -o victory_point.
+
+}
+
