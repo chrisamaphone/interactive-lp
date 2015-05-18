@@ -126,6 +126,21 @@ structure Ceptre = struct
     lookupSplit' id table (fn x => x)
   end
 
+  fun lookupStage id nil = NONE
+    | lookupStage id ((s as {name,body,nondet})::stages) =
+        if name = id then SOME s
+        else lookupStage id stages
+
+  fun lookupStageSplit id stages =
+  let
+    fun lss' id nil cont = NONE
+      | lss' id ((s as {name,body,nondet})::stages) cont =
+          if name = id then SOME (s, stages)
+          else lss' id stages (fn suffix => cont (s::suffix))
+  in
+    lss' id stages (fn x => x)
+  end
+
   (* assigns numbers to named terms for the sake of translating between external
   * representation and internal. *)
   fun walk_terms (tms : external_term list) (table, ctr) =
@@ -238,15 +253,23 @@ structure Ceptre = struct
       : rule_internal
     end
 
-  (* a stage is a name & a list of rules *)
-  type stage = {name : ident, body : rule_internal list}
+  (* a stage is a name, a modifier specifying what to do when multiple rules
+  * apply, and a list of rules *)
+  datatype nondet = Random | Interactive | Ordered
+  type stage = {name : ident, nondet : nondet, body : rule_internal list}
 
-  fun stageToString {name, body} =
+  fun nondetToString Random = "random"
+    | nondetToString Interactive = "interactive"
+    | nondetToString Ordered = "ordered"
+
+
+  fun stageToString {name, nondet, body} =
   let
     val rules = map (fn r => "  " ^ (ruleToString r) ^ ".") body
     val rule_string = String.concatWith "\n" rules
+    val mode_string = nondetToString nondet
   in
-    "stage " ^ name ^ " = {\n"
+    mode_string ^ " stage " ^ name ^ " = {\n"
     ^ rule_string
     ^ "\n}"
   end
@@ -306,8 +329,8 @@ structure Ceptre = struct
     =
   let
     val outer_level_rules = map stageRuleToRule links
-    (* XXX remove qui? *)
-    val outer_level = {name="outer_level", body=outer_level_rules}
+    (* XXX nondet = Random? could be ordered. *)
+    val outer_level = {name="outer_level", nondet=Random, body=outer_level_rules}
     val ctx = (unaryPred "stage" init_stage)::init_state
   in
     (outer_level::stages, ctx)
@@ -338,6 +361,7 @@ structure Ceptre = struct
 
   val stage_paths : stage =
     {name = "paths",
+     nondet = Random,
      body = [rule1'1, rule1'2]}
 
   val init1 = 
