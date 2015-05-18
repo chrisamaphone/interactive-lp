@@ -176,7 +176,14 @@ struct
             in
               externalToInternal sg erule
             end
-        | _ => raise IllFormed
+        | _ => 
+            let
+              val error = "unable to parse decl " ^ (topToString "" syntax)
+                          ^ "\n"
+              val () = print error
+            in
+              raise IllFormed
+            end
 
   fun separate f l =
   let
