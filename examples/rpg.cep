@@ -65,7 +65,6 @@ rest_screen : pred.
 adventure_screen : pred.
 quit : pred.
 
-% TODO should be "interactive stage" when that exists
 stage main = {
   do/rest : main_screen -o rest_screen. 
   do/adventure : main_screen -o adventure_screen.
@@ -74,6 +73,7 @@ stage main = {
   % comment out for autogen version
   % do/quit : main_screen -o quit.
 }
+#interactive main.
 
 qui * stage main * $rest_screen -o stage rest.
 qui * stage main * $shop_screen -o stage shop.
@@ -133,7 +133,7 @@ stage fight = {
   fight/hit
     : $fight_in_progress * monster_hp MHP * weapon_damage D
         * subtract MHP D (some MHP')
-        -o monster_hp MHP.
+        -o monster_hp MHP'.
   win
     : fight_in_progress * monster_hp MHP * weapon_damage D
         * subtract MHP D none
@@ -151,6 +151,7 @@ stage fight = {
             * subtract HP Size none
             -o die_screen.
 }
+#interactive fight.
 qui * stage fight * $win_screen -o stage win.
 qui * stage fight * $flee_screen -o stage flee.
 qui * stage fight * $die_screen -o stage die.
