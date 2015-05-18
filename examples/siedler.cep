@@ -13,12 +13,26 @@ knight : pred.
 progress : pred.
 victory_point : pred.
 
+turn : pred.
+success : pred.
+
 stage building = {
 
-build_road : brick * lumber -o road.
-build_settlement : brick * lumber * wool * grain -o settlement.
-build_city : ore * ore * ore * grain * grain -o city.
-build_development : ore * wool * grain -o development_card.
+build_road : turn * brick * lumber -o road * success.
+build_settlement : turn * brick * lumber * wool * grain 
+  -o settlement * success.
+build_city : turn * ore * ore * ore * grain * grain 
+  -o city * success.
+build_development : turn * ore * wool * grain 
+  -o development_card * success.
+
+}
+#interactive building.
+
+qui * stage building * success -o stage draw_dev_card.
+qui * stage building * turn -o ().
+
+stage draw_dev_card = {
 
 dev_knight : development_card -o knight.
 dev_prog : development_card -o progress.
@@ -26,8 +40,11 @@ dev_victory_point : development_card -o victory_point.
 
 }
 
+qui * stage draw_dev_card -o stage building * turn.
+
 context init =
-{brick, brick, brick, lumber, lumber, lumber, wool, wool, wool, 
+{turn,
+  brick, brick, brick, lumber, lumber, lumber, wool, wool, wool, 
   grain, grain, grain, ore, ore, ore}.
 
 #trace _ building init.
