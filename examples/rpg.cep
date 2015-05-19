@@ -1,4 +1,4 @@
-% attempt at doing the bit in my twine blog post
+% Hack & slash RPG demo (akin to Twine blog post)
 
 nat : type.
 z : nat.
@@ -54,9 +54,34 @@ treasure nat : pred.
 init_tok : pred.
 context init_ctx = {init_tok}.
 
+weapon_damage nat : pred.
+weapon : type.
+damage_of weapon nat : bwd.
+cost weapon nat : bwd.
+
+sword : weapon.
+mace : weapon.
+grenade : weapon.
+
+damage_of sword (s (s (s (s z)))). % 4
+damage_of mace (s (s (s (s (s z))))). % 5
+damage_of grenade (s (s (s (s (s (s (s (s (s z))))))))). % 10
+
+% 10
+cost sword (s (s (s (s (s (s (s (s (s (s z)))))))))).
+% 20
+cost mace (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s z)
+                                        ))))))))))))))))))).
+cost grenade   % 50
+(s (s (s (s (s
+(s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s 
+  (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s z))))))))))))
+                       )))))))))))))))))))))))))))))))))))))).
+
 stage init = {
   i : init_tok * max_hp N
-      -o health N * treasure z * ndays z.
+      -o health N * treasure z * ndays z
+          * weapon_damage (s (s z)).
 }
 qui * stage init -o stage main * main_screen.
 
@@ -71,7 +96,7 @@ stage main = {
   do/shop : main_screen -o shop_screen.
 
   % comment out for autogen version
-  % do/quit : main_screen -o quit.
+  do/quit : main_screen -o quit.
 }
 #interactive main.
 
@@ -90,9 +115,13 @@ stage rest = {
 qui * stage rest -o stage main * main_screen.
 
 stage shop = {
-  r : shop_screen -o ().
+  leave : shop_screen -o main_screen.
+  buy : treasure T * cost W C * damage_of W D * weapon_damage _
+          * subtract T C (some T')
+          -o treasure T' * weapon_damage D.
 }
-qui * stage shop -o stage main * main_screen.
+#interactive shop.
+qui * stage shop * $main_screen -o stage main.
 
 monster_size nat : bwd.
 monster_size (s (s z)).
@@ -109,7 +138,7 @@ mkchoice : pred.
 stage adventure = {
   init : adventure_screen -o spoils z.
 }
-qui * stage adventure -o stage fight * fight_screen.
+qui * stage adventure -o stage fight_init * fight_screen.
 
 fought : pred.
 drop nat : pred.
@@ -121,40 +150,47 @@ die_screen : pred.
 drop_amount nat nat : bwd.
 drop_amount X X. % for now
 
-% XXX move this up
-weapon_damage nat : pred.
-weapon_damage (s (s z)).
-
-fight_in_progress : pred.
-stage fight = {
+stage fight_init = {
   init : fight_screen -o gen_monster * fight_in_progress.
   gen_a_monster : gen_monster * monster_size Size
                     -o monster Size * monster_hp Size.
+}
+qui * stage fight_init -o stage fight * choice.
+
+try_fight : pred.
+fight_in_progress : pred.
+stage fight_auto = {
   fight/hit
-    : $fight_in_progress * monster_hp MHP * weapon_damage D
+    : try_fight * $fight_in_progress * monster_hp MHP * $weapon_damage D
         * subtract MHP D (some MHP')
         -o monster_hp MHP'.
   win
-    : fight_in_progress * monster_hp MHP * weapon_damage D
+    : fight_in_progress * monster_hp MHP * $weapon_damage D
         * subtract MHP D none
         -o win_screen.
   fight/miss
-    : $fight_in_progress * monster Size * health HP
+    : try_fight * $fight_in_progress * $monster Size * health HP
             * subtract HP Size (some HP')
         -o health HP'.
-  flee
-    : fight_in_progress -o flee_screen.
   die_from_damages
-    : health z -o die_screen.
+    : health z * fight_in_progress -o die_screen.
   fight/die  
-    : fight_in_progress * monster Size * health HP
+    : try_fight * fight_in_progress * monster Size * health HP
             * subtract HP Size none
             -o die_screen.
 }
+choice : pred.
+qui * stage fight_auto * $fight_in_progress -o stage fight * choice.
+qui * stage fight_auto * $win_screen -o stage win.
+qui * stage fight_auto * $die_screen -o stage die.
+
+stage fight = {
+  do_fight : choice * $fight_in_progress -o try_fight.
+  do_flee  : choice * fight_in_progress -o flee_screen.
+}
 #interactive fight.
-qui * stage fight * $win_screen -o stage win.
+qui * stage fight * $fight_in_progress -o stage fight_auto.
 qui * stage fight * $flee_screen -o stage flee.
-qui * stage fight * $die_screen -o stage die.
 
 stage flee = {
   % lose spoils
@@ -178,13 +214,21 @@ stage win = {
   continue
     : go_home_or_continue -o fight_screen.
 }
+#interactive win.
 qui * stage win * $main_screen -o stage main.
-qui * stage win * $fight_screen -o stage fight.
-qui * stage win -o stage adventure * adventure_screen.
+qui * stage win * $fight_screen -o stage fight_init.
 
+end : pred.
 stage die = {
-  end : die_screen -o ().
+  quit : die_screen -o end.
+  restart : die_screen * monster_hp _ 
+              * spoils _ * ndays _ * treasure _
+              * weapon_damage _ -o init_tok.
 }
+#interactive die.
+
+qui * stage die * end -o ().
+qui * stage die * $init_tok -o stage init.
 
 #trace _ init init_ctx.
 
