@@ -1,0 +1,59 @@
+unit : type.
+factory : unit.
+offense : unit.
+defense : unit.
+
+team : type.
+red : team.
+black : team.
+
+opponent team team : bwd.
+opponent red black.
+opponent black red.
+
+money team : pred.
+has team unit : pred.
+turn team : pred.
+
+stage play = {
+  buy_factory : 
+    turn T 
+      * money T * money T * money T * money T * money T
+      -o has T factory.
+
+  buy_offense :
+    turn T
+      * money T * money T
+      -o has T offense.
+
+  buy_defense :
+    turn T
+      * money T
+      -o has T defense.
+
+}
+
+% automatic
+stage combat = {
+  offense_win : 
+    opponent T T' * $has T offense * has T defense -o ().
+  defense_win : 
+    opponent T T' * has T offense * $has T defense -o ().
+}
+
+undefended team : pred.
+defended T.
+stage checkUndefended = {
+    defended : $has T defense * undefended T -o defended T.
+}.
+qui * stage checkUndefended * undefended T -o stage attackFactories.
+qui * stage checkUndefended * defended T * defended T' -o stage gen.
+
+stage attackFactories = {
+  attack : opponent T T' * turn T * $has T offense * has T' factory -o (). 
+}.
+
+stage gen = {
+  factory_money : turn T * has T factory -o has T money.
+}.
+
