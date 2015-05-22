@@ -27,12 +27,14 @@ plant plant_type plant_phase health : pred.
 
 step : pred.
 
+soil_space : pred.
+
 % actions: water, plant, harvest
 stage play {
   get_seeds : $step * harvested Type -o have_seed Type * have_seed Type.
-  plant : $step * have_seed Type -o plant Type seed healthy.
-  harvest : $step * plant Type mature healthy -o harvested Type.
-  clear : $step * plant Type _ dead -o ().
+  plant : $step * have_seed Type * soil_space -o plant Type seed healthy.
+  harvest : $step * plant Type mature healthy -o harvested Type * soil_space.
+  clear : $step * plant Type _ dead -o soil_space.
   water : $step * plant Type Phase wilting -o plant Type Phase healthy.
   done : step -o ().
 }
@@ -41,16 +43,17 @@ stage play {
 qui * stage play -o stage grow * step.
 
 stage grow = {
-  grow : step * plant Type Phase healthy * next Phase Phase'
+  grow : $step * plant Type Phase healthy * next Phase Phase'
             -o plant Type Phase' healthy.
-  wilt : step * plant Type Phase healthy
+  wilt : $step * plant Type Phase healthy
             -o plant Type Phase wilting.
-  die : step * plant Type Phase wilting
+  die : $step * plant Type Phase wilting
             -o plant Type Phase dead.
+  done : step -o ().
 }
 qui * stage grow -o stage play * step.
 
-context init = {have_seed flower, have_seed herb, have_seed vine, step}.
+context init = {have_seed flower, have_seed herb, have_seed vine, step,
+                  soil_space, soil_space, soil_space, soil_space}.
 #trace _ play init.
-
 
