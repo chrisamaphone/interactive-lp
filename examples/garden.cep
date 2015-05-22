@@ -1,0 +1,56 @@
+% tiny garden sim
+
+plant_type : type.
+flower : plant_type.
+herb : plant_type.
+vine : plant_type.
+succulent : plant_type.
+
+plant_phase : type.
+seed : plant_phase.
+seedling : plant_phase.
+mature : plant_phase.
+
+next plant_phase plant_phase : bwd.
+next seed seedling.
+next seedling mature.
+
+health : type.
+healthy : health.
+overgrowing : health.
+wilting : health.
+dead : health.
+
+harvested plant_type : pred.
+have_seed plant_type : pred.
+plant plant_type plant_phase health : pred.
+
+step : pred.
+
+% actions: water, plant, harvest
+stage play {
+get_seeds : harvested Type -o have_seed Type * have_seed Type.
+plant : have_seed Type -o plant Type seed healthy.
+harvest : plant Type mature healthy -o harvested Type.
+clear : plant Type _ dead -o ().
+water : plant Type Phase wilting -o plant Type Phase healthy.
+done : step -o ().
+}
+#interactive play.
+
+qui * stage play -o stage grow * step.
+
+stage grow = {
+  grow : step * plant Type Phase healthy * next Phase Phase'
+            -o plant Type Phase' healthy.
+  wilt : step * plant Type Phase healthy
+            -o plant Type Phase wilting.
+  die : step * plant Type Phase wilting
+            -o plant Type Phase dead.
+}
+qui * stage grow -o stage play * step.
+
+context init = {have_seed flower, have_seed herb, have_seed vine, step}.
+#trace _ play init.
+
+
