@@ -1,0 +1,61 @@
+%% XXX Thursday, May 21
+%% Too unfocused to finish this example rn - but it should be within reach!
+
+player : type.
+p1 : player.
+p2 : player.
+
+turn player : pred.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+hp player nat : pred.
+mana player nat : pred.
+
+card : type.
+murloc_raider : card.
+acidic_swamp_ooze : card.
+generic_weapon : card.
+
+init_stats card nat nat : bwd.
+init_stats murloc_raizer (s z) (s z).
+init_stats acidic_swamp_ooze (s (s z)) (s (s (s z))).
+init_stats generic_weapon (s (s z)) (s (s z)).
+
+cost card nat : bwd.
+cost murloc_raider (s z).
+cost acidic_swamp_ooze (s (s z)).
+cost generic_weapon (s (s (s z))).
+
+hand player card : pred.
+deck player card : pred.
+field player card nat nat : pred.
+just_played player card : pred.
+
+equipped player card nat nat : pred.
+
+stage draw = {
+  do_draw : 
+    $turn P * deck P C z -o hand P C.
+}
+
+stage play = {
+  attack_with_hero
+    : turn P * equipped P W Attack (s Dur) * opponent P P'
+        -o do_attack Attack P' * equipped P Dur * attacked P. 
+  attack_with_minion 
+  play_minion :
+    hand P C * 
+}
+
+stage do_effects = {
+  weapon_crumble : turn P * equipped P W _ z -o ().
+  play_ooze
+    : just_played P acidic_swamp_ooze * opponent P P'
+          * equipped P' W _ _ -o ().
+  play_weapon
+    : just_played P generic_weapon * init_stats generic_weapon Attack Dur
+        -o equipped P generic_weapon Attack Dur.
+}
