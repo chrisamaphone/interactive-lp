@@ -1,4 +1,17 @@
-% tiny garden sim
+% slightly bigger garden sim
+% in this version, we'll try to introduce plants that can
+%  - overtake other plants (overgrowth)
+%  - require less water (overwatering kills them)
+%
+% to do this, each plant needs to record:
+% - how many days it's gone w/o water
+% - how many days in a row it's been watered
+
+nat : type.
+z : nat.
+s nat : nat.
+
+day nat : pred.
 
 plant_type : type.
 flower : plant_type.
@@ -23,34 +36,55 @@ dead : health.
 
 harvested plant_type : pred.
 have_seed plant_type : pred.
-plant plant_type plant_phase health : pred.
+% last var is for synchronization
+plant plant_type plant_phase health nat : pred.
 
 step : pred.
+
+soil_space : pred.
 
 % actions: water, plant, harvest
 stage play {
   get_seeds : $step * harvested Type -o have_seed Type * have_seed Type.
-  plant : $step * have_seed Type -o plant Type seed healthy.
-  harvest : $step * plant Type mature healthy -o harvested Type.
-  clear : $step * plant Type _ dead -o ().
-  water : $step * plant Type Phase wilting -o plant Type Phase healthy.
+
+  plant : 
+    $step * have_seed Type * soil_space * $day D 
+      -o plant Type seed healthy D.
+  
+  harvest : $step * plant Type mature healthy _ 
+      -o harvested Type * soil_space.
+  
+  clear : $step * plant Type _ dead _
+      -o soil_space.
+  
+  water : $step * plant Type Phase wilting D 
+      -o plant Type Phase healthy D.
+  
   done : step -o ().
 }
 #interactive play.
 
-qui * stage play -o stage grow * step.
+qui * stage play -o stage advance_day * step.
+
+stage advance_day = {
+  advance : day N * step -o day (s N).
+}
+
+qui * stage advance_day -o stage grow.
 
 stage grow = {
-  grow : step * plant Type Phase healthy * next Phase Phase'
-            -o plant Type Phase' healthy.
-  wilt : step * plant Type Phase healthy
-            -o plant Type Phase wilting.
-  die : step * plant Type Phase wilting
-            -o plant Type Phase dead.
+  grow : plant Type Phase healthy D * next Phase Phase' * $day (s D)
+            -o plant Type Phase' healthy (s D).
+  wilt : plant Type Phase healthy D * $day (s D)
+            -o plant Type Phase wilting (s D).
+  die : plant Type Phase wilting D * $day (s D)
+            -o plant Type Phase dead (s D).
 }
 qui * stage grow -o stage play * step.
 
-context init = {have_seed flower, have_seed herb, have_seed vine, step}.
+context init = {day z, 
+  have_seed flower, have_seed herb, have_seed vine, have_seed succulent,
+  step, soil_space, soil_space, soil_space, soil_space}.
 #trace _ play init.
 
 

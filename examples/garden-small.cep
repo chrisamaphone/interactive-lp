@@ -1,10 +1,14 @@
 % tiny garden sim
+% this version is fairly easy and repetitive.
+% nothing really pushes back against your efforts to maintain the
+% garden except that things die if you don't water them.
+% also there are no real interesting decisions - all the plants are the
+% same.
 
 plant_type : type.
 flower : plant_type.
 herb : plant_type.
 vine : plant_type.
-succulent : plant_type.
 
 plant_phase : type.
 seed : plant_phase.
