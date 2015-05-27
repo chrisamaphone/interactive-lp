@@ -1,4 +1,4 @@
-% slightly bigger garden sim
+% bigger garden sim
 % in this version, we'll try to introduce plants that can
 %  - overtake other plants (overgrowth)
 %  - require less water (overwatering kills them)
@@ -10,6 +10,7 @@
 nat : type.
 z : nat.
 s nat : nat.
+never : nat.
 
 day nat : pred.
 
@@ -32,35 +33,72 @@ health : type.
 healthy : health.
 overgrowing : health.
 wilting : health.
+overwatered : health.
 dead : health.
+
+minus nat nat nat : bwd.
+minus/z  : minus N z N.
+minus/z' : minus z N z.
+minus/s : minus (s N) (s M) P
+          <- minus N M P.
+minus/never : minus N never never.
+
+water_limit nat : bwd.
+wl : water_limit (s (s z)).
+
+geq nat nat : bwd.
+geq/z : geq N z.
+geq/s : geq (s N) (s M)
+        <- geq N M.
+geq/never : geq never N.
 
 harvested plant_type : pred.
 have_seed plant_type : pred.
-% last var is for synchronization
-plant plant_type plant_phase health nat : pred.
 
 step : pred.
+turns nat : pred.
 
-soil_space : pred.
+soil_space : type.
+space1 : soil_space.
+space2 : soil_space.
+space3 : soil_space.
+space4 : soil_space.
+
+% predicates on soil space
+empty soil_space : pred.
+has_plant soil_space plant_type plant_phase : pred.
+last_updated soil_space nat : pred.
+last_watered soil_space nat : pred.
+consecutive_waterings soil_space nat : pred.
 
 % actions: water, plant, harvest
 stage play {
-  get_seeds : $step * harvested Type -o have_seed Type * have_seed Type.
+  get_seeds : 
+    turns (s N) * harvested Type 
+      -o have_seed Type * have_seed Type * turns N.
 
   plant : 
-    $step * have_seed Type * soil_space * $day D 
-      -o plant Type seed healthy D.
+    turns (s N) * have_seed Type * empty S * $day D 
+      -o has_plant S Type seed healthy 
+        * last_updated S D
+        * consecutive_waterings S z
+        * last_watered S never
+        * turns N.
   
-  harvest : $step * plant Type mature healthy _ 
-      -o harvested Type * soil_space.
+  harvest : 
+    turns (s N) * has_plant Spot Type mature healthy
+      * last_updated S _ * consecutive_waterings S _ * last_watered S _
+      -o harvested Type * empty Spot * turns N.
   
-  clear : $step * plant Type _ dead _
-      -o soil_space.
+  clear : turns (s N) * has_plant S Type _ dead
+      * last_updated S _ * consecutive_waterings S _ * last_watered S _
+      -o empty S * turns N.
   
-  water : $step * plant Type Phase wilting D 
-      -o plant Type Phase healthy D.
+  water : turns (s N) * $has_plant S Type Phase Health
+      * $day D * last_watered S _ * consecutive_waterings S W
+      -o last_watered S D * consecutive_waterings S (s W) * turns N.
   
-  done : step -o ().
+  done : turns _ -o ().
 }
 #interactive play.
 
@@ -73,18 +111,29 @@ stage advance_day = {
 qui * stage advance_day -o stage grow.
 
 stage grow = {
-  grow : plant Type Phase healthy D * next Phase Phase' * $day (s D)
-            -o plant Type Phase' healthy (s D).
-  wilt : plant Type Phase healthy D * $day (s D)
-            -o plant Type Phase wilting (s D).
-  die : plant Type Phase wilting D * $day (s D)
-            -o plant Type Phase dead (s D).
+  grow : has_plant S Type Phase healthy * next Phase Phase' * $day (s D)
+          * last_updated S D
+            -o has_plant S Type Phase' healthy
+                * last_updated S (s D).
+
+  drink : plant Type Phase wilting * last_updated S D * $day (s D)
+          * $last_watered S D
+          -o plant Type Phase healthy * last_updated S (s D).
+  
+  wilt : plant Type Phase healthy * last_updated S D * $day (s D)
+          * last_watered S WaterDay * minus (s D) WaterDay DaysAgo
+            * water_limit WL * geq DaysAgo WL
+            -o plant Type Phase wilting (s D)
+                * last_updated S (s D).
+
+  die : plant Type Phase wilting * last_updated S D * $day (s D)
+            -o plant Type Phase dead * last_updated S (s D).
 }
-qui * stage grow -o stage play * step.
+qui * stage grow -o stage play * turns (s (s (s z))).
 
 context init = {day z, 
   have_seed flower, have_seed herb, have_seed vine, have_seed succulent,
-  step, soil_space, soil_space, soil_space, soil_space}.
+  empty space1, empty space2, empty space3, empty space4, turns (s (s (s z)))}.
 #trace _ play init.
 
 
