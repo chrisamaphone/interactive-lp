@@ -1,0 +1,24 @@
+%% Using stages for negation
+
+% to encode the rule ~p -o q...
+
+p : pred.
+q : pred.
+no_p_yet : pred.
+notp : pred.
+
+context init = {no_p_yet}.
+
+stage check_p = {
+find : no_p_yet * $p -o ().
+}.
+qui * stage check_p * no_p_yet -o stage do_q * notp.
+qui * stage check_p * $p -o stage done.
+
+stage do_q = {
+  rule : notp -o q.
+}
+
+stage done = {}
+
+#trace _ check_p init.
