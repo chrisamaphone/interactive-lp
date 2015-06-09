@@ -30,17 +30,27 @@ putdown_on_post
 p1 : post.
 p2 : post.
 p3 : post.
+
 r1 : ring. 
-r2 : ring. smaller r2 r1.
-r3 : ring. smaller r3 r2.
-% smaller/trans : smaller R1 R2 -> smaller R2 R3 -> smaller R1 R3.
-smaller r3 r1.
+r2 : ring.
+r3 : ring.
+
+succ ring ring : bwd.
+succ r1 r2.
+succ r2 r3.
+
+smaller R R'
+  <- succ R R'.
+smaller R R''
+  <- succ R R'
+  <- smaller R' R''.
+
 context init =
 {clear (bottom p2), clear (bottom p3),
-    on r1 (bottom p1),
-    on r2 (top_of r1),
-    on r3 (top_of r2), 
-    clear (top_of r3),
+    on r3 (bottom p1),
+    on r2 (top_of r3),
+    on r1 (top_of r2), 
+    clear (top_of r1),
     arm_free}.
 
 #trace _ do init.
