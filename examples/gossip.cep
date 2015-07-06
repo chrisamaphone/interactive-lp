@@ -1,0 +1,61 @@
+% gossip game:
+% social network knowledge propagation
+
+person : type.
+follows person person : pred.
+
+message : type.
+m1 : message.
+m2 : message.
+m3 : message.
+says person message : message.
+
+% actions:
+% say person message
+% follow person person
+% repeat person message
+
+knows person message : message.
+posted message : pred.
+not_posted message : pred.
+
+stage say = {
+
+say : knows Person Message
+        * not_posted Person Message -o !posted Person Message.
+
+}
+
+qui * stage say -o stage read.
+
+stage read = {
+
+read : 
+  posted Source Message * $follows Follower Source
+        -o !knows Follower (says Source Message) 
+            * not_posted Follower (says Source Message).
+  
+cleanup : 
+  not_posted Person Message * !posted Person Message
+      -o ().
+}
+
+qui * stage read -o stage say.
+
+p1 : person.
+p2 : person.
+p3 : person.
+p4 : person.
+p5 : person.
+
+context init =
+{!posted p1 m1, !posted p2 m2, !posted p3 m3, !knows p4 m1, 
+    not_posted p4 m1,
+  follows p1 p2, follows p1 p3,
+  follows p2 p1, 
+  follows p3 p1,
+  follows p4 p5, follows p4 p1,
+  follows p5 p4}.
+
+#trace _ twitter init.
+

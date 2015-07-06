@@ -1,0 +1,115 @@
+unit : type.
+offense : unit.
+defense : unit.
+
+team : type.
+red : team.
+black : team.
+
+opponent team team : bwd.
+opponent red black.
+opponent black red.
+
+money team : pred.
+has team unit : pred.
+turn team : pred.
+next_step team : pred.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+factories team nat : pred.
+
+context init_factories = {factories red (s z), factories black (s z)}.
+
+stage play = {
+  buy_factory : 
+    $turn T 
+      * money T * money T * money T * money T * money T
+      * factories T R
+      -o factories T (s R) * next_step T.
+
+  buy_offense :
+    $turn T
+      * money T * money T
+      -o has T offense * next_step T.
+
+  buy_defense :
+    $turn T
+      * money T
+      -o has T defense * next_step T.
+
+  do_nothing : turn T -o next_step T.
+}
+#interactive play.
+qui * stage play * next_step T -o stage combat_or_not * turn T.
+
+do_combat team : pred.
+stage combat_or_not = {
+  do_attack : turn T * $has T offense -o do_combat T.
+  dont_attack : turn T -o next_step T.
+}
+#interactive combat_or_not.
+qui * stage combat_or_not * do_combat T -o stage combat * turn T.
+qui * stage combat_or_not * next_step T * $factories T R -o 
+  stage produce * turn T * gen_money R.
+
+% automatic
+stage combat = { % XXX should these all happen at once? if not, remove $.
+  offense_win : $turn T *
+    opponent T T' * $has T offense * has T' defense -o next_step T.
+  defense_win : $turn T *
+    opponent T T' * has T offense * $has T' defense -o next_step T.
+}
+undefended team : pred.
+defended team : pred.
+qui * stage combat * next_step T * opponent T T'
+  -o stage checkUndefended * undefended T' * turn T.
+qui * stage combat * turn T * opponent T T'
+  -o stage checkUndefended * undefended T' * turn T.
+
+stage checkUndefended = {
+    is_defended : 
+      undefended T * $has T defense -o defended T.
+}
+qui * stage checkUndefended * undefended T -o stage attackFactory.
+qui * stage checkUndefended * turn T * defended T' * $factories T R
+  -o stage produce * turn T * gen_money R.
+
+stage attackFactory = {
+  attack : opponent T T' * turn T * $has T offense
+              * factories T' (s R)
+            -o next_step T * factories T' R. 
+}
+#interactive attackFactory.
+
+gen_money team nat : pred.
+qui * stage attackFactory * next_step T * $factories T R
+  -o stage produce * turn T * gen_money R. 
+qui * stage attackFactory * turn T * $factories T R
+  -o stage produce * turn T * gen_money R.
+
+% produce a money for every factory.
+stage produce = {
+  generate_money : $turn T * gen_money (s R)
+                    -o money T * gen_money R.
+  done : turn T * gen_money z -o next_step T.
+}.
+qui * stage produce -o stage check_deaths.
+
+game_over : pred.
+stage check_deaths = {
+  tie : factories T z * factories T' z * next_step _ -o game_over.
+  loss : factories T z * factories T' (s N) * next_step _ -o game_over.
+}
+qui * stage check_deaths * game_over -o ().
+% turn changes:
+qui * stage check_deaths * next_step T * opponent T T' 
+  -o stage play * turn T'.
+
+context init = {init_factories, turn red}.
+
+#trace _ play init.
+
+

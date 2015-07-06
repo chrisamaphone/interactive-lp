@@ -176,7 +176,25 @@ struct
             in
               externalToInternal sg erule
             end
-        | _ => raise IllFormed
+        | Decl (Lolli (lhs_syn, rhs_syn)) =>
+            let
+              val (lhs, residual) = extractLHS lhs_syn (fn x => x) []
+              val rhs = extractRHS rhs_syn residual
+              val name = gensym ()
+              (* external syntax *)
+              val erule = {name = name, lhs = lhs, rhs = rhs}
+              val () = wild_gensym := 0 (* reset for each rule *)
+            in
+              externalToInternal sg erule
+            end
+        | _ => 
+            let
+              val error = "unable to parse decl " ^ (topToString "" syntax)
+                          ^ "\n"
+              val () = print error
+            in
+              raise IllFormed
+            end
 
   fun separate f l =
   let
@@ -217,7 +235,14 @@ struct
                  NONE =>
                  (case lookup id sg of
                        SOME (Ceptre.Pred (_,[])) => [extractGroundAtom syn]
-                     | _ => raise IllFormed)
+                     | _ =>
+                         let
+                           val error = "failed to parse "^(synToString syn)
+                            ^" as a context or context component."
+                           val () = print error
+                         in
+                          raise IllFormed
+                         end)
               | SOME c => c)
        | _ => [ extractGroundAtom syn ] 
         (* XXX check for presence in sg? *)
@@ -235,7 +260,8 @@ struct
           let
             val rules = map (declToRule sg) rules_syntax
           in
-            {name = name, body = rules}
+            (* XXX default nondet ok? *)
+            {name = name, nondet = Ceptre.Random, body = rules}
           end
         | _ => raise IllFormed
 
@@ -315,6 +341,7 @@ struct
                 | CDecl of decl
                 | CBwd of bwd_rule
                 | CBuiltin of string * Ceptre.builtin
+                | CStageMode of ident * Ceptre.nondet
 
   (* checks decl wrt sg *)
   (* returns a csyn, either a CDecl or a CBwd *)
@@ -402,7 +429,20 @@ struct
             (predicate, NAT_SUCC)
        | _ => raise IllFormed
 
-  fun extractTop sg ctxs top =
+
+  fun stage_exists s (stages : Ceptre.stage list) =
+    List.exists (fn {name, nondet, body} => name = s) stages
+
+  fun lookupStage s (stages : Ceptre.stage list) =
+    List.find (fn {name,...} => name = s) stages
+
+  fun replaceNondet n mode (stages : Ceptre.stage list) =
+    case lookupStageSplit n stages of
+         NONE => raise IllFormed
+       | SOME ({name,body,nondet}, stages) =>
+          {name=name,body=body,nondet=mode}::stages
+
+  fun extractTop sg ctxs stages top =
     case top of
          Stage _ => CStage (extractStage sg top)
        | Decl (Ascribe (Id _, Lolli _)) => CRule (declToRule sg top)            
@@ -411,15 +451,20 @@ struct
              val name = gensym ()
              val named_syn = Ascribe (Id name, Lolli rule)
            in
-             extractTop sg ctxs (Decl named_syn)
+             extractTop sg ctxs stages (Decl named_syn)
            end
-       | Decl s => (extractDecl sg top
+       | Decl s => (extractDecl sg top 
+        (* XXX nb this doesn't actually catch Ceptre.IllFormed *)
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext ctxs sg top)
        | Special (directive, args) =>
            case directive of
                 "trace" => CProg (extractTrace args ctxs sg)
               | "builtin" => CBuiltin (extractBuiltin args sg)
+              | "interactive" =>
+                  (case args of
+                       [Id name] => CStageMode (name, Ceptre.Interactive)
+                      | _ => raise IllFormed)
               | _ => raise IllFormed (* XXX put builtin here *)
 
   fun csynToString (CStage stage) = stageToString stage
@@ -430,20 +475,20 @@ struct
     | csynToString (CProg (_,stg,ctx)) = 
         "#trace * " ^ stg ^ " " ^ (contextToString ctx) ^ "."
     | csynToString (CDecl (name,class)) = 
-          name ^ " : " ^ (classToString class) ^ "."
+        name ^ " : " ^ (classToString class) ^ "."
     | csynToString (CBwd bwd) = "bwd" (* XXX *)
     | csynToString (CBuiltin builtin) = "builtin" (* XXX *)
+    | csynToString (CStageMode (id,mode)) = 
+        "#" ^ (nondetToString mode) ^ " " ^ id ^ "."
+      
 
-
-  fun stage_exists s (stages : Ceptre.stage list) =
-    List.exists (fn {name, body} => name = s) stages
 
   (* turn a whole list of top-level decls into a list of progs. *)
   fun process' tops sg bwds contexts stages links progs builtins =
     case tops of
          [] => ({header=rev sg,rules=rev bwds} : Ceptre.sigma, rev progs)
        | (top::tops) => 
-           (case extractTop sg contexts top of
+           (case extractTop sg contexts stages top of
                  CStage stage => 
                   process' tops sg bwds contexts (stage::stages) links progs
                              builtins
@@ -487,6 +532,13 @@ struct
                 | CBuiltin (pred, builtin) =>
                     process' tops sg bwds contexts stages links progs 
                       (builtin::builtins)
+                | CStageMode (id, mode) =>
+                    let
+                      val stages' = replaceNondet id mode stages
+                    in
+                      process' tops sg bwds contexts stages' links progs
+                        builtins
+                    end
              )
 
   fun process tops = process' tops [] [] [] [] [] [] []

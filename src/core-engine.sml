@@ -40,8 +40,8 @@ sig
 end = 
 struct
 
-(* fun debug f = () (* Not-trace-mode *) *)
- fun debug f = f () (* Trace mode *)
+fun debug f = () (* Not-trace-mode *)
+(* fun debug f = f () (* Trace mode *) *)
 
 type ctx_var = int
 datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Pair of value * value | Inl of value | Inr of value | Unit
@@ -122,14 +122,14 @@ let
           (uid, x) :: number_list (uid+1) xs
 
    fun number_prog uid [] = []
-     | number_prog uid ({name, body} :: stages) =  
-          {name = name, body = number_list uid body}
+     | number_prog uid ({name, body, nondet} :: stages) =  
+          {name = name, body = number_list uid body, nondet=nondet}
           :: number_prog (uid + length body) stages
 
    val bwd_rules = number_list 0 (#rules sigma)
    val prog = number_prog (length bwd_rules) prog
 
-   fun compile_lhses {name, body} = 
+   fun compile_lhses {name, body, nondet} = 
       (name, 
        List.map
           (fn (uid, {name, pivars, lhs, rhs}) => 
@@ -139,7 +139,7 @@ let
                List.foldr (fn (a,p) => C.Tensor (C.Atom a, p)) C.One lhs})
           body)
 
-   fun compile_rhses ({name, body}, map) = 
+   fun compile_rhses ({name, body, nondet}, map) = 
       List.foldl 
           (fn ((uid, {rhs, ...}: Ceptre.rule_internal), rmap) => 
               I.insert rmap uid rhs)

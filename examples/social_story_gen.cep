@@ -14,40 +14,18 @@ anger character character : pred.
 sad character : pred.
 bored character : pred.
 
-action : type.
-share_interest character character : action.
-go_on_date character character : action.
-flirt character character : action.
-comfort character character : action.
-bicker character character : action.
-insult character character : action.
-compliment character character : action.
-apologize character character : action.
-wait : action.
-
-do action : pred.
+% actions:
+% share interest
+% bully
+% flirt
+% hit on
+% confide
+% bicker
+% insult
+% become friends, enemies, dating
+% break up, make up, break friendship
 
 resolution character : pred. % used to determine when the story should end.
-
-% "signals"
-listen : pred.
-success : pred.
-ai_turn : pred.
-init_ai : pred.
-
-stage accept_input = {
-  accept : listen * inputTerm X -o do X.
-}
-input_failed : qui * stage accept_input * listen -o stage accept_input.
-input_accepted : qui * stage accept_input * $do X -o stage doStuff * init_ai.
-
-end_doStuff : qui * stage doStuff -o stage cleanup.
-stage cleanup = {
-  cleanup : ai_turn -o ().
-}
-
-action_failed : qui * stage cleanup * do X -o stage accept_input * listen.
-action_succeeded : qui * stage cleanup * success -o stage accept_input * listen.
 
 stage doStuff = {
 %% for each of attraction, affection, and anger, there are corresponding
@@ -55,63 +33,45 @@ stage doStuff = {
 % also there should be at least one action that depends on that state
 % and one that nullifies it.
 
-% AI can take "3 steps" before returning control 
-init : init_ai -o ai_turn * ai_turn * ai_turn.
-
-do/wait :
-  do wait -o success.
-
-% AI
 % actions dealing with attraction
 do/fallInLove : 
-  ai_turn *
-  $present C * $attraction C C' -o affection C C'.
+  $present C * attraction C C' -o affection C C'.
 
-do/getCrush : 
-  ai_turn *
+do/eroticize : 
   $present C * $affection C C' * affection C C' * affection C C'
   -o attraction C C'.
 
 do/date :
-  do (go_on_date C C') *
   $present C * $present C' * $affection C C' * $attraction C C'
     * $affection C' C * $attraction C' C
-    -o resolution C * resolution C' * success.
+    -o resolution C * resolution C'.
 
 do/flirt :
-  do (flirt C C') *
-  $present C * $present C' * $attraction C C' 
-    -o attraction C' C * success.
+  $present C * $present C' * $attraction C C' -o attraction C' C.
 
 do/flirt/conflict :
-  do (flirt C C') *
   $present C * $present C' * $present C'' * $attraction C C' * $attraction C'' C
   -o eros C' C * anger C'' C * anger C'' C' 
-    * sad C'' * success.
+    * sad C''.
 
 % actions dealing with friendship
 
 do/shareInterest :
-  do (share_interest C C') *
   $present C * $present C' * has_interest C Interest * has_interest C' Interest
-  -o affection C C' * affection C' C * success.
+  -o affection C C' * affection C' C.
 
 do/comfort :
-  do (comfort C C') *
   $present C * $present C' * sad C * $affection C' C
-    -o affection C C' * resolution C * success.
+    -o affection C C' * resolution C.
 
 % introducing some spontaneity
 do/like/bored :
-  ai_turn *
   $present C * $present C' * bored C
     -o affection C C'.
 do/anger/bored :
-  ai_turn *
   $present C * $present C' * bored C
     -o anger C C'.
 do/crush/bored :
-  ai_turn *
   $present C * $present C' * bored C
     -o attraction C C'.
 
@@ -122,28 +82,15 @@ do/reject :
     -o sad C.
 
 do/bicker :
-  do (bicker C C') *
   $present C * $present C' * $attraction C C' * $attraction C' C
-    -o anger C C' * anger C' C * success.
+    -o anger C C' * anger C' C.
 
 do/insult :
-  do (insult C C') *
   $present C * $present C' * $anger C C'
-  -o anger C' C * sad C' * success.
-
-do/compliment :
-  do (compliment C C') *
-    $present C * $present C' * $affection C C'
-      -o affection C' C * success.
-
-do/apologize :
-  do (apologize C C') *
-    $present C * $present C' *
-    anger C' C * $affection C C' * $affection C' C
-      -o success.
+  -o anger C' C * sad C'.
 
 % termination
-% do/end : resolution C * present C -o ().
+do/end : resolution C * present C -o ().
   
 }
 
@@ -185,8 +132,7 @@ context init =
   bored melissa,
   bored zoe,
   bored lil,
-  bored charles,
-  listen
+  bored charles
 }.
 
-#trace _ accept_input init.
+#trace _ doStuff init.

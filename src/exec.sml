@@ -11,22 +11,63 @@ fun currentPhase ctx =
       [ id ] => id
     | _ => raise BadProg 
 
+(* 
 fun lookupPhase id ({stages,...}:Ceptre.program) =
   let
     fun lookupInList stages =
     (case stages of
-       ((p as {name,body})::stages) => 
+       ((p as {name,body,nondet})::stages) => 
          if name = id then p
          else lookupInList stages
       | _ => raise BadProg)
   in
     lookupInList stages
   end
+*)
 
 structure Rand = RandFromRandom(structure Random = AESRandom)
 
-(* pick one element from a list *)
-fun pick L = List.nth (L, Rand.randInt (List.length L))
+(* pick one element randomly from a list *)
+fun pick_random L = List.nth (L, Rand.randInt (List.length L))
+
+fun number' (x::xs) i = (i,x)::(number' xs (i+1))
+  | number' [] _ = []
+fun number xs = number' xs 0
+fun numberStrings xs = 
+  let
+    val numbered = number xs
+  in
+    map (fn (i,x) => (Int.toString i)^": "^x) numbered
+  end
+
+fun promptChoice Ts =
+  let
+    val choices = map CoreEngine.transitionToString Ts
+    val numbered = numberStrings choices
+    val promptString = String.concatWith "\n" numbered
+    val () = print (promptString ^ "\n?- ")
+  in
+    case TextIO.inputLine TextIO.stdIn of
+        NONE => promptChoice Ts (* try again *)
+      | SOME s =>
+          (case Int.fromString s of
+                  (* XXX add some error message *)
+                NONE => promptChoice Ts (* try again *)
+              | SOME i =>
+                  if i < (List.length Ts) then i
+                  else promptChoice Ts (* try again *) )
+  end
+
+fun pick mode L =
+  case mode of
+        Ceptre.Random => pick_random L
+      | Ceptre.Ordered => (case L of [] => raise BadProg | (x::xs) => x)
+      | Ceptre.Interactive =>
+          let
+            val choice = promptChoice L
+          in
+            List.nth (L,choice)
+          end
 
 val qui = (Ceptre.Lin, "qui", [])
 
@@ -44,11 +85,11 @@ fun unzip1_2 l = unzip1_2' l [] []
 fun fwdchain 
   (sigma : Ceptre.sigma)
   (ctx : Ceptre.atom list) 
-  (program as {init_stage,...} : Ceptre.program) 
+  (program as {init_stage,stages,...} : Ceptre.program) 
   (print : string -> unit)
 =
 let
-  fun loop stage fastctx = 
+  fun loop (stage : string) fastctx = 
   let
     val ctx = CoreEngine.context fastctx
     (* Write out the context *)
@@ -91,7 +132,7 @@ let
               [] => fastctx (* DONE *)
             | L => 
               let 
-                val T = pick L
+                val T = pick Ceptre.Random L
                 val () = print "Applying stage transition "
                 val () = print (CoreEngine.transitionToString T) 
               in
@@ -99,13 +140,16 @@ let
               end
         end
       | L => 
-          let
-            val T = pick L
-            val () = print "\nApplying transition "
-            val () = print (CoreEngine.transitionToString T)
-          in
-            take_transition T
-          end
+          (case Ceptre.lookupStage stage stages of
+                NONE => raise BadProg
+              | SOME {nondet,...} =>
+                let
+                  val T = pick nondet L
+                  val () = print "\nApplying transition "
+                  val () = print (CoreEngine.transitionToString T)
+                in
+                  take_transition T
+                end)
   end
 
   val (stages, ctx) = Ceptre.progToRulesets program
