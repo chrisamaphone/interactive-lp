@@ -1,23 +1,15 @@
-% take 1 of full game impl: no robber.
-
-nat : type.
-z : nat.
-s nat : nat.
-
-plus nat nat nat : bwd.
-plus z N N.
-plus (s N) M (s P)
-  <- plus N M P.
+% "mini siedler" - no full map.
+% just players with turns, hands, trading, settlements, and cities.
+% resource production still constrained by geometry, but building is not.
 
 player : type.
-red : player. blue : player. yellow : player. white : player.
+red : player. blue : player. yellow : player.
 
 % turn order
 next player player : bwd.
 next red blue.
 next blue yellow.
-next yellow white.
-next white red.
+next yellow red.
 
 resource : type.
 brick : resource.
@@ -26,255 +18,133 @@ wool : resource.
 grain : resource.
 ore : resource.
 
-% road : resource.
-% settlement : resource.
-% city : resource.
-
-development_card : resource.
-knight : resource.
-progress : resource.
-victory_point : resource.
-
 holds player resource : pred.
 
 turn player : pred.
 done player : pred.
 
-init : pred.
-
-% 19 board spaces (hexes).
 hex : type.
-        s1 : hex. s2 : hex. s3 : hex.
-    s4 : hex. s5 : hex. s6 : hex. s7 : hex.
-s8 : hex. s9 : hex. s10 : hex. s11 : hex. s12 : hex.
-    s13 : hex. s14 : hex. s15 : hex. s16 : hex.
-        s17 : hex. s18 : hex. s19 : hex.
-water : hex. % for now
+h1 : hex. h2 : hex. h3 : hex. h4 : hex. h5 : hex. h6 : hex.
 
-% 36 points between hexes. ("intersections" in siedler jargon)
-point : type.
-p1 : point. p2 : point. p3 : point. p4 : point. 
-p5 : point. p6 : point. p7 : point. p8 : point. 
-p9 : point. p10 : point. p11 : point. p12 : point. 
-p13 : point. p14 : point. p15 : point. p16 : point. 
-p17 : point. p18 : point. p19 : point. p20 : point. 
-p21 : point. p22 : point. p23 : point. p24 : point. 
-p25 : point. p26 : point. p27 : point. p28 : point. 
-p29 : point. p30 : point. p31 : point. p32 : point. 
-p33 : point. p34 : point. p35 : point. p36 : point. 
+produces hex resource : bwd.
+produces h1 grain.
+produces h2 lumber.
+produces h3 ore.
+produces h4 wool.
+produces h5 grain.
+produces h6 brick.
 
-borders point hex : bwd.
-borders p1 s1. borders p1 s2.
-borders p2 s2. borders p2 s3.
-borders p3 s1. borders p3 s4.
-borders p4 s1. borders p4 s4. borders p4 s5.
-borders p5 s1. borders p5 s2. borders p5 s5.
-borders p6 s2. borders p6 s5. borders p6 s6.
-borders p7 s2. borders p7 s3. borders p7 s6.
-borders p8 s3. borders p8 s6. borders p8 s7.
-borders p9 s3. borders p9 s7.
-borders p10 s4. borders p10 s8.
-borders p11 s4. borders p11 s8. borders p11 s9.
-borders p12 s4. borders p12 s5. borders p12 s9.
-borders p13 s5. borders p13 s9. borders p13 s10.
-borders p14 s5. borders p14 s6. borders p14 s10.
-borders p15 s6. borders p15 s10. borders p15 s11.
-borders p16 s6. borders p16 s7. borders p16 s11.
-borders p17 s7. borders p17 s11. borders p17 s12.
-borders p18 s7. borders p18 s12.
-borders p19 s8. borders p19 s13.
-borders p20 s8. borders p20 s9. borders p20 s13.
-borders p21 s9. borders p21 s13. borders p21 s14.
-borders p22 s9. borders p22 s10. borders p22 s14.
-borders p23 s10. borders p23 s14. borders p23 s15.
-borders p24 s10. borders p24 s11. borders p24 s15.
-borders p25 s11. borders p25 s15. borders p25 s16.
-borders p26 s11. borders p26 s12. borders p26 s16.
-borders p27 s12. borders p27 s16.
-borders p28 s13. borders p28 s17.
-borders p29 s13. borders p29 s14. borders p29 s17.
-borders p30 s14. borders p30 s17. borders p30 s18.
-borders p31 s14. borders p31 s15. borders p31 s18.
-borders p32 s15. borders p32 s18. borders p32 s19.
-borders p33 s15. borders p33 s16. borders p33 s19.
-borders p34 s16. borders p34 s19.
-borders p35 s17. borders p35 s18.
-borders p36 s18. borders p36 s19.
+intersection : type.
+i1 : intersection.
+i2 : intersection.
+i3 : intersection.
+i4 : intersection.
+i5 : intersection.
+i6 : intersection.
 
-adjacent point point : bwd.
-adjacent p1 p5.
-adjacent p2 p7.
-adjacent p3 p4.
-adjacent p4 p3. adjacent p4 p5. adjacent p4 p12.
-% XXX continue
+ilist : type.
+nil : ilist.
+cons intersection ilist : ilist.
 
-tile : type.
-hills : tile. pasture : tile. mountains : tile.
-fields : tile. forest : tile. desert : tile.
+adjacent hex ilist : bwd.
+adjacent h1 (cons i1 (cons i2 nil)). 
+adjacent h2 (cons i1 (cons i3 nil)).
+adjacent h3 (cons i2 (cons i4 nil)).
+adjacent h4 
+  (cons i1 (cons i2 (cons i3 (cons i4 (cons i5 (cons i6 nil)))))).
+adjacent h5 (cons i3 (cons i6 nil)).
+adjacent h6 (cons i5 (cons i6 nil)).
 
-has hex tile : pred.
+available_land intersection : pred.
+has_settlement player intersection : pred.
+has_city player intersection : pred.
 
-settlement_placed player point : pred.
-city_placed player point : pred.
-road_placed player point point : pred.
-empty_point point.
-empty_edge point point : pred.
+context board =
+{ available_land i1,
+  available_land i2,
+  available_land i3,
+  available_land i4,
+  available_land i5,
+  available_land i6 }.
 
-init_board : pred. init_players : pred.
-init_empties : pred.
-context initctx = {init_board, init_players, init_empties}.
+init_settlement player : pred.
+context players = 
+{turn red, 
+  init_settlement red,
+  init_settlement yellow,
+  init_settlement blue }.
+
+context init = {board, players}.
+
 stage setup = {
-setup/board : init_board 
-          -o has s1 forest * has s2 pasture * has s3 fields
-    * has s4 hills * has s5 mountains * has s6 hills * has s7 pasture
-* has s8 desert * has s9 forest * has s10 fields * has s11 forest * has s12 fields
-    * has s13 hills * has s14 pasture * has s15 pasture * has s16 mountains
-        * has s17 mountains * has s18 fields * has s19 forest.
-
-setup/players : init_players -o
-    settlement_placed white p4 * road_placed white s1 s5
-  * settlement_placed yellow p9 * road_placed yellow s3 s7
-  * settlement_placed red p14 * road_placed red s5 s6
-  * settlement_placed red p24 * road_placed red s10 s11
-    * holds red grain * holds red lumber * holds red wool
-  * settlement_placed yellow p17 * road_placed yellow s11 s12
-    * holds yellow wool * holds yellow lumber * holds yellow grain
-  * settlement_placed blue p29 * road_placed blue s13 s14
-    * holds blue brick * holds blue wool * holds blue ore
-  * settlement_placed white p33 * road_placed white s15 s19
-    * holds white wool * holds white ore * holds white lumber
-  * settlement_placed blue p36 * road_placed s18 water
-  * turn red.
-
-setup/empty : init_empties -o
-    empty_point s1 s2 water * empty_point s2 s3 water
-  * empty_point s1 s4 water * empty_point s2 s5 s6 
-  * empty_point s2 s3 s6 * empty point s4 s8 water
-  * empty_point s4 s8 s9 * empty_point s5 s9 s10
-  * empty_point s6 s10 s11 * empty_point s7 s12 water
-  * empty_point s8 s13 water * empty_point s8 s19 s13
-  * empty_point s9 s13 s14 * empty_point s9 s10 s14
-  * empty_point s10 s14 s15 * empty_point s11 s15 s16
-  * empty_point s11 s12 s16 * empty_point s12 s16 water
-  * empty_point s13 s17 water * empty_point s14 s17 s18
-  * empty_point s14 s15 s18 * empty_point s15 s18 s19
-  * empty_point s16 s19 water * empty_point s17 s18 water
-  
-  % XXX there are a couple of redundant water edges.
-  * empty_edge s1 water * empty_edge s1 s2 * empty_edge s2 s3  
-    * empty_edge s3 water 
-  * empty_edge s4 water * empty_edge s1 s4 * empty_edge s2 s5 
-  * empty_edge s2 s6 * empty_edge s3 s6 * empty_edge s7 water
-  * empty_edge s4 water * empty_edge s4 s5 * empty_edge s6 s7
-    * empty_edge s7 water
-  * empty_edge s8 water * empty_edge s8 s4 * empty_edge s9 s4
-    * empty_edge s9 s5 * empty_edge s10 s5 * empty_edge s10 s6
-    * empty_edge s11 s6 * empty_edge s11 s7 * empty_edge s12 s7
-    * empty_edge s12 water
-  * empty_edge s8 water * empty_edge s8 s9 * empty_edge s9 s10
-    * empty_edge s12 water
-  * empty_edge s8 water * empty_edge s8 s13 * empty_edge s9 s13
-    * empty_edge s9 s14 * empty_edge s10 s14 * empty_edge s10 s15
-    * empty_edge s11 s15 * empty_edge s11 s16 * empty_edge s12 s16
-  * empty_edge s13 water * empty_edge s14 s15 * empty_edge s15 s16
-    * empty_edge s16 water
-  * empty_edge s13 water * empty_edge s13 s17 * empty_edge s14 s17
-    * empty_edge s14 s18 * empty_edge s15 s18 * empty_edge s15 s19
-    * empty_edge s16 s19 * empty_edge s16 water
-  * empty_edge s17 water * empty_edge s17 s18 * empty_edge s18 s19
-    * empty_edge s19 water
-  * empty_edge s17 water * empty_edge s17 water * empty_edge s18 water
-    * empty_edge s19 water * empty_edge s19 water.
+  % everyone gets one settlement to start,
+  % going in random order.
+  settle
+  : init_settlement P * available_land X 
+    -o has_settlement P X.
 }
+#interactive setup.
+
 die : pred.
-roll nat : pred.
-qui * stage setup -o stage roll * die * die.
+setup_to_rolling : qui * stage setup -o stage roll * die.
 
+roll hex : pred.
 stage roll = {
-  roll1 : die -o roll (s z).
-  roll2 : die -o roll (s (s z)).
-  roll3 : die -o roll (s (s (s z))).
-  roll4 : die -o roll (s (s (s (s z)))).
-  roll5 : die -o roll (s (s (s (s (s z))))).
-  roll6 : die -o roll (s (s (s (s (s (s z)))))).
-
-  add : roll X * roll Y * plus X Y Z -o roll Z.
+  roll1 : die -o roll h1.
+  roll2 : die -o roll h2.
+  roll3 : die -o roll h3.
+  roll4 : die -o roll h4. 
+  roll5 : die -o roll h5.
+  roll6 : die -o roll h6.
 }
+roll_to_prod : qui * stage roll -o stage produce.
 
-makes tile resource : bwd.
-makes hills brick.
-makes pasture wool.
-makes mountains ore.
-makes fields grain.
-makes forest lumber.
-% makes desert (nothing).
+prod intersection : pred.
+mete resource ilist : pred.
+stage produce = {
+  process_roll : 
+    roll H * produces H R * adjacent H Is
+    -o mete R Is.
 
-gen_res hex : pred.
-stage gen_resources = {
-  gen2  : roll (s (s z)) -o gen_res s19.
-  gen3  : roll (s (s (s z))) -o gen_res s9 * gen_res 16.
-  gen4  : roll (s (s (s (s z)))) -o gen_res s4 * gen_res s11.
-  gen5  : roll (s (s (s (s (s z))))) -o gen_res s6 * gen_res s17.
-  gen6  : roll (s (s (s (s (s (s z)))))) -o gen_res s5 * gen_res s19.
- %  gen7  : roll (s (s (s (s (s (s (s z))))))) -o do_robber.
-  gen7  : roll (s (s (s (s (s (s (s z))))))) -o ().
-  gen8  : roll (s (s (s (s (s (s (s (s z)))))))) 
-    -o gen_res s12 * gen_res s13.
-  gen9  : roll (s (s (s (s (s (s (s (s (s z)))))))))
-    -o gen_res s3 * gen_res s15.
-  gen10 : roll (s (s (s (s (s (s (s (s (s (s z))))))))))
-    -o gen_res s7 * gen_res s14.
-  gen11 : roll (s (s (s (s (s (s (s (s (s (s (s z)))))))))))
-    -o gen_res s10 * gen_res s1.
-  gen12 : roll (s (s (s (s (s (s (s (s (s (s (s (s z))))))))))))
-    -o gen_res s2.
-
-  % gen/res : gen_res Place * $has Place Terrain * makes Terrain Resource 
+  mete/nil : mete R nil -o ().
+  mete/skip : mete R (cons I Is) * $available_land I
+              -o mete R Is.
+  mete/settlement 
+    : mete R (cons I Is) * $has_settlement Player I
+              -o holds Player R * mete R Is.
+  mete/city
+    :  mete R (cons I Is) * $has_city Player I
+              -o holds Player R * holds Player R
+                  * mete R Is.
 }
+prod_to_trade : qui * stage produce -o stage trade.
 
-stage building = {
-
-% build and place a road
-build_road : 
-  $turn P * holds P brick * holds P lumber * empty_edge X Y 
-    -o road_placed P X Y.
-
-% build and place a settlement
-build_settlement : 
-  $turn P * holds P brick * holds P lumber * holds P wool * holds P grain 
-    * empty_point X1 X2 X3
-  -o settlement_placed P X1 X2 X3.
-
-% build and place a city.
-build_city : 
-  $turn P * holds P ore * holds P ore * holds P ore * holds P grain * holds P grain 
-    * empty_point X1 X2 X3
-  -o city_placed P X1 X2 X3.
-
-build_development : turn P * holds P ore * holds P wool * holds P grain 
-  -o holds P development_card.
-
-finished : turn P -o done P.
+stage trade = {
+  do/trade : $turn P * holds P R * holds P' R'
+            -o holds P R' * holds P' R.
+  donetrading : turn P -o done P.
 }
-#interactive building.
+#interactive trade.
+trade_to_build : qui * stage trade * done P -o stage build * turn P.
 
-qui * stage building * $holds P development_card  -o stage draw_dev_card.
-qui * stage building * done P * next P P' -o stage building * turn P'.
+stage build = {
+  build_settlement : 
+    $turn P 
+      * holds P brick * holds P lumber * holds P wool * holds P grain 
+      * available_land L
+    -o has_settlement P L.
 
-stage draw_dev_card = {
+  build_city :
+    $turn P
+      * has_settlement P I * holds P ore * holds P ore * holds P ore
+        * holds P grain * holds P grain
+    -o has_city P I.
 
-dev_knight : holds P development_card -o holds P knight.
-dev_prog : holds P development_card -o holds P progress.
-dev_victory_point : holds P development_card -o holds P victory_point.
-
+  finished : turn P -o done P.
 }
+#interactive build.
+build_to_roll : 
+  qui * stage build * done P * next P P'
+   -o stage roll * turn P' * die.
 
-qui * stage draw_dev_card -o stage building * turn.
-
-% context init =
-% {turn,
-%   brick, brick, brick, lumber, lumber, lumber, wool, wool, wool, 
-%   grain, grain, grain, ore, ore, ore}.
-
-% #trace _ building init.
-#trace _ setup initctx.
+#trace _ setup init.

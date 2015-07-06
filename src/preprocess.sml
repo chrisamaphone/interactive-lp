@@ -176,6 +176,17 @@ struct
             in
               externalToInternal sg erule
             end
+        | Decl (Lolli (lhs_syn, rhs_syn)) =>
+            let
+              val (lhs, residual) = extractLHS lhs_syn (fn x => x) []
+              val rhs = extractRHS rhs_syn residual
+              val name = gensym ()
+              (* external syntax *)
+              val erule = {name = name, lhs = lhs, rhs = rhs}
+              val () = wild_gensym := 0 (* reset for each rule *)
+            in
+              externalToInternal sg erule
+            end
         | _ => 
             let
               val error = "unable to parse decl " ^ (topToString "" syntax)
