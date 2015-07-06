@@ -224,7 +224,14 @@ struct
                  NONE =>
                  (case lookup id sg of
                        SOME (Ceptre.Pred (_,[])) => [extractGroundAtom syn]
-                     | _ => raise IllFormed)
+                     | _ =>
+                         let
+                           val error = "failed to parse "^(synToString syn)
+                            ^" as a context or context component."
+                           val () = print error
+                         in
+                          raise IllFormed
+                         end)
               | SOME c => c)
        | _ => [ extractGroundAtom syn ] 
         (* XXX check for presence in sg? *)
@@ -435,7 +442,8 @@ struct
            in
              extractTop sg ctxs stages (Decl named_syn)
            end
-       | Decl s => (extractDecl sg top
+       | Decl s => (extractDecl sg top 
+        (* XXX nb this doesn't actually catch Ceptre.IllFormed *)
                       handle IllFormed => CNone s)
        | Context _ => CCtx (extractContext ctxs sg top)
        | Special (directive, args) =>
