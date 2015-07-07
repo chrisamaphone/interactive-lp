@@ -154,8 +154,7 @@ let
 
   val (stages, ctx) = Ceptre.progToRulesets program
   val senses = PullSensors.builtins (* XXX fix *)
-  val builtins = [] (* XXX fix, : string * builtin list *)
-  val fastctx = CoreEngine.init sigma builtins senses stages ctx
+  val fastctx = CoreEngine.init sigma senses stages ctx
 in
    CoreEngine.context (loop init_stage fastctx)
 end

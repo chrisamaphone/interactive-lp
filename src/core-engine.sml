@@ -9,7 +9,6 @@ sig
    
    (* Turns a program and a context into a fast context *)
    val init: Ceptre.sigma
-             -> (string * Ceptre.builtin) list
              -> (string * sense) list 
              -> Ceptre.stage list 
              -> Ceptre.context 
@@ -41,7 +40,7 @@ end =
 struct
 
 fun debug f = () (* Not-trace-mode *)
-(* fun debug f = f () (* Trace mode *) *)
+(* fun debug f = f () *) (* Trace mode *) 
 
 type ctx_var = int
 datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Pair of value * value | Inl of value | Inr of value | Unit
@@ -71,98 +70,10 @@ structure S = IntRedBlackSet
 structure M = StringRedBlackDict
 structure I = IntRedBlackDict
 
-type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.prem} list
-
-(* LHSes are connected to a particluar ruleset *)
-(* RHSes are just mapped from their names *)
-type 'a prog = 
-  {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
-   bwds: (int * Ceptre.bwd_rule) list M.dict,
-   lmap: fast_ruleset M.dict,
-   rmap: C.atom list I.dict, 
-   builtin: C.builtin M.dict}
-
-type ctx = 
-  {next: ctx_var,
-   concrete: (ctx_var * C.atom) list}
-
-datatype fastctx = 
-   FC of {prog: fastctx prog, 
-          ctx: ctx}
-
-fun fc_concrete (FC {ctx = {concrete, ...}, ...}) = concrete
-fun fc_bwds (FC {prog = {bwds, ...}, ...}) = bwds
-fun fc_lmap (FC {prog = {lmap, ...}, ...}) = lmap
-fun fc_senses (FC {prog = {senses, ...}, ...}) = senses
-fun fc_builtin (FC {prog = {builtin, ...}, ...}) = builtin
-
-type sense = fastctx * Ceptre.term list -> Ceptre.term list list
-                               
-fun init (sigma: C.sigma) builtins senses prog initial_ctx: fastctx = 
-let
-   (* Add unique identifiers to all forward-chaining rules *)
-   fun number_list uid [] = []
-     | number_list uid (x :: xs) =
-          (uid, x) :: number_list (uid+1) xs
-
-   fun number_prog uid [] = []
-     | number_prog uid ({name, body, nondet} :: stages) =  
-          {name = name, body = number_list uid body, nondet=nondet}
-          :: number_prog (uid + length body) stages
-
-   val bwd_rules = number_list 0 (#rules sigma)
-   val prog = number_prog (length bwd_rules) prog
-
-   fun compile_lhses {name, body, nondet} = 
-      (name, 
-       List.map
-          (fn (uid, {name, pivars, lhs, rhs}) => 
-              {name = (name, uid), pivars = pivars, 
-               lhs = 
-               (* XXX REPLACE WITH IDENTITY WHEN TYPES CHANGE *)
-               List.foldr (fn (a,p) => C.Tensor (C.Atom a, p)) C.One lhs})
-          body)
-
-   fun compile_rhses ({name, body, nondet}, map) = 
-      List.foldl 
-          (fn ((uid, {rhs, ...}: Ceptre.rule_internal), rmap) => 
-              I.insert rmap uid rhs)
-          map body
-
-   fun insert_bwd_rule ((id, rule: Ceptre.bwd_rule), m) =
-   let val key = (#1 (#head rule)) 
-   in M.insertMerge m key [ (id, rule) ] (fn rules => (id, rule) :: rules)
-   end
-
-   val prog: fastctx prog = 
-      {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
-                   M.empty senses,
-       bwds = List.foldl (fn (rule, m) => insert_bwd_rule (rule, m))
-                 M.empty bwd_rules,
-       lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
-                 M.empty (map compile_lhses prog),
-       rmap = List.foldl compile_rhses 
-                 I.empty prog,
-       builtin = List.foldl (fn ((k, v), m) => M.insert m k v)
-                    M.empty builtins}
-
-   val ctx: ctx = 
-      List.foldl 
-         (fn (atom, {next, concrete}) =>
-            {next = next+1, concrete = ((next, atom) :: concrete)})
-         {next = 0, concrete = []}
-         initial_ctx
-in
-   FC {prog = prog, ctx = ctx}
-end
-                        
-fun context (FC {ctx = {concrete, ...}, ...}) = map #2 concrete
-
-fun guard b = if b then ND.return () else ND.fail
-
 (****** Variable substitutions ******)
 
 type msubst = C.term option vector
+val nosubst: msubst = Vector.tabulate (0, fn _ => NONE)
 
 
 (* apply_subst subst term = subst(term)
@@ -220,6 +131,109 @@ fun ground bi subst t =
       NONE => Pattern t
     | SOME t => Term t 
 
+fun ground_for_debugging bi subst t =  
+   case ground_term_partial bi subst t of 
+      NONE => "["^C.termToString t^"]"
+    | SOME t => C.termToString t 
+
+
+type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.prem} list
+
+(* LHSes are connected to a particluar ruleset *)
+(* RHSes are just mapped from their names *)
+type 'a prog = 
+  {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
+   bwds: (int * Ceptre.bwd_rule) list M.dict,
+   lmap: fast_ruleset M.dict,
+   rmap: C.atom list I.dict, 
+   builtin: C.builtin M.dict}
+
+type ctx = 
+  {next: ctx_var,
+   concrete: (ctx_var * C.atom) list}
+
+datatype fastctx = 
+   FC of {prog: fastctx prog, 
+          ctx: ctx}
+
+fun fc_concrete (FC {ctx = {concrete, ...}, ...}) = concrete
+fun fc_bwds (FC {prog = {bwds, ...}, ...}) = bwds
+fun fc_lmap (FC {prog = {lmap, ...}, ...}) = lmap
+fun fc_senses (FC {prog = {senses, ...}, ...}) = senses
+fun fc_builtin (FC {prog = {builtin, ...}, ...}) = builtin
+
+type sense = fastctx * Ceptre.term list -> Ceptre.term list list
+                               
+fun init (sigma: C.sigma) senses prog initial_ctx: fastctx = 
+let
+   (* Add unique identifiers to all forward-chaining rules *)
+   fun number_list uid [] = []
+     | number_list uid (x :: xs) =
+          (uid, x) :: number_list (uid+1) xs
+
+   fun number_prog uid [] = []
+     | number_prog uid ({name, body, nondet} :: stages) =  
+          {name = name, body = number_list uid body, nondet=nondet}
+          :: number_prog (uid + length body) stages
+
+   val bwd_rules = number_list 0 (#rules sigma)
+   val prog = number_prog (length bwd_rules) prog
+
+   fun compile_lhses {name, body, nondet} = 
+      (name, 
+       List.map
+          (fn (uid, {name, pivars, lhs, rhs}) => 
+              {name = (name, uid), pivars = pivars, 
+               lhs = 
+               (* XXX REPLACE WITH IDENTITY WHEN TYPES CHANGE *)
+               List.foldr (fn (a,p) => C.Tensor (C.Atom a, p)) C.One lhs})
+          body)
+
+   fun compile_rhses ({name, body, nondet}, map) = 
+      List.foldl 
+          (fn ((uid, {rhs, ...}: Ceptre.rule_internal), rmap) => 
+              I.insert rmap uid rhs)
+          map body
+
+   fun insert_bwd_rule ((id, rule: Ceptre.bwd_rule), m) =
+   let val key = (#1 (#head rule)) 
+   in M.insertMerge m key [ (id, rule) ] (fn rules => (id, rule) :: rules)
+   end
+
+   val prog: fastctx prog = 
+      {senses = List.foldl (fn ((k, v), m) => M.insert m k v)
+                   M.empty senses,
+       bwds = List.foldl (fn (rule, m) => insert_bwd_rule (rule, m))
+                 M.empty bwd_rules,
+       lmap = List.foldl (fn ((k, v), m) => M.insert m k v)
+                 M.empty (map compile_lhses prog),
+       rmap = List.foldl compile_rhses 
+                 I.empty prog,
+       builtin = List.foldl (fn ((k, v), m) => M.insert m k v)
+                    M.empty (#builtin sigma)}
+
+   val ctx: ctx = 
+      List.foldl 
+         (fn ((mode, a, tms), {next, concrete}) =>
+          let 
+             val atom =
+                case ground_terms_partial (#builtin prog) nosubst tms [] of
+                   SOME tms => (mode, a, tms)
+                 | NONE => raise Fail "Initial context not ground" 
+          in 
+             {next = next+1, concrete = ((next, atom) :: concrete)}
+          end)
+         {next = 0, concrete = []}
+         initial_ctx
+in
+   FC {prog = prog, ctx = ctx}
+end
+                        
+fun context (FC {ctx = {concrete, ...}, ...}) = map #2 concrete
+
+fun guard b = if b then ND.return () else ND.fail
+
+
 (* match_term {pat, term} subst ~~> zero or one new substs
  * match_terms {pat, term} subst ~~> zero or one new substs
  * 
@@ -234,7 +248,12 @@ fun match_type_error (p, t) =
                " against pattern "^C.termToString p)
 
 fun match_term bi {pat = p, term = t} (subst: msubst): msubst ND.m = 
-   case (p, t) of 
+let 
+   val () = debug (fn () => 
+      print ("Attempting match. Pattern: "^C.termToString p
+             ^" term: "^C.termToString t^"\n"))
+in
+  (case (p, t) of 
       (C.Var n, t) =>
         (case Vector.sub (subst, n) of 
             NONE => ND.return (Vector.update (subst, n, SOME t))
@@ -254,16 +273,15 @@ fun match_term bi {pat = p, term = t} (subst: msubst): msubst ND.m =
          else if i2 = 0 
             then ND.return subst
          else ND.fail)
-    | (C.Fn (f, [p]), C.ILit i2) => 
+    | (C.Fn (f, [p1]), C.ILit i2) => 
         (if SOME (C.NAT_SUCC) <> M.find bi f
             then match_type_error (p, t)
          else if i2 > 0
-            then match_term bi {pat = p, term = C.ILit (i2 - 1)} subst
+            then match_term bi {pat = p1, term = C.ILit (i2 - 1)} subst
          else ND.fail)
 
-    | (p, C.Var n) => 
-        (ND.return subst) (* Variable found: imprecise (still sound?) *)
-    | _ => match_type_error (p, t)
+    | _ => match_type_error (p, t))
+end
 
 and match_terms bi {f, pat = ps, term = ts} subst: msubst ND.m = 
    case (ps, ts) of
@@ -375,10 +393,7 @@ fun search_premises' prog (r: Ceptre.ident * int) (Vs: value list) subst prem =
           [ search_premises' prog r Vs subst prem1
           , search_premises' prog r Vs subst prem2 ]
     | C.Atom atom => 
-         ND.bind
-            (search_atom prog Vs subst atom)
-            (fn (x: value, subst) => 
-               search_premises' prog r (x :: Vs) subst prem) 
+         (search_atom prog Vs subst atom)
 
 and search_premises prog (r: Ceptre.ident * int) subst prems = 
 let 
@@ -387,7 +402,9 @@ let
 in
   (ND.bind (search_premises' prog r [] subst prems)
       (fn (value, subst) =>
-   ND.return {r = r, tms = subst, Vs = [value]}))
+   let val () = debug (fn () =>
+      print ("Rule "^(#1 r)^" successfully run, generating substitution\n"))
+   in ND.return {r = r, tms = subst, Vs = [value]} end))
 end
 
 (* search_bwd bwds ctx (ts_subst, ts) bwd ~~> some extended ts_substs 
@@ -444,16 +461,11 @@ end
 
 and search_atom prog (Vs: value list) subst (mode, a, ps) =
 let 
-(*
-   val () = debug 
-      (fn () => print ("Current subgoal: "^a^"("^
-                       String.concatWith "," (map C.termToString ps)^")\n"))
-
    val () = debug
-      (fn () => print ("Resolving subgoal "^a^"("^
-                       String.concatWith "," (map C.termToString ps)^")"^
-                       " from the context.\n"))
-*)
+      (fn () => print ("Attempting subgoal: "^a^"("^
+                       String.concatWith ","
+                          (map (ground_for_debugging (fc_builtin prog) subst)
+                              ps)^")\n"))
 
    (* val () = print "search_prem\n" *)
    (* Try to satisfy the premise by looking it up in the context *)
@@ -464,14 +476,6 @@ let
            (ND.letMany ctx (fn hyp => match_hyp prog Vs subst (a, ps) hyp))
        | C.Pers => 
            (ND.letMany ctx (fn hyp => match_hyp prog [] subst (a, ps) hyp))
-
-(*
-   val () = debug
-      (fn () => print ("Resolving subgoal "^a^"("^
-                       String.concatWith "," 
-                          (map (C.termToString o apply_subst subst) ps)^")"^
-                       " with backward chaining.\n")) 
-*)
 
    (* Try to satisfy the premise by finding rules that match it *)
    val derived: (value * msubst) ND.m =
@@ -484,11 +488,6 @@ let
                (fn bwd => 
             search_bwd prog (subst, head) bwd)
          end
-
-   val () = debug
-      (fn () => print ("Resolving subgoal "^a^"("^
-                       String.concatWith "," (map C.termToString ps)^")"^
-                       " with sensing predicates.\n"))
 
    val sensed: (value * msubst) ND.m = 
       case M.find (fc_senses prog) a of 
@@ -559,10 +558,17 @@ in
    (FC {prog = prog, ctx = ctx}, xs)
 end
 
-fun insert (FC {prog, ctx = {concrete, next}}) atom =
-   (FC {prog = prog,
-        ctx = {concrete = (next, atom) :: concrete, next = next+1}},
-    next)
+fun insert (FC {prog, ctx = {concrete, next}}) (mode, a, tms) =
+let 
+   val tms = 
+      case ground_terms_partial (#builtin prog) nosubst tms [] of
+         NONE => raise Fail "Terms given to insert not ground"
+       | SOME tms => tms
+in
+  (FC {prog = prog,
+       ctx = {concrete = (next, (mode, a, tms)) :: concrete, next = next+1}},
+   next)
+end
 
 fun remove (FC {prog, ctx = {concrete, next}}) x = 
    FC {prog = prog,

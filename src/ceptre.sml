@@ -37,7 +37,10 @@ structure Ceptre = struct
      head : pred * term list, subgoals : atom list}
 
   type tp_header = decl list
-  type sigma = {header:tp_header, rules:bwd_rule list}
+  datatype builtin = NAT | NAT_ZERO | NAT_SUCC
+  type sigma = {header:tp_header, 
+                builtin: (string * builtin) list,
+                rules:bwd_rule list}
 
   (* Stringification/ pretty printing for internal syntax *)
 
@@ -305,7 +308,6 @@ structure Ceptre = struct
 
   (* program is a set of stages, a set of stage rules, and an identifier for an
   * initial stage *)
-  datatype builtin = NAT | NAT_ZERO | NAT_SUCC
   type program = {stages : stage list, 
                   links : stage_rule list,
                   init_stage : ident,

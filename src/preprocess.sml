@@ -486,7 +486,9 @@ struct
   (* turn a whole list of top-level decls into a list of progs. *)
   fun process' tops sg bwds contexts stages links progs builtins =
     case tops of
-         [] => ({header=rev sg,rules=rev bwds} : Ceptre.sigma, rev progs)
+         [] => ({header=rev sg,
+                 builtin=rev builtins,
+                 rules=rev bwds} : Ceptre.sigma, rev progs)
        | (top::tops) => 
            (case extractTop sg contexts stages top of
                  CStage stage => 
@@ -531,7 +533,7 @@ struct
                     )
                 | CBuiltin (pred, builtin) =>
                     process' tops sg bwds contexts stages links progs 
-                      (builtin::builtins)
+                      ((pred, builtin)::builtins)
                 | CStageMode (id, mode) =>
                     let
                       val stages' = replaceNondet id mode stages
