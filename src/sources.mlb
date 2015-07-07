@@ -7,7 +7,6 @@ ceptre.sml
 sensing.sml
 acting.sml
 core-engine.sml
-(*
 exec.sml
 
 ceptre.cmlex.sml
@@ -16,4 +15,3 @@ parse.sml
 preprocess.sml
 top.sml
 go.sml
-*)

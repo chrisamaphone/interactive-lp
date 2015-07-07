@@ -71,22 +71,6 @@ structure S = IntRedBlackSet
 structure M = StringRedBlackDict
 structure I = IntRedBlackDict
 
-fun ground tm = 
-   case tm of
-      C.Var _ => false
-    | C.Fn (_, tms) => List.all ground tms 
-    | C.SLit _ => true
-    | C.ILit _ => true 
-
-fun ground_prefix' tms accum = 
-   case tms of 
-      [] => (rev accum, [])
-    | tm :: tms => if ground tm
-                      then ground_prefix' tms (tm :: accum)
-                   else (rev accum, tm :: tms)
-
-fun ground_prefix tms = ground_prefix' tms []
-
 type fast_ruleset = {name: C.ident * int, pivars: int, lhs: C.prem} list
 
 (* LHSes are connected to a particluar ruleset *)
@@ -186,6 +170,7 @@ type msubst = C.term option vector
  * Applies substitution as far as possible, leaving variables if any
  * occur. *)
 
+(*
 fun apply_subst (subst: msubst) (t: C.term) = 
    case t of 
       C.Var n => 
@@ -195,31 +180,64 @@ fun apply_subst (subst: msubst) (t: C.term) =
     | C.Fn (f, ts) => C.Fn (f, List.map (apply_subst subst) ts)
     | C.SLit _ => t
     | C.ILit _ => t  
+*)
 
+fun ground_term_partial bi (subst: msubst) (t: C.term) =
+   case t of 
+      C.Var n =>
+        (case Vector.sub (subst, n) of
+            NONE => NONE
+          | SOME t' => SOME t')
+    | C.Fn (f, tms) =>
+        (case (M.find bi f, ground_terms_partial bi subst tms []) of
+            (_, NONE) => NONE
+          | (NONE, SOME tms) => SOME (C.Fn (f, tms)) 
+          | (SOME C.NAT_ZERO, SOME []) => SOME (C.ILit 0)
+          | (SOME C.NAT_SUCC, SOME [C.ILit n]) => SOME (C.ILit (n+1))
+          | _ => raise Fail "ground_term_partial: type error")
+    | C.SLit _ => SOME t
+    | C.ILit _ => SOME t
+
+and ground_terms_partial bi (subst: msubst) (tms: C.term list) accum = 
+   case tms of 
+      [] => SOME (rev accum)
+    | tm :: tms => 
+        (case ground_term_partial bi subst tm of
+            NONE => NONE
+          | SOME tm => ground_terms_partial bi subst tms (tm :: accum))
+
+fun ground_prefix bi subst tms accum = 
+   case tms of 
+      [] => (rev accum, [])
+    | tm :: tms => 
+        (case ground_term_partial bi subst tm of
+            NONE => (rev accum, tm :: tms)
+          | SOME tm => ground_prefix bi subst tms (tm :: accum))
+
+datatype grounding = Term of C.term | Pattern of C.term
+fun ground bi subst t =  
+   case ground_term_partial bi subst t of 
+      NONE => Pattern t
+    | SOME t => Term t 
 
 (* match_term {pat, term} subst ~~> zero or one new substs
  * match_terms {pat, term} subst ~~> zero or one new substs
  * 
- * Matching of a pattern against a ground or partially-ground
- * term.  
+ * Matching of a pattern against a ***ground*** term
  * 
- * The substitution sigma provides information about the pattern: in 
- * other words, we're really trying to match subst(pat) against term.
- * 
- * This definitely makes sense if term is completely ground. If term
- * is not ground any variables it contains are treated as complete
- * unknowns, so we say that the match succeeds and we don't learn
- * anything about the structure of the corresponding pattern. I'm less
- * confident that makes sense. *)
+ * The substitution sigma provides incomplete information about the
+ * pattern: in other words, we're really trying to match subst(pat)
+ * against term. *)
+
+fun match_type_error (p, t) = 
+   raise Fail ("Type error, matching "^C.termToString t^
+               " against pattern "^C.termToString p)
 
 fun match_term bi {pat = p, term = t} (subst: msubst): msubst ND.m = 
    case (p, t) of 
       (C.Var n, t) =>
         (case Vector.sub (subst, n) of 
-            NONE =>
-              (if ground t
-               then ND.return (Vector.update (subst, n, SOME t))
-               else ND.return subst) (* Non-ground: imprecise (still sound?) *)
+            NONE => ND.return (Vector.update (subst, n, SOME t))
           | SOME ground_pat => 
               (match_term bi {pat = ground_pat, term = t} subst))
     | (C.Fn (f, ps), C.Fn (g, ts)) => 
@@ -228,10 +246,24 @@ fun match_term bi {pat = p, term = t} (subst: msubst): msubst ND.m =
          match_terms bi {f = f, pat = ps, term = ts} subst))
     | (C.SLit s1, C.SLit s2) => if s1 = s2 then ND.return subst else ND.fail
     | (C.ILit i1, C.ILit i2) => if i1 = i2 then ND.return subst else ND.fail
+
+    (* BUILTIN TYPE SPECIFICATIONS *)
+    | (C.Fn (f, []), C.ILit i2) =>
+        (if SOME (C.NAT_ZERO) <> M.find bi f 
+            then match_type_error (p, t)
+         else if i2 = 0 
+            then ND.return subst
+         else ND.fail)
+    | (C.Fn (f, [p]), C.ILit i2) => 
+        (if SOME (C.NAT_SUCC) <> M.find bi f
+            then match_type_error (p, t)
+         else if i2 > 0
+            then match_term bi {pat = p, term = C.ILit (i2 - 1)} subst
+         else ND.fail)
+
     | (p, C.Var n) => 
         (ND.return subst) (* Variable found: imprecise (still sound?) *)
-    | _ => raise Fail ("Type error, matching "^C.termToString t^
-                       " against pattern "^C.termToString p)
+    | _ => match_type_error (p, t)
 
 and match_terms bi {f, pat = ps, term = ts} subst: msubst ND.m = 
    case (ps, ts) of
@@ -242,6 +274,27 @@ and match_terms bi {f, pat = ps, term = ts} subst: msubst ND.m =
             (match_terms bi {f = f, pat = ps, term = ts}) 
     | _ => raise Fail ("Arity error for "^f)
 
+fun match_grounding_terms bi {f, pat = ps, term = ts} subst: msubst ND.m =
+   case (ps, ts) of
+      ([], []) => ND.return subst
+    | (p :: ps, Pattern _ :: ts) => 
+         match_grounding_terms bi {f = f, pat = ps, term = ts} subst
+    | (p :: ps, Term t :: ts) => 
+         ND.bind
+            (match_term bi {pat = p, term = t} subst)
+            (match_grounding_terms bi {f = f, pat = ps, term = ts}) 
+    | _ => raise Fail ("Arity error for "^f)
+
+fun match_grounding_pats bi {f, pat = ps, term = ts} subst: msubst ND.m =
+   case (ps, ts) of
+      ([], []) => ND.return subst
+    | (Term _ :: ps, t :: ts) => 
+      match_grounding_pats bi {f = f, pat = ps, term = ts} subst
+    | (Pattern p :: ps, t :: ts) => 
+         ND.bind
+            (match_term bi {pat = p, term = t} subst)
+            (match_grounding_pats bi {f = f, pat = ps, term = ts})
+    | _ => raise Fail ("Arity error for "^f)
 
 fun is_in_val x value = 
    case value of
@@ -250,6 +303,7 @@ fun is_in_val x value =
     | Inl t1 => is_in_val x t1
     | Inr t1 => is_in_val x t1
     | Var y => y = x 
+    | Rule (r, tms) => List.exists (is_in_val x) tms 
 
 fun is_in x exclude = List.exists (is_in_val x) exclude
  
@@ -287,18 +341,25 @@ fun match_hyp prog exclude subst (a, ps) (x, (m, b, ts)) =
 fun search_premises' prog (r: Ceptre.ident * int) (Vs: value list) subst prem =
    case prem of
       C.Eq (t1, t2) =>
-        (ND.bind (if ground t1 (* ugh. *)
-                  then match_term (fc_builtin prog) {pat=t2, term=t1} subst
-                  else match_term (fc_builtin prog) {pat=t1, term=t2} subst)
-            (fn subst => ND.return (Unit, subst)))
-    | C.Neq (t1, t2) => 
-      let 
-         val t1 = apply_subst subst t1
-         val t2 = apply_subst subst t2
+      let val bi = fc_builtin prog 
       in
-        (if not (ground t1 andalso ground t2)
-         then raise Fail "Inequality between non ground terms"
-         else if t1 = t2 then ND.return (Unit, subst) else ND.fail)
+        (ND.bind (case ground_term_partial bi subst t1 of 
+                     SOME t1 => match_term bi {pat=t2, term=t1} subst
+                   | NONE =>
+                 (case ground_term_partial bi subst t2 of 
+                     SOME t2 => match_term bi {pat=t1, term=t2} subst
+                   | NONE => raise Fail "Non-ground equality")) 
+            (fn subst => ND.return (Unit, subst)))
+      end
+    | C.Neq (t1, t2) => 
+      let val bi = fc_builtin prog 
+         val t1 = ground_term_partial bi subst t1 (* Must be SOME *)
+         val t2 = ground_term_partial bi subst t2 (* Must be SOME *)
+      in
+        (case (t1, t2) of 
+            (SOME t1, SOME t2) =>
+              (if t1 = t2 then ND.return (Unit, subst) else ND.fail)
+          | _ => raise Fail "Inequality between non ground terms")
       end
     | C.Tensor (prem1, prem2) =>
         (ND.bind
@@ -335,53 +396,44 @@ end
  * with the goal of getting a fully-instantiated version that has a proof,
  * and returning a suitably updated substitution.
  * 
- *   ctx [ name : subgoals -o a ps ] |- a ts 
+ *   ctx [ name : subgoals -o a ps ] |- a head
  * 
- * Assumes ts_subst(ts) = ts -- in other words, assumes that this is
- * already a partially-instantiated list of terms.
+ * Assumes ts_subst has already been applied to the elements in head
+ * that it was possible to ground -- these terms marked with Term, the
+ * terms that are patterns to be used later on to update ts_subst are
+ * marked as Pattern.
  * 
  * Assumes backward chaining rule is reasonably moded; should have as a
  * postcondition that the atoms it returns are fully instantiated. *) 
 
-and search_bwd prog (ts_subst, ts) (uid, bwd) = 
+and search_bwd prog (ts_subst, head) (uid, bwd) = 
 let
    val bi = fc_builtin prog
    val {name, pivars, head = (a, ps), subgoals} = bwd
    (* XXX REPLACE WITH IDENTITY ONCE TYPES FIXED *)
    val subgoals = List.foldr (fn (a,p) => C.Tensor (C.Atom a, p)) C.One subgoals
-in ND.bind (match_terms bi
-               {f = a, pat = ps, term = ts} 
+in ND.bind (match_grounding_terms bi
+               {f = a, pat = ps, term = head} 
                (unknown pivars))
      (* Okay, we partially match the head of the rule, giving subst *)
      (fn subst => 
    ND.bind (search_premises prog (name, uid) subst subgoals)
      (* Here's a way to satisfy all subgoals! *)
      (fn {r, tms = subst, Vs} =>
-   ND.letOne (map (apply_subst subst) ps)
+   ND.letOne (valOf (ground_terms_partial bi subst ps [])
+              handle Option => raise Fail "Non-ground result of bwd chaining")
      (* (a, ss) is the fact we've established using backward chaining;
-      * it has the proof term r(Vs). We're counting on ss being ground; 
-      * this should always be the case if the backward chaining logic
-      * programs are well moded.
+      * it has the proof term r(Vs). 
       *
-      * (a, ss) is definitely a provable fact in the current program,
-      * so now we're in the position we're in with match_hyp: we want
-      * to match this new fact against the subgoal ts that we started
+      * Now we're in the position we're in with match_hyp: we want to
+      * match this new fact against the subgoal ts that we started
       * with. *)
      (fn ss => 
-   let val () = debug (fn () => 
-                   print ("Matching derived fact "^a^
-                          "("^String.concatWith "," (map C.termToString ss)
-                          ^")\n"^
-                          "              against "^a^
-                          "("^String.concatWith "," (map C.termToString ts)
-                          ^")\n"))
-   in ND.bind (match_terms bi {f = a, pat = ts, term = ss} ts_subst)
+   ND.bind (match_grounding_pats bi {f = a, pat = head, term = ss} ts_subst)
      (* Now we have learned things about our original substitution, 
       * and can return *) 
      (fn ts_subst => 
-   let val () = debug (fn () => 
-                   print ("Match was successful\n"))
-   in ND.return (Rule (a, Vs), ts_subst) end)end)))
+   ND.return (Rule (a, Vs), ts_subst)))))
 end
 
 (* search_atom prog Vs subst prem ~~~> some extended substitutions
@@ -392,6 +444,7 @@ end
 
 and search_atom prog (Vs: value list) subst (mode, a, ps) =
 let 
+(*
    val () = debug 
       (fn () => print ("Current subgoal: "^a^"("^
                        String.concatWith "," (map C.termToString ps)^")\n"))
@@ -400,6 +453,7 @@ let
       (fn () => print ("Resolving subgoal "^a^"("^
                        String.concatWith "," (map C.termToString ps)^")"^
                        " from the context.\n"))
+*)
 
    (* val () = print "search_prem\n" *)
    (* Try to satisfy the premise by looking it up in the context *)
@@ -411,22 +465,24 @@ let
        | C.Pers => 
            (ND.letMany ctx (fn hyp => match_hyp prog [] subst (a, ps) hyp))
 
+(*
    val () = debug
       (fn () => print ("Resolving subgoal "^a^"("^
                        String.concatWith "," 
                           (map (C.termToString o apply_subst subst) ps)^")"^
-                       " with backward chaining.\n"))
+                       " with backward chaining.\n")) 
+*)
 
    (* Try to satisfy the premise by finding rules that match it *)
    val derived: (value * msubst) ND.m =
       case M.find (fc_bwds prog) a of
          NONE => ND.fail
        | SOME bwds_for_a => 
-         let val tsx = map (apply_subst subst) ps
+         let val head = map (ground (fc_builtin prog) subst) ps
          in ND.letMany bwds_for_a
                (* A rule! Does it give us a ground instance of our atom? *)
                (fn bwd => 
-            search_bwd prog (subst, tsx) bwd)
+            search_bwd prog (subst, head) bwd)
          end
 
    val () = debug
@@ -439,7 +495,7 @@ let
          NONE => ND.fail
        | SOME sense_for_a =>
          let 
-            val (tsg, psng) = ground_prefix (map (apply_subst subst) ps)
+            val (tsg, psng) = ground_prefix (fc_builtin prog) subst ps []
             val bi = fc_builtin prog
          in ND.letMany (sense_for_a (prog, tsg))
                (* Some outputs. Let's use them to extend the substitution. *)
@@ -471,9 +527,10 @@ fun possible_steps stage prog =
                (fn {name, pivars, lhs} =>
             search_premises prog name (unknown pivars) lhs)))
 
-fun add_to_ctx gsubst ((mode, a, ps), ({next, concrete}, xs)) = 
+fun add_to_ctx gsubst bi ((mode, a, ps), ({next, concrete}, xs)) = 
   let
-    val atom = (mode, a, map (apply_subst gsubst) ps)
+    val atom = (mode, a, valOf (ground_terms_partial bi gsubst ps [])
+                         handle Option => raise Fail "non-ground --> ctx")
   in
     ({next = next + 1, 
       concrete = (next, atom) :: concrete},
@@ -496,7 +553,8 @@ let
   
    (* Update context, get new identifiers *)
    val (ctx, xs) = 
-      List.foldr (add_to_ctx tms) ({concrete = concrete, next = next}, []) rhs
+      List.foldr (add_to_ctx tms (#builtin prog)) 
+         ({concrete = concrete, next = next}, []) rhs
 in
    (FC {prog = prog, ctx = ctx}, xs)
 end
