@@ -14,6 +14,6 @@ stage foo = {
   four : things 4 -o four_things.
 }
 
-context init = {things 8}.
+context init = {things (s (s (s (s (s 3)))))}.
 
 #trace _ foo init.
