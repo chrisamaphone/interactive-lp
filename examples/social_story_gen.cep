@@ -105,19 +105,19 @@ charles : character.
 
 % interests
 math : interest.
-rocks : interest.
-trash : interest.
-anime : interest.
+music : interest.
+fashion : interest.
+books : interest.
 
 has_interest zack math.
-has_interest zack trash.
-has_interest melissa trash.
-has_interest melissa anime.
+has_interest zack fashion.
+has_interest melissa fashion.
+has_interest melissa books.
 has_interest zoe math.
-has_interest zoe rocks.
-has_interest lil rocks.
-has_interest lil trash.
-has_interest charles anime.
+has_interest zoe music.
+has_interest lil music.
+has_interest lil fashion.
+has_interest charles books.
 has_interest charles math.
 
 context init =
