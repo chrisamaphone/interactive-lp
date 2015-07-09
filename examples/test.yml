@@ -1,0 +1,41 @@
+succeed:
+ - broadcast.cep
+ - context-test.cep
+ - fptp.cep
+ - gossip.cep
+ - if-rpg.cep
+ - leq.cep
+ - mazegen.cep
+ - mazegen2.cep
+ - negation.cep
+ - numbers.cep
+ - parable.cep
+ - primes.cep
+ - promweek.cep
+ - rpg-tiny.cep
+ - shuffle.cep
+ - small.cep
+ - social_story_gen.cep
+ - sort.cep
+ - tiny.cep
+ - wilds.cep
+
+fail:
+ - hearthstone.cep
+ - paper.cep
+ - sense.cep
+
+nonterm:
+ - arith.cep
+ - citysim.cep
+ - drama_llamas.cep
+ - garden-small.cep
+ - if.cep
+ - interactive-stage-test.cep
+ - moveGrid.cep
+ - rpg.cep
+ - siedler1.cep
+ - siedler_core.cep
+ - simwar.cep
+ - tower_of_hanoi.cep
+ - tragedy.cep

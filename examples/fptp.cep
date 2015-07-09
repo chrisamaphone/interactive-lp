@@ -14,7 +14,7 @@ stage count = {
   count_ballot : ballot C * hopeful C N -o hopeful C (s N).
 }
 
-- : qui * stage count -o stage pick * max z.
+qui * stage count -o stage pick * max z.
 
 lt nat nat : bwd.
 lt/z : lt z (s N).
@@ -30,7 +30,7 @@ stage pick = {
                -o max N * !defeated C.
 }
 
-- : qui * stage pick * hopeful C N -o stage done * !elected C.
+qui * stage pick * hopeful C N -o stage done * !elected C.
 
 stage done = {
   cleanup : max _ -o ().

@@ -195,6 +195,7 @@ struct
        | (_, P.Id cid) => CConst (extractCls data cid)
        | (P.Id did, P.Arrow (lhs, rhs)) => 
            (remember did; CBwd (extractBwd (did, extractPrem lhs, rhs)))
+       | (P.Id did, syn) => (remember did; CBwd (extractBwd (did, One, syn)))
        | _ => raise Fail ("Invalid declaration: "^
                           P.synToString (P.Ascribe (data, class)))
 

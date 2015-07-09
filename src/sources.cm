@@ -13,6 +13,8 @@ Group is
   ceptre.cmlex.sml
   ceptre.cmyacc.sml
   parse.sml
+  csyn.sml
+  typecheck.sml
   preprocess.sml
   top.sml
   test-harness.sml

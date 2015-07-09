@@ -265,7 +265,7 @@ let
 
    (* Debug: print out the parsed file *)
    val () =
-      if false then ()
+      if true then ()
       else app (print o topToString "") tops
 in 
    tops

@@ -4,6 +4,21 @@ struct
   fun progs fname =
   let
     val parsed = Parse.parsefile fname
+
+    (* Modified loader to test type checker *)
+    fun loop types signat [] = ()
+      | loop types signat (top :: tops) =
+        let
+           val csyn = CSyn.extractTop types top
+           val decl = TypeCheck.typecheckDecl signat csyn
+           val types =  
+              case decl of 
+                 Signature.TypeDecl a => StringRedBlackSet.insert types a
+               | _ => types 
+           val () = print (Signature.topdeclToString decl^"\n")
+        in loop types (Signature.add signat decl) tops end
+    val () = loop StringRedBlackSet.empty [] parsed
+
     val (sg:Ceptre.sigma, programs) = Preprocess.process parsed
   in
     (sg, programs)
