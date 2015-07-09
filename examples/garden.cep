@@ -43,6 +43,7 @@ minus/s : minus (s N) (s M) P
           <- minus N M P.
 minus/never : minus N never never.
 
+% how many days can a plant go without water before it wilts?
 water_limit nat : bwd.
 wl : water_limit (s (s z)).
 
@@ -66,7 +67,7 @@ space4 : soil_space.
 
 % predicates on soil space
 empty soil_space : pred.
-has_plant soil_space plant_type plant_phase : pred.
+has_plant soil_space plant_type plant_phase health : pred.
 last_updated soil_space nat : pred.
 last_watered soil_space nat : pred.
 consecutive_waterings soil_space nat : pred.
@@ -94,6 +95,7 @@ stage play {
       * last_updated S _ * consecutive_waterings S _ * last_watered S _
       -o empty S * turns N.
   
+  % XXX this isn't quite right wrt consecutive waterings
   water : turns (s N) * $has_plant S Type Phase Health
       * $day D * last_watered S _ * consecutive_waterings S W
       -o last_watered S D * consecutive_waterings S (s W) * turns N.
@@ -116,18 +118,18 @@ stage grow = {
             -o has_plant S Type Phase' healthy
                 * last_updated S (s D).
 
-  drink : plant Type Phase wilting * last_updated S D * $day (s D)
+  drink : has_plant S Type Phase wilting * last_updated S D * $day (s D)
           * $last_watered S D
           -o plant Type Phase healthy * last_updated S (s D).
   
-  wilt : plant Type Phase healthy * last_updated S D * $day (s D)
-          * last_watered S WaterDay * minus (s D) WaterDay DaysAgo
+  wilt : has_plant S Type Phase healthy * last_updated S D * $day (s D)
+          * $last_watered S WaterDay * minus (s D) WaterDay DaysAgo
             * water_limit WL * geq DaysAgo WL
-            -o plant Type Phase wilting (s D)
+            -o has_plant S Type Phase wilting
                 * last_updated S (s D).
 
-  die : plant Type Phase wilting * last_updated S D * $day (s D)
-            -o plant Type Phase dead * last_updated S (s D).
+  die : has_plant S Type Phase wilting * last_updated S D * $day (s D)
+            -o has_plant S Type Phase dead * last_updated S (s D).
 }
 qui * stage grow -o stage play * turns (s (s (s z))).
 

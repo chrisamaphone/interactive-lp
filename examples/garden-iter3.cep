@@ -1,0 +1,131 @@
+plant_type : type.
+flower : plant_type.
+herb : plant_type.
+vine : plant_type.
+succulent : plant_type.
+
+plant_phase : type.
+seed : plant_phase.
+seedling : plant_phase.
+mature : plant_phase.
+
+next plant_phase plant_phase : bwd.
+next seed seedling.
+next seedling mature.
+
+health : type.
+healthy : health.
+overgrowing : health.
+wilting : health.
+dead : health.
+
+harvested plant_type : pred.
+have_seed plant_type : pred.
+
+space : type. 
+s1 : space. s2 : space. s3 : space. s4 : space.
+s5 : space. s6 : space. s7 : space. s8 : space.
+
+max_space : pred.
+
+next_space space space : bwd.
+next_space s4 s5.
+next_space s5 s6.
+next_space s6 s7.
+next_space s7 s8.
+
+empty space : pred.
+plant_at space : pred.
+plant_type_at space plant_type : pred.
+plant_phase_at space plant_phase : pred.
+health_at space : pred.
+needs_water space : pred.
+watered space : pred.
+
+step : pred.
+turns nat : pred.
+
+stage play {
+  get_seeds : 
+    turns (s N) * harvested Type 
+      -o have_seed Type * have_seed Type * turns N.
+
+  plant : 
+    turns (s N) * have_seed Type * empty S * $day D 
+      -o plant_at S 
+          * plant_type_at S Type
+          * plant_phase_at S seed
+          * health_at S healthy
+          * needs_water S
+          * turns N.
+      
+  harvest : 
+    turns (s N) * plant_at S 
+    * plant_phase_at S mature * health_at S healthy 
+    * plant_type_at S Type
+      -o harvested Type * empty S * turns N.
+  
+  clear : 
+    turns (s N) * plant_at S * health_at S dead
+    * plant_phase_at S _ * plant_type_at S _
+      -o empty S * turns N.
+  
+  water : 
+    turns (s N) * needs_water S
+      -o watered S * turns N.
+
+  buy_space :
+    turns (s N) * harvested P 
+    * max_space S * next_space S S'
+    -o empty S' * max_space S'.
+
+  done : turns _ -o ().
+}
+#interactive play.
+
+qui * stage play -o stage advance_day.
+
+plant_turn space : pred.
+stage advance_day = {
+  gen_turn : plant_at S -o plant_turn S.
+}
+
+qui * stage advance_day -o stage grow.
+
+stage grow = {
+  grow : plant_turn S * $health_at S healthy * watered S
+       * plant_phase_at S Phase * next Phase Phase'
+            -o plant_at S * plant_phase_at S Phase' * needs_water S.
+
+  wilt : plant_turn S * health_at S healthy * $needs_water S
+            -o plant_at S * health_at S wilting.
+
+  drink : plant_turn S * health_at S wilting * watered S
+            -o plant_at S * health_at S healthy * needs_water S.
+
+  die : plant_turn S * health_at S wilting * needs_water S
+            -o plant_at S * health_at S dead.
+
+  none/dead 
+    : plant_turn S * $health_at S dead -o plant_at S.
+
+  none/mature
+    : plant_turn S * $health_at S healthy * watered S
+      * $plant_phase_at S mature 
+      -o plant_at S * needs_water S.
+
+  needwater/empty
+    : $empty S * needs_water S -o ().
+
+  watered/empty
+    : $empty S * watered S -o ().
+}
+qui * stage grow -o stage play * turns (s (s (s z))).
+
+context init = {day z, 
+  have_seed flower, have_seed herb, have_seed vine, have_seed succulent,
+  empty s1, empty s2, empty s3, empty s4, max_space s4,
+  turns (s (s (s z)))}.
+#trace _ play init.
+
+
