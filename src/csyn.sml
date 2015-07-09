@@ -43,7 +43,7 @@ struct
     | Atom of atom
    type fwd_rule = {name: C.ident, lhs: prem, rhs: atom list}
    type bwd_rule = {name: C.ident, subgoals: prem, head: C.pred * term list} 
-   type stage    = {name: C.ident, nondet: C.nondet, body: fwd_rule list} 
+   type stage    = {name: C.ident, body: fwd_rule list} 
 (*
    fun termToString term = 
       case term of
@@ -151,7 +151,6 @@ struct
 
    fun extractStage name tops = 
       {name = name,
-       nondet = C.Random,
        body = map (fn (P.Decl (P.Lolli rule)) => 
                         (extractRule (gensym ()) rule)
                     | (P.Decl (P.Ascribe (P.Id id, P.Lolli rule))) => 
