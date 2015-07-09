@@ -1,3 +1,8 @@
+(* Transfers the very general parsed syntax to Ceptre's syntax. 
+ * 
+ * The objective of this file is really to do as little as possible:
+ * the only transformation that happens is desugaring the $ syntax. *)
+
 structure CSyn =
 struct
    structure C = Ceptre
@@ -70,12 +75,11 @@ struct
       CStage of stage
     | CRule of fwd_rule 
     | CCtx of C.ident * atom list
-    | CProg of (int option) * C.ident * C.context 
+    | CTrace of (IntInf.int option) * C.ident * (atom list)
     | CType of C.ident
-    | CTerm of C.ident * C.ident list * C.ident
     | CPred of C.ident * C.ident list * C.predClass
-    | CDecl of C.decl
-    | CBwd of C.bwd_rule
+    | CConst of C.ident * C.ident list * C.ident
+    | CBwd of bwd_rule
     | CBuiltin of string * C.builtin
     | CStageMode of C.ident * C.nondet
 
@@ -141,12 +145,12 @@ struct
       {name = id, lhs = extractPrem lhs, 
        rhs = map extractAtom (extractConj rhs @ extractDuplicates true lhs)}
 
-   fun extractPred data class = 
+   fun extractCls data class = 
       case data of
          P.Id id => 
-           (remember id; CPred (id, [], class))
+           (remember id; (id, [], class))
        | P.App (P.Id id, tms) => 
-           (remember id; CPred (id, map extractID tms, class))
+           (remember id; (id, map extractID tms, class))
        | _ => raise Fail ("Expected declaration, got: "^P.synToString data)
 
    fun extractStage name tops = 
@@ -164,14 +168,35 @@ struct
          P.Comma (syn1, syn2) => extractContext syn1 @ extractContext syn2
        | P.Bang syn => [ extractAtom (C.Pers, syn) ]
        | syn => [ extractAtom (C.Lin, syn) ]
-         
-   (* Declarations, which are potentially ambiguous
+
+   fun extractBwd (name, prem, rhs) = 
+      case rhs of 
+         P.Arrow (lhs, rhs) =>
+            extractBwd (name, Tensor (extractPrem lhs, prem), rhs)
+       | P.Id a => 
+            {name=name, subgoals=prem, head=(a, [])}
+       | P.App (P.Id a, tms) => 
+            {name=name, subgoals=prem, head=(a, map extractTerm tms)}  
+       | syn => raise Fail ("Not allowed in backward chaining rule: "^
+                            P.synToString syn)
+
+   (* Declarations are potentially ambiguous: generates either CType or CBwd
     * 
     * Because a : v is 
     *   - A type declaration (a has type v) if v is a type
     *   - A backward chaining rule (the rule a says v is true) if v is a prop
     * we pass in the set of known type names to distinguish these cases. *)
-   fun extractDecl types data class = raise Match
+   fun extractDecl types data class = 
+      case (data, class) of
+         (P.Id did, P.Id cid) => 
+           (if StringRedBlackSet.member types cid 
+               then CConst (extractCls data cid)
+            else (remember did; CBwd (extractBwd (did, One, class))))
+       | (_, P.Id cid) => CConst (extractCls data cid)
+       | (P.Id did, P.Arrow (lhs, rhs)) => 
+           (remember did; CBwd (extractBwd (did, extractPrem lhs, rhs)))
+       | _ => raise Fail ("Invalid declaration: "^
+                          P.synToString (P.Ascribe (data, class)))
 
    fun extractTop types top =
       case top of
@@ -186,22 +211,48 @@ struct
            (CRule (extractRule (gensym ()) rule))
 
        | P.Decl (P.Ascribe (P.Id id, P.Id "type")) => (remember id; CType id)
-       | P.Decl (P.Ascribe (data, P.Pred ())) => extractPred data C.Prop
-       | P.Decl (P.Ascribe (data, P.Id "bwd")) => extractPred data C.Bwd
-       | P.Decl (P.Ascribe (data, P.Id "sense")) => extractPred data C.Sense
-       | P.Decl (P.Ascribe (data, P.Id "action")) => extractPred data C.Act
+       | P.Decl (P.Ascribe (dc, P.Pred ())) => CPred (extractCls dc C.Prop)
+       | P.Decl (P.Ascribe (dc, P.Id "bwd")) => CPred (extractCls dc C.Bwd)
+       | P.Decl (P.Ascribe (dc, P.Id "sense")) => CPred (extractCls dc C.Sense)
+       | P.Decl (P.Ascribe (dc, P.Id "action")) => CPred (extractCls dc C.Act)
 
-       | P.Decl (P.Ascribe (data, class)) => extractDecl types data class
+       | P.Decl (P.Ascribe (dc, class)) => extractDecl types dc class
        | P.Decl syn => extractDecl types (P.Id (gensym ())) syn 
 
-       | P.Special (directive, args) => raise Match
-           (* case directive of
-                "trace" => CProg (extractTrace args ctxs sg)
-              | "builtin" => CBuiltin (extractBuiltin args sg)
+       | P.Special (directive, args) =>
+           (case directive of
+                "trace" =>
+                   (case args of 
+                       [ limit, P.Id stage, ctx ] => 
+                       let 
+                          val limit = 
+                             case limit of 
+                                P.Wild () => NONE
+                              | P.Num n => SOME n
+                              | _ => raise Fail "First arg of #trace must be \
+                                                \number or wildcard '_'" 
+                          val ctx = 
+                             case ctx of
+                                P.EmptyBraces () => []
+                              | P.Braces syn => extractContext syn
+                              | syn => [ extractAtom (C.Lin, syn) ]
+                       in
+                          CTrace (limit, stage, ctx)
+                       end
+                     | _ => raise Fail "Format: #trace <opt_ident> <ident> \
+                                       \<context>")
+              | "builtin" => 
+                   (case args of 
+                       [ P.Id "NAT", P.Id pred ] => 
+                          CBuiltin (pred, C.NAT)
+                     | [ P.Id "NAT_ZERO", P.Id const ] => 
+                          CBuiltin (const, C.NAT_ZERO)
+                     | [ P.Id "NAT_SUCC", P.Id const ] => 
+                          CBuiltin (const, C.NAT_SUCC)
+                     | _ => raise Fail "Format: #builtin <builtin> <ident>")
               | "interactive" =>
-                  (case args of
-                       [Id name] => CStageMode (name, C.Interactive)
-                      | _ => raise IllFormed)
-              | _ => raise IllFormed *)
-
+                   (case args of
+                       [ P.Id name ] => CStageMode (name, C.Interactive)
+                     | _ => raise Fail "Format: #interactive <ident>")
+              | _ => raise Fail ("Unknown directive #"^directive))
 end
