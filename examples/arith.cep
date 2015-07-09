@@ -1,0 +1,27 @@
+nat: type.
+z: nat.
+s nat: nat.
+
+plus nat nat nat: pred.
+times nat nat nat: pred.
+go nat nat: pred.
+output nat: pred.
+
+plus z N N.
+
+plus (s N) M (s P)
+  <- plus N M P.
+
+times z N z.
+
+times (s N) M Q
+  <- plus P M Q
+  <- times N M P.
+
+stage rules {
+  name: go N M * times N M P -o output P.
+}
+
+context init = { go (s (s (s (s (s z))))) (s (s (s z))) }.
+
+#trace _ rules init.

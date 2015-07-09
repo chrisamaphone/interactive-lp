@@ -17,7 +17,7 @@ struct
                | _ => types 
            val () = print (Signature.topdeclToString decl^"\n")
         in loop types (Signature.add signat decl) tops end
-    val () = loop StringRedBlackSet.empty [] parsed
+    val () = loop StringRedBlackSet.empty [] parsed 
 
     val (sg:Ceptre.sigma, programs) = Preprocess.process parsed
   in

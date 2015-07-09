@@ -29,7 +29,9 @@ nonterm:
  - arith.cep
  - citysim.cep
  - drama_llamas.cep
+ - garden.cep
  - garden-small.cep
+ - garden-iter3.cep
  - if.cep
  - interactive-stage-test.cep
  - moveGrid.cep
@@ -39,3 +41,4 @@ nonterm:
  - simwar.cep
  - tower_of_hanoi.cep
  - tragedy.cep
+ - buffy.cep
