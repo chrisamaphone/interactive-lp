@@ -13,18 +13,19 @@ broadcast location message : pred.
 stage say = {
   say : says C M * $at C L -o broadcast L M.
 }
-qui * stage say -o stage hear.
 
 restore character location : pred.
 
 stage hear = {
   hear : $broadcast L M * at C L -o knows C M * restore C L.
 }
-qui * stage hear -o stage restore.
 
 stage restore = {
   restore : restore C L -o at C L.
 } 
+
+qui * stage say -o stage hear.
+qui * stage hear -o stage restore.
 
 alice : character.
 bob : character.
