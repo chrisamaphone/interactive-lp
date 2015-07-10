@@ -120,7 +120,7 @@ stage grow = {
 
   drink : has_plant S Type Phase wilting * last_updated S D * $day (s D)
           * $last_watered S D
-          -o plant Type Phase healthy * last_updated S (s D).
+          -o has_plant S Type Phase healthy * last_updated S (s D).
   
   wilt : has_plant S Type Phase healthy * last_updated S D * $day (s D)
           * $last_watered S WaterDay * minus (s D) WaterDay DaysAgo
