@@ -55,6 +55,7 @@ process_fail : qui * stage process * do _ -o stage accept_input * listen.
 process_done : qui * stage process * done -o ().
 
 stage accept_input = {
+  accept : listen * inputCmd Cmd -o do Cmd * got.
 }
 
 accept_succeed : qui * stage accept_input * got -o stage process.
