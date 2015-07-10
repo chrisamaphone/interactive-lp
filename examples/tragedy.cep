@@ -11,12 +11,14 @@ weapon : object.
 % states
 at character location : pred.
 has character object : pred.
+wants character object : pred.
 dead character : pred.
 murdered character character : pred.
 anger character character : pred.
-eros chracter character : pred.
+eros character character : pred.
 philia character character : pred.
 married character character : pred.
+unmarried character : pred.
 neutral character character : pred.
 depressed character : pred.
 suicidal character : pred.

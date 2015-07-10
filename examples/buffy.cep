@@ -21,6 +21,7 @@ friends character character : pred.
 crush character character : pred.
 dating character character : pred.
 dislike character character : pred.
+hunting character character : pred.
 
 place : type.
 crypt : place.

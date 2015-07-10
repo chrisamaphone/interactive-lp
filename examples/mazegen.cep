@@ -2,7 +2,7 @@
 
 nat : type.
 z : nat.
-s : nat -> nat.
+s nat : nat.
 
 lt nat nat : bwd.
 lt/z : lt z (s N).
@@ -37,6 +37,8 @@ stage unvisit = {
 }
 
 wall_dir : type.
+north : wall_dir.
+west : wall_dir.
 south : wall_dir.
 east : wall_dir.
 wall nat nat wall_dir : pred.

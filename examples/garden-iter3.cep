@@ -26,7 +26,7 @@ space : type.
 s1 : space. s2 : space. s3 : space. s4 : space.
 s5 : space. s6 : space. s7 : space. s8 : space.
 
-max_space : pred.
+max_space space : pred.
 
 next_space space space : bwd.
 next_space s4 s5.
@@ -38,12 +38,17 @@ empty space : pred.
 plant_at space : pred.
 plant_type_at space plant_type : pred.
 plant_phase_at space plant_phase : pred.
-health_at space : pred.
+health_at space health : pred.
 needs_water space : pred.
 watered space : pred.
 
+nat : type.
+z : nat.
+s nat : nat.
+
 step : pred.
 turns nat : pred.
+day nat : pred.
 
 stage play {
   get_seeds : 

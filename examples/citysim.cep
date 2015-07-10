@@ -31,7 +31,7 @@ stage sim = {
 
 }
 
-- : qui * stage sim -o stage cleanup.
+qui * stage sim -o stage cleanup.
 
 selected action : pred.
 stage cleanup = {
@@ -40,13 +40,13 @@ stage cleanup = {
 }
 
 tok : pred.
-- : qui * stage cleanup -o stage accept * tok.
+qui * stage cleanup -o stage accept * tok.
 
 stage accept = {
   do/accept : tok * input X -o selected X.
 }
 
-- : qui * stage accept -o stage process.
+qui * stage accept -o stage process.
 
 stage process = {
 
@@ -61,7 +61,7 @@ stage process = {
   do/add_person : money * money * money * selected add_person -o person.
 }
 
-- : qui * stage process -o stage sim * step.
+qui * stage process -o stage sim * step.
 
 context init = {money, money, money, money, money, money, tok, !mill}.
 

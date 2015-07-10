@@ -25,7 +25,7 @@ lake : place.
 entity : type.
 player : entity.
 
-at player place : pred.
+at entity place : pred.
 
 adj place cmd place : bwd.
 adj town north forest.
@@ -37,7 +37,11 @@ adj desert west forest.
 adj forest north castle.
 adj castle south forest.
 
-go dir : pred.
+done : pred.
+do cmd : pred.
+go cmd : pred.
+listen : pred.
+got : pred.
 success : pred.
 
 stage process = {
@@ -50,11 +54,7 @@ process_succeed : qui * stage process * success -o stage accept_input * listen.
 process_fail : qui * stage process * do _ -o stage accept_input * listen.
 process_done : qui * stage process * done -o ().
 
-listen : pred.
-got : pred.
-
 stage accept_input = {
-  accept : listen * inputCmd Cmd -o do Cmd * got.
 }
 
 accept_succeed : qui * stage accept_input * got -o stage process.

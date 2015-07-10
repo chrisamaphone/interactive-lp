@@ -51,7 +51,7 @@ do/flirt :
 
 do/flirt/conflict :
   $present C * $present C' * $present C'' * $attraction C C' * $attraction C'' C
-  -o eros C' C * anger C'' C * anger C'' C' 
+  -o attraction C' C * anger C'' C * anger C'' C' 
     * sad C''.
 
 % actions dealing with friendship

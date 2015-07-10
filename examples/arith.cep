@@ -2,8 +2,8 @@ nat: type.
 z: nat.
 s nat: nat.
 
-plus nat nat nat: pred.
-times nat nat nat: pred.
+plus nat nat nat: bwd.
+times nat nat nat: bwd.
 go nat nat: pred.
 output nat: pred.
 

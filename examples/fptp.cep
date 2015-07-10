@@ -9,6 +9,7 @@ elected candidate : pred.
 defeated candidate : pred.
 ballot candidate : pred.
 hopeful candidate nat : pred.
+max nat : pred.
 
 stage count = {
   count_ballot : ballot C * hopeful C N -o hopeful C (s N).
@@ -20,8 +21,6 @@ lt nat nat : bwd.
 lt/z : lt z (s N).
 lt/s : lt (s N) (s M)
       <- lt N M.
-
-max nat : pred.
 
 stage pick = {
   increase : max N * hopeful C N' * lt N N'  
