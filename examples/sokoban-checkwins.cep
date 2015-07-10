@@ -1,0 +1,50 @@
+
+%% win checking in sokoban.
+
+tile : type.
+
+target tile : pred.
+crate_at tile : pred.
+
+uncounted_target tile : pred.
+maybe_win : pred.
+no_win : pred.
+
+stage gen_uncounted = {
+  target T -o uncounted_target T.
+}
+qui * stage gen_uncounted -o stage count.
+
+stage count = {
+  uncounted_target T * $crate_at T -o target T.
+}
+qui * stage count -o stage check * maybe_win.
+
+stage check = {
+  uncounted_target T * maybe_win -o target T * no_win.
+}
+
+qui * stage check * no_win -o stage play.
+qui * stage check * maybe_win -o stage win.
+
+stage play = {
+
+}
+% qui * stage play -o stage gen_uncounted.
+
+stage win = {
+  
+}
+
+t1 : tile.
+t2 : tile.
+t3 : tile.
+t4 : tile.
+context test = {
+  target t1,
+  target t3,
+  crate_at t1,
+  crate_at t2,
+  crate_at t3}.
+
+#trace _ gen_uncounted test.

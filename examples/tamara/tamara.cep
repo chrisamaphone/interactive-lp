@@ -1,0 +1,216 @@
+scene : type.
+a1 : scene.  b2 : scene.  
+b3 : scene.  b4 : scene.  b5 : scene.  
+b6 : scene.  b7 : scene.  b8 : scene.
+b9 : scene.  b10 : scene.  b11 : scene.  
+c12 : scene.  c13 : scene.  c14 : scene.  
+d15 : scene.  d16 : scene.  d17 : scene.
+
+location : type.
+sidehall      : location.
+atrium        : location.
+hall          : location.
+oratorio      : location.
+diningroom    : location.
+luisaroom     : location.
+dannunzioroom : location.
+leda          : location. 
+above-atrium  : location.
+finzi-office  : location. % 10 locations.
+offstage      : location. 
+
+%% characters
+tamara    scene location : pred.
+luisa     scene location : pred.
+emilia    scene location : pred.
+finzi     scene location : pred.
+despiga   scene location : pred.
+aelis     scene location : pred.
+dannunzio scene location : pred.
+carlotta  scene location : pred.
+dante     scene location : pred.
+mario     scene location : pred. % 10 characters.
+
+context 
+init = {
+  tamara    d15 atrium,?
+  luisa     a1 offstage,
+  emilia    a1 offstage,
+  finzi     a1 offstage,
+  despiga   a1 atrium,
+  aelis     a1 offstage,
+  dannunzio a1 offstage,
+  carlotta  a1 offstage,
+  dante     a1 offstage,
+  mario     a1 offstage
+}.
+
+
+stage all = {
+%%%% SECTION A %%%%
+
+a1_dante_finzi
+: dante a1 offstage * finzi a1 offstage -o dante a1 atrium * finzi a1 atrium.
+
+a1_emilia_enters
+: emilia a1 offstage -o emilia a1 atrium.
+
+a1_dannunzio_enters
+: dannunzio a1 offstage -o dannunzio a1 atrium.
+
+a1_dannunzio_exits
+: dannunzio a1 atrium -o dannunzio a1 dannunzioroom.
+
+a1_emilia_exits
+: emilia a1 atrium -o emilia a1 sidehall.
+
+a1_aelis_enters
+: aelis a1 offstage -o aelis a1 atrium.
+
+a1_carlotta_enters
+: carlotta a1 offstage -o carlotta a1 atrium.
+
+a1_carlotta_and_aelis_exit
+: aelis a1 atrium * carlotta a1 atrium
+           -o carlotta b4 hall * aelis a1 diningroom.
+
+a1_mario_enters
+: mario a1 offstage -o mario a1 atrium.
+
+a1_mario_exits
+: mario a1 atrium -o mario d15 atrium.
+
+a1_groups_split
+: dante a1 atrium * finzi a1 atrium * despiga a1 atrium
+       -o  dante a1 luisaroom
+           * finzi a1 diningroom
+           * despiga b2 atrium .
+%% at this point, the audience is divided and the story becomes truly
+%% concurrent.
+
+% Dante takes group 1 to Luisa and D'Annunzio, then heads to the atrium
+% alone.
+a1_grp1_luisa
+: dante a1 luisaroom * luisa a1 offstage
+-o dante a1 dannunzioroom * luisa b3 luisaroom.
+
+a1_grp1_dannunzio
+: dante a1 dannunzioroom * dannunzio a1 dannunzioroom
+-o dante b10 atrium * dannunzio b6 dannunzioroom.
+
+% Finzi takes group 2 to Aelis, then Emilia, then meets Carlotta in the
+% hall.
+a1_grp2_aelis
+: finzi a1 diningroom * aelis a1 diningroom
+-o finzi a1 sidehall * aelis b9 diningroom.
+
+a1_grp2_emilia
+: finzi a1 sidehall * emilia a1 sidehall
+-o finzi b4 hall * emilia b7 leda.
+
+
+%%%% SECTION B %%%%
+
+b2_despiga_monologue
+: despiga b2 atrium -o despiga b10 atrium.
+
+b3_luisa_monologue
+: luisa b3 luisaroom -o luisa b11 dannunzioroom.
+
+b4_carlotta_kisses_finzi
+: finzi b4 hall * carlotta b4 hall
+-o finzi b5 hall * carlotta b8 leda.
+
+b5_finzi_monologue
+: finzi b5 hall -o finzi c12 atrium.
+
+b6_dannunzio_monologue
+: dannunzio b6 dannunzioroom -o dannunzio b11 dannunzioroom.
+
+b7_emilia_monologue
+: emilia b7 leda -o emilia b8 leda.
+
+b8_emilia_carlotta
+: emilia b8 leda * carlotta b8 leda 
+-o emilia c12 diningroom * carlotta c12 atrium.
+
+b9_aelis_monologue
+: aelis b9 diningroom -o aelis c12 atrium.
+
+b10_dante_despiga
+: dante b10 atrium * despiga b10 atrium
+-o dante c12 atrium * despiga c12 atrium.
+
+b11_dannunzio_luisa
+: dannunzio b11 dannunzioroom * luisa b11 dannunzioroom
+-o dannunzio c12 atrium * luisa c12 above-atrium.
+
+%%%% SECTION C %%%%
+
+c12_finzi_exit
+: %% de Spiga, Dante, Aelis, Finzi, Carlotta, D'Annunzio
+  despiga   c12 atrium
+* dante     c12 atrium
+* aelis     c12 atrium
+* finzi     c12 atrium
+* carlotta  c12 atrium
+* luisa     c12 above-atrium
+-o   despiga   c12 atrium
+    * dante     c12 atrium
+    * aelis     c12 atrium
+    * finzi     c12 finzi-office
+    * carlotta  c12 atrium
+    * luisa     c12 above-atrium.
+
+c12_gunshot
+: luisa c12 above-atrium * finzi c12 finzi-office * emilia c12 diningroom
+-o luisa c12 atrium * finzi c12 atrium * emilia c12 atrium.
+
+c12_emilia_carlotta_aelis_luisa_leave_atrium
+: emilia c12 atrium * carlotta c12 atrium * aelis c12 atrium 
+  * luisa c12 atrium
+-o emilia c13 sidehall * carlotta c13 sidehall * aelis c13 sidehall
+    * luisa c13 atrium.
+
+c13_finzi_luisa_confrontation
+: finzi c12 atrium * luisa c13 atrium
+-o finzi d15 atrium * luisa c13 sidehall.
+
+c13_emilia_aelis_carlotta_luisa_sidehall
+: emilia c13 sidehall * aelis c13 sidehall * carlotta c13 sidehall
+* luisa c13 sidehall
+%% all exit back to atrium
+-o emilia c13 atrium * aelis c14 atrium * carlotta c13 atrium
+* luisa c13 atrium.
+
+c12_take_presents_to_leda
+: dante c12 atrium * carlotta c13 atrium * luisa c13 atrium 
+* emilia c13 atrium
+-o dante c14 leda * carlotta c14 leda * luisa c14 leda
+* emilia c14 atrium.
+
+c14_emilia_enter_leda
+: dante c14 leda * carlotta c14 leda * luisa c14 leda * emilia c14 atrium
+-o dante c14 leda * carlotta c14 leda * luisa c14 leda * emilia c14 leda.
+
+c14_all_exit_leda
+: dante c14 leda * carlotta c14 leda * luisa c14 leda * emilia c14 leda
+-o dante c14 atrium * carlotta c14 atrium * luisa c14 atrium 
+    * emilia c14 atrium.
+%% n.b. technically they go "back" to scene c12, but this disrupts
+%% a useful form of stratification...
+
+c_final
+: luisa c14 atrium * carlotta c14 atrium * dante c14 atrium 
+* emilia c14 atrium * aelis c14 atrium * dannunzio c12 atrium
+* despiga c12 atrium
+-o  luisa d17 oratorio * carlotta d17 oratorio
+   * aelis d17 oratorio * despiga d17 oratorio
+   * dante d15 atrium * dannunzio d15 atrium
+   * emilia d15 diningroom.
+}
+#interactive all.
+
+#trace _ all init.
+
+
