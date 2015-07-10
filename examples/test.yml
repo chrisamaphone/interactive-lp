@@ -16,6 +16,7 @@ succeed:
  - shuffle.cep
  - small.cep
  - social_story_gen.cep
+ - sokoban-checkwins.cep
  - sort.cep
  - tiny.cep
  - wilds.cep
@@ -24,6 +25,7 @@ fail:
  - hearthstone.cep
  - paper.cep
  - sense.cep
+ - tamara/tamara.cep
 
 nonterm:
  - arith.cep
@@ -31,10 +33,12 @@ nonterm:
  - drama_llamas.cep            XXX: init_ai and friends
  - garden.cep                  XXX: plant -> has_plant???
  - garden-small.cep
+ - garden-med.cep
  - garden-iter3.cep
  - if.cep                      XXX: too many type errors
  - interactive-stage-test.cep
  - moveGrid.cep
+ - rpg-tiny.cep
  - rpg.cep
  - siedler1.cep
  - siedler_core.cep
