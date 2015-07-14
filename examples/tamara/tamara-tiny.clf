@@ -3,55 +3,63 @@ s1 : scene.
 s2 : scene.
 s3 : scene.
 s4 : scene.
+s5 : scene.
 
 %% characters
 tamara : scene -> type.
 luisa : scene -> type.
-maid : scene -> type.
-ellis : scene -> type.
+emilia : scene -> type.
+aelis : scene -> type.
 gabriele : scene -> type.
-ballerina : scene -> type.
+carlotta : scene -> type.
 dante : scene -> type.
 mario : scene -> type.
 
-
 init 
 : type = 
-{tamara s2 * luisa s1 * maid s1 * ellis s1 * gabriele s1 * ballerina s1 *
+{tamara s1 * luisa s1 * emilia s1 * aelis s1 * gabriele s1 * carlotta s1 *
 dante s1 * mario s1}.
 
-load-gun 
+luisa-monologue 
   : luisa s1 -o {luisa s2}.
 family-gathers 
-  : gabriele s1 * ellis s1 * ballerina s1
-    -o {gabriele s2 * ellis s2 * ballerina s2}.
-maid-kisses
-  : maid s1 * dante s1 -o {maid s2 * dante s2}.
-maid-kisses-2
-  : maid s1 * mario s1 -o {maid s2 * mario s2}.
-dante-alone
-  : dante s1 -o {dante s2}.
-mario-alone
-  : mario s1 -o {mario s2}.
-gondola
+  : gabriele s1 * aelis s1 * carlotta s1
+    -o {gabriele s2 * aelis s2 * carlotta s2}.
+emilia-schemes-with-dante
+  : emilia s1 * dante s1 -o {emilia s2 * dante s2}.
+dante-steal-gun
   : dante s2 -o {dante s3}.
-maid-steal-gun
-  : maid s2 -o {maid s3}.
-mario-helps
-  : mario s2 * tamara s2 -o {mario s3 * tamara s3}.
-luisa-storms
+mario-helps-tamara-with-bags
+  : mario s1 * tamara s1 -o {mario s2 * tamara s2}.
+tamara-is-welcomed
+  : tamara s2 * aelis s2 * mario s2
+    -o {tamara s3 * aelis s3 * mario s3}.
+luisa-threatens-gabriele
   : luisa s2 * gabriele s2 -o {luisa s3 * gabriele s3}.
-ellis-flirts
-  : ellis s2 * ballerina s2 -o {ellis s3 * ballerina s3}.
+luisa-meets-tamara
+  : luisa s3 * tamara s3 * gabriele s3
+    -o {luisa s4 * tamara s4 * gabriele s4}.
+carlotta-gossips-to-emilia
+  : emilia s2 * carlotta s2 -o {emilia s3 * carlotta s3}.
 tamara-rejects
-  : tamara s3 * gabriele s3 -o {tamara s4 * gabriele s4}.
+  : tamara s4 * gabriele s4 -o {tamara s5 * gabriele s5}.
 luisa-suicide
-  : luisa s3 -o {luisa s4}.
+  : luisa s4 -o {luisa s5}.
+aelis-seduces-carlotta
+  : aelis s3 * carlotta s3 -o {aelis s4 * carlotta s4}.
+dante-mario-reminisce
+  : dante s3 * mario s3 -o {dante s4 * mario s4}.
+emilia-fails-to-leave
+  : emilia s3 -o {emilia s4}.
+denoument
+  : aelis s4 * dante s4 * mario s4 * emilia s4 * carlotta s4
+    * luisa s5
+-o {aelis s5 * dante s5 * mario s5 * emilia s5 * carlotta s5}.
 
 #trace * init.
 
-#query * * * 1
+#query * * * 10
 init -o 
-{tamara S0 * luisa S1 * maid S2 * ellis S3 * gabriele S4 * ballerina S5 *
-dante S6 * mario S7}.
+{tamara Tamara * emilia Emilia * aelis Aelis * gabriele Gabi
+* carlotta Carlotta * dante Dante * mario Mario}.
 
