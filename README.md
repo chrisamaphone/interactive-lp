@@ -17,7 +17,7 @@ development:
 
     then
 
-    <code>./ceptre <filename></code>,
+    <code>./ceptre path/to/filename.cep</code>,
   
 - Examples live in
 <code>examples/</code> and the relevant ones to Ceptre are those that
