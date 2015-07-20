@@ -20,6 +20,8 @@ structure Ceptre = struct
    | Or of prem * prem
    | One
    | Atom of atom
+  type rule_internal_new = 
+    {name : ident, pivars : int, lhs : prem, rhs : atom list}
   type rule_internal = 
     {name : ident, pivars : int, lhs : atom list, rhs : atom list}
   type context = atom list
@@ -35,6 +37,9 @@ structure Ceptre = struct
   type bwd_rule = 
     {name : ident, pivars : int, 
      head : pred * term list, subgoals : atom list}
+  type bwd_rule_new = 
+    {name : ident, pivars : int, 
+     head : pred * term list, subgoals : prem}
 
   type tp_header = decl list
   datatype builtin = NAT | NAT_ZERO | NAT_SUCC
@@ -58,6 +63,12 @@ structure Ceptre = struct
   fun atomToString (Lin, p, args) = withArgs p (map termToString args)
     | atomToString (Pers, p, args) = withArgs ("!"^p) (map termToString args)
 
+  fun pclassToString class = 
+     case class of
+        Prop => "pred"
+      | Act => "acting"
+      | Sense => "sense"
+      | Bwd => "bwd" 
 
   fun classToString class =
     case class of

@@ -7,6 +7,10 @@ lt/z : lt z (s N).
 lt/s : lt (s N) (s M)
      <- lt N M.
 
+list : type.
+nil : list.
+snoc list nat : list.
+
 at nat nat : pred.
 null nat : bwd.
 % "null I" means I is successor of the last
@@ -23,9 +27,6 @@ return list : pred.
 qui * stage sort -o stage collect * collect z nil.
 
 
-list : type.
-nil : list.
-snoc list nat : list.
 
 stage collect = {
   collect/at : collect I L * at I N -o collect (s I) (snoc L N).

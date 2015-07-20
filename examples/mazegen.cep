@@ -2,7 +2,7 @@
 
 nat : type.
 z : nat.
-s : nat -> nat.
+s nat : nat.
 
 lt nat nat : bwd.
 lt/z : lt z (s N).
@@ -37,12 +37,14 @@ stage unvisit = {
 }
 
 wall_dir : type.
-south : dir.
-east : dir.
+north : wall_dir.
+west : wall_dir.
+south : wall_dir.
+east : wall_dir.
 wall nat nat wall_dir : pred.
 not_in_maze nat nat : pred.
 
-adjacent nat nat dir nat nat : bwd.
+adjacent nat nat wall_dir nat nat : bwd.
 adjacent/e : adjacent X Y east (s X) Y.
 adjacent/w : adjacent (s X) Y west X Y.
 adjacent/s : adjacent X Y south X (s Y).
@@ -54,7 +56,7 @@ stage allWalls = {
 }
 
 unpicked : pred.
-in_wall_list nat nat dir : pred.
+in_wall_list nat nat wall_dir : pred.
 
 qui * stage allWalls -o unpicked * stage traverse.
 

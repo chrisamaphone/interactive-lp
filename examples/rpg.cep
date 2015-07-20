@@ -1,8 +1,8 @@
 % Hack & slash RPG demo (akin to Twine blog post)
 
-nat : type.
-z : nat.
-s nat : nat.
+nat : type.   #builtin NAT nat.
+z : nat.      #builtin NAT_ZERO z.
+s nat : nat.  #builtin NAT_SUCC s.
 
 nat-option : type.
 none : nat-option.
@@ -43,9 +43,9 @@ cplus/s   : cplus (s N) M T P
 cplus/z   : cplus z M T M.
 
 max_hp nat : bwd.
-- : max_hp (s (s (s (s (s (s (s (s (s z))))))))).
+max_hp (s (s (s (s (s (s (s (s (s z))))))))).
 recharge_hp nat : bwd.
-- : recharge_hp (s (s (s (s (s (s (s (s (s (s z)))))))))).
+recharge_hp (s (s (s (s (s (s (s (s (s (s z)))))))))).
 
 ndays nat : pred.
 health nat : pred.
@@ -63,20 +63,19 @@ sword : weapon.
 mace : weapon.
 grenade : weapon.
 
-damage_of sword (s (s (s (s z)))). % 4
-damage_of mace (s (s (s (s (s z))))). % 5
-damage_of grenade (s (s (s (s (s (s (s (s (s z))))))))). % 10
+damage_of sword 4.
+damage_of mace 5.
+damage_of grenade 10.
 
-% 10
-cost sword (s (s (s (s (s (s (s (s (s (s z)))))))))).
-% 20
-cost mace (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s z)
-                                        ))))))))))))))))))).
-cost grenade   % 50
-(s (s (s (s (s
-(s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s 
-  (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s (s z))))))))))))
-                       )))))))))))))))))))))))))))))))))))))).
+cost sword 10.
+cost mace 20.
+cost grenade 50.
+
+main_screen : pred.
+shop_screen : pred.
+rest_screen : pred.
+adventure_screen : pred.
+quit : pred.
 
 stage init = {
   i : init_tok * max_hp N
@@ -84,11 +83,6 @@ stage init = {
           * weapon_damage (s (s z)).
 }
 qui * stage init -o stage main * main_screen.
-
-main_screen : pred.
-rest_screen : pred.
-adventure_screen : pred.
-quit : pred.
 
 stage main = {
   do/rest : main_screen -o rest_screen. 
@@ -145,6 +139,10 @@ drop nat : pred.
 win_screen : pred.
 lose_screen : pred.
 die_screen : pred.
+gen_monster : pred.
+try_fight : pred.
+fight_in_progress : pred.
+choice : pred.
 
 % drop_amount M N means a monster of size M can drop N coins
 drop_amount nat nat : bwd.
@@ -157,8 +155,6 @@ stage fight_init = {
 }
 qui * stage fight_init -o stage fight * choice.
 
-try_fight : pred.
-fight_in_progress : pred.
 stage fight_auto = {
   fight/hit
     : try_fight * $fight_in_progress * monster_hp MHP * $weapon_damage D
@@ -179,7 +175,6 @@ stage fight_auto = {
             * subtract HP Size none
             -o die_screen.
 }
-choice : pred.
 qui * stage fight_auto * $fight_in_progress -o stage fight * choice.
 qui * stage fight_auto * $win_screen -o stage win.
 qui * stage fight_auto * $die_screen -o stage die.

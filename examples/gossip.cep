@@ -15,9 +15,9 @@ says person message : message.
 % follow person person
 % repeat person message
 
-knows person message : message.
-posted message : pred.
-not_posted message : pred.
+knows person message : pred.
+posted person message : pred.
+not_posted person message : pred.
 
 stage say = {
 

@@ -10,15 +10,15 @@ opponent team team : bwd.
 opponent red black.
 opponent black red.
 
-money team : pred.
-has team unit : pred.
-turn team : pred.
-next_step team : pred.
-
 nat : type.
 z : nat.
 s nat : nat.
 
+money team : pred.
+has team unit : pred.
+turn team : pred.
+next_step team : pred.
+gen_money nat : pred.
 factories team nat : pred.
 
 context init_factories = {factories red (s z), factories black (s z)}.
@@ -84,7 +84,6 @@ stage attackFactory = {
 }
 #interactive attackFactory.
 
-gen_money team nat : pred.
 qui * stage attackFactory * next_step T * $factories T R
   -o stage produce * turn T * gen_money R. 
 qui * stage attackFactory * turn T * $factories T R

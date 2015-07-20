@@ -2,6 +2,7 @@
 
 red : pred.
 blue : pred.
+green : pred.
 
 stage red_blue = {
   r1 : red -o blue.
@@ -23,6 +24,11 @@ context init' = {init, red}.
 location : type.
 start : location.
 end : location.
+l1 : location.
+l2 : location.
+l3 : location.
+l4 : location.
+l5 : location.
 
 element : type.
 r : element.
