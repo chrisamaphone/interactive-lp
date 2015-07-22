@@ -87,9 +87,10 @@ fun fwdchain
   (ctx : Ceptre.atom list) 
   (program as {init_stage,stages,...} : Ceptre.program) 
   (print : string -> unit)
+: Ceptre.context * Traces.trace
 =
 let
-  fun loop (stage : string) fastctx = 
+  fun loop (stage : string) fastctx transitions = 
   let
     val ctx = CoreEngine.context fastctx
     (* Write out the context *)
@@ -120,7 +121,7 @@ let
         val [(x, [Ceptre.Fn (stage_id, [])])] = 
           CoreEngine.lookup fastctx' "stage"
       in
-        loop stage_id fastctx'
+        loop stage_id fastctx' (T::transitions)
       end
   in
      case CoreEngine.possible_steps stage fastctx of
@@ -129,7 +130,7 @@ let
           val (fastctx, var) = CoreEngine.insert fastctx qui
         in
           case CoreEngine.possible_steps "outer_level" fastctx of 
-              [] => fastctx (* DONE *)
+              [] => (fastctx, transitions) (* DONE *)
             | L => 
               let 
                 val T = pick Ceptre.Random L
@@ -154,12 +155,14 @@ let
 
   val (stages, ctx) = Ceptre.progToRulesets program
   val senses = PullSensors.builtins (* XXX fix *)
-  val fastctx = CoreEngine.init sigma senses stages ctx
+  val init_ctx = CoreEngine.init sigma senses stages ctx
+  val (end_ctx, trace) = loop init_stage init_ctx []
 in
-   CoreEngine.context (loop init_stage fastctx)
+   (CoreEngine.context end_ctx, trace)
 end
 
-fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program) = 
+fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
+  : Ceptre.context * Traces.trace  =
 let
   (* val senses = asfasdf (* XXX set up sensors *) *)
   val logfile = TextIO.openOut "log.txt"

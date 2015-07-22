@@ -41,13 +41,38 @@ struct
    fun run fname index =
      let
        val (sigma, progs) = progs fname
-       val ans = Exec.run sigma (List.nth (progs, index))
+       val (res_ctx, trace) = Exec.run sigma (List.nth (progs, index))
+       val ctx_string = Ceptre.contextToString res_ctx
+       val trace_strings =
+         map CoreEngine.transitionToString trace
+       val trace_string = String.concatWith "\n" trace_strings
+       val result_string = 
+         "\n\nFinal state:\n" 
+        ^ ctx_string ^ "\n" ^
+        "\nTrace: \n"
+        ^ trace_string ^ "\n"
      in
-       print ("\n\nFinal state:\n" ^ (Ceptre.contextToString ans) ^ "\n")
-       ; SOME ans
+       print result_string
+       ; SOME res_ctx (* XXX also trace? *)
      end
      handle Subscript => 
        (print ((Int.toString index)^" is an invalid program index!\n")
        ; NONE)
+
+  (* runFirst : string -> Ceptre.context *)
+  (* extracts the first program from the file, then runs it to quiescence,
+  * returning the final context. *) 
+  fun runFirst fname = run fname 0
+    (*
+    case progs fname of
+         (_, []) => NONE
+       | (sg:Ceptre.sigma, prog::_) => 
+           let
+             val () = print "Running the following program:\n"
+             val () = print (Ceptre.programToString prog) 
+           in
+             SOME (Exec.run sg prog)
+           end
+    *)
 
 end

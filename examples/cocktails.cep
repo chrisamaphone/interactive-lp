@@ -18,6 +18,9 @@ campari : pred.
 cynar : pred.
 lime : pred.
 lemon : pred.
+bitters : pred.
+basil : pred.
+chartreuse : pred.
 
 stage mix = {
 s1 : strong -o tequila.

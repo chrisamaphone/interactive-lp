@@ -7,6 +7,7 @@ ceptre.sml
 sensing.sml
 acting.sml
 core-engine.sml
+traces.sml
 exec.sml
 
 ceptre.cmlex.sml
