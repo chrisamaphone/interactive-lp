@@ -16,6 +16,8 @@ sig
 
    val transitionToString: transition -> string
 
+   (* variables in the context that a particular transition depends on (both
+   * linear and persistent, intermixed for now *)
    val transitionDeps: 
       transition -> ctx_var list
 
