@@ -1,11 +1,28 @@
 structure CoreEngine:>
 sig
-   type ctx_var
+   eqtype ctx_var
    type transition
    type fastctx
    type sense = fastctx * Ceptre.term list -> Ceptre.term list list
+ 
+   (* XXX move this elsewhere *)
+   datatype value = 
+      Var of ctx_var 
+    | Rule of Ceptre.pred * value list 
+    | Pair of value * value 
+    | Inl of value 
+    | Inr of value 
+    | Unit
 
-   val transitionToString : transition -> string
+   val transitionToString: transition -> string
+
+   val transitionDeps: 
+      transition -> ctx_var list
+
+   (* The proof term rule(arg) has positive type *)
+   (* The transition would be let p = rule(arg) *)
+   val transitionProof: 
+      transition -> {rule: Ceptre.ident, arg: value}
    
    (* Turns a program and a context into a fast context *)
    val init: Ceptre.sigma
@@ -43,10 +60,32 @@ fun debug f = () (* Not-trace-mode *)
 (* fun debug f = f () *) (* Trace mode *) 
 
 type ctx_var = int
-datatype value = Var of ctx_var | Rule of Ceptre.pred * value list | Pair of value * value | Inl of value | Inr of value | Unit
+
+datatype value = 
+   Var of ctx_var 
+ | Rule of Ceptre.pred * value list 
+ | Pair of value * value 
+ | Inl of value 
+ | Inr of value 
+ | Unit
+
+fun valueDeps v = 
+   case v of 
+      Var x => [x]
+    | Rule (_, vs) => List.concat (map valueDeps vs)
+    | Pair (v1, v2) => valueDeps v1 @ valueDeps v2
+    | Inl v => valueDeps v
+    | Inr v => valueDeps v
+    | Unit => []   
 
 type transition =
    {r: Ceptre.ident * int, tms : Ceptre.term option vector, Vs: value list}
+
+fun transitionProof ({r = (r, _), Vs, ...}: transition) = 
+   {rule = r, arg = hd Vs}
+
+fun transitionDeps ({Vs, ...}: transition) = 
+   valueDeps (hd Vs)
 
 fun vectorToList v = 
    List.tabulate (Vector.length v, fn i => valOf (Vector.sub (v, i)))
