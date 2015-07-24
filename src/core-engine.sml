@@ -23,6 +23,9 @@ sig
    val transitionDeps: 
       transition -> ctx_var list
 
+   val valueDeps:
+      value -> ctx_var list
+
    (* The proof term rule(arg) has positive type *)
    (* The transition would be let p = rule(arg) *)
    val transitionProof: 

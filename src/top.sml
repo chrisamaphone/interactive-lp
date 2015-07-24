@@ -42,6 +42,14 @@ struct
      let
        val (sigma, progs) = progs fname
        val (res_ctx, trace) = Exec.run sigma (List.nth (progs, index))
+       (* convert the trace to a graph and write it to a dotfile *)
+       val traceGraph = Traces.traceToGraph trace
+       val graphString = Dot.graphToString traceGraph
+       val dotfile = TextIO.openOut "trace.dot"
+       val () = TextIO.output (dotfile, graphString)
+       val () = TextIO.flushOut dotfile
+       val () = TextIO.closeOut dotfile
+       (* Print out the context and trace *)
        val ctx_string = Ceptre.contextToString res_ctx
        val trace_strings = map Traces.stepToString trace
        val trace_string = String.concatWith "\n" trace_strings

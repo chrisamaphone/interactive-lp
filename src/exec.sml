@@ -112,7 +112,7 @@ let
           CoreEngine.lookup fastctx' "stage"
 
         (* get trace step *)
-        val step = Traces.transitionToStep T
+        val step = Traces.transitionToStep T (map (#1) newvars)
       in
         loop stage_id fastctx' (step::steps)
       end

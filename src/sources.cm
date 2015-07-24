@@ -8,6 +8,7 @@ Group is
   sensing.sml
   acting.sml
   core-engine.sml
+  dot.sml
   traces.sml
   exec.sml
 
