@@ -15,6 +15,8 @@ sig
     | Unit
 
    val transitionToString: transition -> string
+   val varToString: ctx_var -> string
+   val valueToString: value -> string
 
    (* variables in the context that a particular transition depends on (both
    * linear and persistent, intermixed for now *)
@@ -91,6 +93,25 @@ fun transitionDeps ({Vs, ...}: transition) =
 
 fun vectorToList v = 
    List.tabulate (Vector.length v, fn i => valOf (Vector.sub (v, i)))
+
+(* To String Functions *)
+
+fun varToString i = "x"^(Int.toString i)
+
+fun valueToString v =
+  case v of
+       Var x => varToString x
+     | Rule (name, args) =>
+        let
+          val arg_strings = map valueToString args
+          val args_string = String.concatWith " " arg_strings
+        in
+          "("^name^" "^args_string^")" 
+        end
+     | Pair (v1, v2) => "["^(valueToString v1)^", "^(valueToString v2)^"]"
+     | Inl v => "(inl "^(valueToString v)^")"
+     | Inr v => "(inr "^(valueToString v)^")"
+     | Unit => "[]"
 
 fun transitionToString {r = (r, _), tms, Vs} =
    Ceptre.withArgs r (map Ceptre.termToString (vectorToList tms))

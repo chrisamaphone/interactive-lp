@@ -43,8 +43,7 @@ struct
        val (sigma, progs) = progs fname
        val (res_ctx, trace) = Exec.run sigma (List.nth (progs, index))
        val ctx_string = Ceptre.contextToString res_ctx
-       val trace_strings =
-         map CoreEngine.transitionToString trace
+       val trace_strings = map Traces.stepToString trace
        val trace_string = String.concatWith "\n" trace_strings
        val result_string = 
          "\n\nFinal state:\n" 

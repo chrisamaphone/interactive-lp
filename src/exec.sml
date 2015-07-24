@@ -3,26 +3,14 @@ struct
 
 exception BadProg
 
-fun currentPhase ctx =
+(*
+fun currentStage ctx =
    case List.mapPartial 
            (fn (x, "stage", [Ceptre.Fn (id, [])]) => SOME id
            | _ => NONE)
            ctx of
       [ id ] => id
     | _ => raise BadProg 
-
-(* 
-fun lookupPhase id ({stages,...}:Ceptre.program) =
-  let
-    fun lookupInList stages =
-    (case stages of
-       ((p as {name,body,nondet})::stages) => 
-         if name = id then p
-         else lookupInList stages
-      | _ => raise BadProg)
-  in
-    lookupInList stages
-  end
 *)
 
 structure Rand = RandFromRandom(structure Random = AESRandom)
@@ -30,6 +18,7 @@ structure Rand = RandFromRandom(structure Random = AESRandom)
 (* pick one element randomly from a list *)
 fun pick_random L = List.nth (L, Rand.randInt (List.length L))
 
+(* Pair elements of a list with their number in that list. *)
 fun number' (x::xs) i = (i,x)::(number' xs (i+1))
   | number' [] _ = []
 fun number xs = number' xs 0
@@ -40,6 +29,7 @@ fun numberStrings xs =
     map (fn (i,x) => (Int.toString i)^": "^x) numbered
   end
 
+(* Prompt the user for a choice between transitions. *)
 fun promptChoice Ts =
   let
     val choices = map CoreEngine.transitionToString Ts
@@ -76,7 +66,8 @@ fun unzip1_2' ((x,y,z)::l) xs yzs =
   | unzip1_2' nil xs yzs = (xs, yzs)
 fun unzip1_2 l = unzip1_2' l [] []
 
-(* fwdchain : Ceptre.context -> Ceptre.program
+
+  (* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
 *  
 *  [fwdchain initialDB program]
@@ -90,7 +81,7 @@ fun fwdchain
 : Ceptre.context * Traces.trace
 =
 let
-  fun loop (stage : string) fastctx transitions = 
+  fun loop (stage : string) fastctx steps = 
   let
     val ctx = CoreEngine.context fastctx
     (* Write out the context *)
@@ -99,7 +90,6 @@ let
     (* general transition handling *)
     fun take_transition T =
       let
-        (* XXX todo: use second output for trace term *)
         val (fastctx', newvars) = 
           CoreEngine.apply_transition fastctx T
         val actions =
@@ -120,8 +110,11 @@ let
         (* READ OUT NEW PHASE FROM PROGRAM *)
         val [(x, [Ceptre.Fn (stage_id, [])])] = 
           CoreEngine.lookup fastctx' "stage"
+
+        (* get trace step *)
+        val step = Traces.transitionToStep T
       in
-        loop stage_id fastctx' (T::transitions)
+        loop stage_id fastctx' (step::steps)
       end
   in
      case CoreEngine.possible_steps stage fastctx of
@@ -130,7 +123,7 @@ let
           val (fastctx, var) = CoreEngine.insert fastctx qui
         in
           case CoreEngine.possible_steps "outer_level" fastctx of 
-              [] => (fastctx, transitions) (* DONE *)
+              [] => (fastctx, steps) (* DONE *)
             | L => 
               let 
                 val T = pick Ceptre.Random L
