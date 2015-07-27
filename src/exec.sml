@@ -83,15 +83,15 @@ fun fwdchain
 let
   fun loop (stage : string) fastctx steps = 
   let
-    val ctx = CoreEngine.context fastctx
     (* Write out the context *)
-    val ctx_string = Ceptre.contextToString ctx
+    val ceptre_ctx = CoreEngine.context fastctx
+    val ctx_string = Ceptre.contextToString ceptre_ctx
     val () = print ("\n---- " ^ ctx_string ^ "\n")
     (* general transition handling *)
-    fun take_transition T =
+    fun take_transition T ctx =
       let
         val (fastctx', newvars) = 
-          CoreEngine.apply_transition fastctx T
+          CoreEngine.apply_transition ctx T
         val actions =
           List.mapPartial
           (fn (x, (_,p,args)) =>
@@ -99,15 +99,16 @@ let
                   SOME action => SOME (x, action, args)
                 | NONE => NONE)
           newvars
-        (* debug: *)
+        (* XXX no actions anymore 
         val () = print 
           ("\n About to run "
           ^Int.toString(List.length actions)^" actions\n")
         val (xs, actions) = unzip1_2 actions 
         val () = List.app (fn (f,args) => f (ctx, args)) actions
         val fastctx' = CoreEngine.removeAll fastctx' xs
+        *)
         
-        (* READ OUT NEW PHASE FROM PROGRAM *)
+        (* Read out new stage from program *)
         val [(x, [Ceptre.Fn (stage_id, [])])] = 
           CoreEngine.lookup fastctx' "stage"
 
@@ -116,21 +117,22 @@ let
       in
         loop stage_id fastctx' (step::steps)
       end
-  in
+  in (* body of loop fn *)
      case CoreEngine.possible_steps stage fastctx of
         [] => 
         let
+          (* n.b. var not used *)
           val (fastctx, var) = CoreEngine.insert fastctx qui
         in
           case CoreEngine.possible_steps "outer_level" fastctx of 
-              [] => (fastctx, steps) (* DONE *)
+              [] => (fastctx, rev steps) (* DONE *)
             | L => 
               let 
                 val T = pick Ceptre.Random L
                 val () = print "Applying stage transition "
                 val () = print (CoreEngine.transitionToString T) 
               in
-                take_transition T
+                take_transition T fastctx
               end
         end
       | L => 
@@ -142,7 +144,7 @@ let
                   val () = print "\nApplying transition "
                   val () = print (CoreEngine.transitionToString T)
                 in
-                  take_transition T
+                  take_transition T fastctx
                 end)
   end
 

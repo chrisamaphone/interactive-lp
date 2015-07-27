@@ -82,6 +82,8 @@ context init_locations =
 no_pc : pred.
 pc character : pred.
 turn : pred.
+end : pred. % end of story.
+go : pred. % not end of story.
 
 context init_game =
 {npc buffy, npc willow, npc xander, npc anya, npc tara,
@@ -92,78 +94,89 @@ stage select_character = {
   pick : npc C * no_pc -o pc C.  
 }
 #interactive select_character.
-qui * stage select_character -o stage pc_choices * turn.
+select_character_to_pc_choices
+: qui * stage select_character -o stage pc_choices * turn.
 
 stage pc_choices = {
   act/move
       : turn * $pc C 
       * at C L * adjacent L L'
-          -o at C L'.
+          -o at C L' * go.
 
   act/attack/evil 
       : turn * $pc C 
       * $evil C 
       * $at C L * $at C' L
-          -o attacking C C'.
+          -o attacking C C' * go.
 
   act/attack/slayer
       : turn * $pc C
       * $slayer C * $at C L * $at C' L * $evil C'
-          -o attacking C C'.
+          -o attacking C C' * go.
 
   act/attack/revenge/friend
       : turn * $pc C
       * $at C L * $at C' L
       * $friends C Victim * hurt_by Victim C'
-      -o attacking C C'.
+      -o attacking C C' * go.
 
   act/attack/revenge/lover
       : turn * $pc C
       * $at C L * $at C' L
       * $dating C Victim * hurt_by Victim C'
-      -o attacking C C'.
+      -o attacking C C' * go.
 
   act/hit_on
       : turn * $pc C
       * $at C L * $at C' L * $crush C C'
-        -o hitting_on C C'.
+        -o hitting_on C C' * go.
 
   act/affection
       : turn * $pc C
       * $at C L * $at C' L * $dating C C'
-        -o acting_affectionate C C'.
+        -o acting_affectionate C C' * go.
 
   act/spellcast/weak_to_strong
       : turn * $pc C * $witch C
       * $at C L * $at C' L 
       * weak C' 
-        -o strong C' * spellcast C C'.
+        -o strong C' * spellcast C C' * go.
 
   act/spellcast/strong_to_weak
       : turn * $pc C * $witch C
       * $at C L * $at C' L
       * strong C'
-        -o weak C' * spellcast C C'.
+        -o weak C' * spellcast C C' * go.
 
   act/accuse
       : turn * $pc C
       * $at C L * $at C' L
       * $hurt_by C C'
-      -o accusing C C'.
+      -o accusing C C' * go.
 
   act/joke_with
       : turn * $pc C
       * $at C L * $at C' L
-      -o joking_with C C'.
+      -o joking_with C C' * go.
 
-  act/none : turn -o ().
+  act/none : turn -o go.
+
+  end_story : turn -o end.
 
 }
 #interactive pc_choices.
 
 npc_turn character : pred.
-qui * stage pc_choices
+pc_to_npc :
+qui * stage pc_choices * go
   -o stage npc_reactions.
+
+pc_to_done :
+qui * stage pc_choices * end
+  -o stage done.
+
+stage done = {}
+
 
 %%%% NPC Reactions %%%%
 stage npc_reactions = {
@@ -239,12 +252,14 @@ stage npc_reactions = {
   %  are dating either party
 
 }
+npc_react_to_gen :
 qui * stage npc_reactions
   -o stage gen_npc_turns.
 
 stage gen_npc_turns = {
   npc C -o npc_turn C.
 }
+npc_gen_to_act :
 qui * stage gen_npc_turns -o stage npc_choices.
 
 stage npc_choices = {
@@ -323,6 +338,7 @@ stage npc_choices = {
   act/none : npc_turn C -o npc C.
 
 }
+npc_to_pc :
 qui * stage npc_choices -o stage pc_reactions.
 
 stage pc_reactions = {
@@ -380,8 +396,8 @@ stage pc_reactions = {
           -o hurt_by C' C.
 }
 #interactive pc_reactions.
+pc_react_to_act :
 qui * stage pc_reactions -o stage pc_choices * turn.
-
 
 
 #trace _ select_character {init_story, init_locations, init_game}.

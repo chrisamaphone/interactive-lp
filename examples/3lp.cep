@@ -17,6 +17,7 @@ stage go = {
   blow_stick : wolf * stickhouse -o wolf.
   blow_brick : wolf * brickhouse -o brickhouse.
 }
+#interactive go.
 
 context init = 
 {pig, pig, pig, wolf, straw, sticks, bricks}. 
