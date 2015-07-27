@@ -1,0 +1,24 @@
+% Three little pigs
+
+pig : pred.
+wolf : pred. 
+sticks : pred.
+bricks : pred.
+straw  : pred.
+stickhouse : pred.
+brickhouse : pred.
+strawhouse : pred.
+
+stage go = {
+  build_straw : pig * straw  -o strawhouse.
+  build_stick : pig * sticks -o stickhouse.
+  build_brick : pig * bricks -o brickhouse.
+  blow_straw : wolf * strawhouse -o wolf.
+  blow_stick : wolf * stickhouse -o wolf.
+  blow_brick : wolf * brickhouse -o brickhouse.
+}
+
+context init = 
+{pig, pig, pig, wolf, straw, sticks, bricks}. 
+
+#trace _ go init.
