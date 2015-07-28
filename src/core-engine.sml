@@ -29,7 +29,7 @@ sig
    (* The proof term rule(arg) has positive type *)
    (* The transition would be let p = rule(arg) *)
    val transitionProof: 
-      transition -> {rule: Ceptre.ident, arg: value}
+      transition -> {rule: Ceptre.ident, tms : Ceptre.term list, arg: value}
    
    (* Turns a program and a context into a fast context *)
    val init: Ceptre.sigma
@@ -88,14 +88,15 @@ fun valueDeps v =
 type transition =
    {r: Ceptre.ident * int, tms : Ceptre.term option vector, Vs: value list}
 
-fun transitionProof ({r = (r, _), Vs, ...}: transition) = 
-   {rule = r, arg = hd Vs}
-
-fun transitionDeps ({Vs, ...}: transition) = 
-   valueDeps (hd Vs)
 
 fun vectorToList v = 
    List.tabulate (Vector.length v, fn i => valOf (Vector.sub (v, i)))
+
+fun transitionProof ({r = (r, _), Vs, tms}: transition) = 
+   {rule = r, tms = vectorToList tms, arg = hd Vs}
+
+fun transitionDeps ({Vs, ...}: transition) = 
+   valueDeps (hd Vs)
 
 (* To String Functions *)
 

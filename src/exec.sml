@@ -90,7 +90,7 @@ let
     (* general transition handling *)
     fun take_transition T ctx =
       let
-        val (fastctx', newvars) = 
+        val (fastctx', newvars : (CoreEngine.ctx_var * Ceptre.atom) list) = 
           CoreEngine.apply_transition ctx T
         val actions =
           List.mapPartial
@@ -113,7 +113,7 @@ let
           CoreEngine.lookup fastctx' "stage"
 
         (* get trace step *)
-        val step = Traces.transitionToStep T (map (#1) newvars)
+        val step = Traces.transitionToStep T newvars
       in
         loop stage_id fastctx' (step::steps)
       end
