@@ -9,6 +9,7 @@ acting.sml
 core-engine.sml
 dot.sml
 traces.sml
+prompt.sml
 exec.sml
 
 ceptre.cmlex.sml

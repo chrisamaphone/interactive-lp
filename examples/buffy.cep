@@ -257,7 +257,7 @@ qui * stage npc_reactions
   -o stage gen_npc_turns.
 
 stage gen_npc_turns = {
-  npc C -o npc_turn C.
+  gen_turn : npc C -o npc_turn C.
 }
 npc_gen_to_act :
 qui * stage gen_npc_turns -o stage npc_choices.
