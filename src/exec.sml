@@ -133,5 +133,5 @@ end
 
 end
 
-structure Exec = ExecFn (TextPrompt)
+structure Exec = ExecFn (ShowCtxPrompt)
 
