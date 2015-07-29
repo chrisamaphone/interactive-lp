@@ -1,0 +1,112 @@
+character : type.
+mother : character.
+father : character.
+hannah : character.
+eve : character.
+simon : character.
+carl : character.
+florence : character.
+
+pregnant character : pred.
+alive character : pred.
+dead character : pred.
+
+death_caps : pred.
+stairs : pred.
+hannah_eve_separate : pred.
+eve_in_attic : pred.
+
+context init = {pregnant mother, alive father, alive florence}.
+
+stage beginning = {
+  eve_hannah_birth 
+  : pregnant mother * $alive florence -o 
+    alive eve * alive hannah * alive mother * hannah_eve_separate.
+
+  hannah_eve_meet
+  : hannah_eve_separate -o stairs.
+
+  florence_dies
+  : stairs * alive florence -o dead florence * eve_in_attic.
+}
+qui * stage beginning -o stage courtship * alive carl * alive simon.
+
+older : pred.
+dating character character : pred.
+married character character : pred.
+jealous character : pred.
+stage courtship = {
+  date_carl
+  : alive carl * $alive hannah * $eve_in_attic -o dating hannah carl.
+
+  breakup_carl
+  : dating hannah carl -o older.
+
+  meet_simon
+  : older * $alive simon * $alive hannah * $eve_in_attic
+    -o dating hannah simon.
+
+  hannah_marries_simon
+  : dating hannah simon -o married hannah simon * jealous eve.
+}
+qui * stage courtship -o stage tragedy * death_caps.
+
+eve_independent : pred.
+miscarried character : pred.
+stage tragedy = {
+  hannah_gets_pregnant
+  : married hannah simon -o pregnant hannah.
+
+  hannah_miscarries
+  : pregnant hannah * $alive hannah -o miscarried hannah.
+
+  parents_die
+  : death_caps * alive mother * alive father -o ().
+
+  eve_ventures_out
+  : eve_in_attic * $jealous eve -o eve_independent.
+}
+wig : pred. 
+mirror : pred.
+mirror_shards : pred.
+attraction character character : pred.
+had_affair character character : pred.
+hannah_knows : pred.
+hannah_in_wig : pred.
+hannah_rage : pred.
+birthday : pred.
+eve_in_glasgow : pred.
+qui * stage tragedy -o stage betrayal * wig * birthday.
+
+stage betrayal = {
+  eve_performs
+  : eve_independent * $wig -o attraction simon eve.
+
+  eve_simon_affair
+  : attraction simon eve * jealous eve * $wig 
+    -o had_affair simon eve * pregnant eve.
+
+  eve_to_glasgow
+  : pregnant eve -o eve_in_glasgow.
+
+  hannah_birthday
+  : birthday * $alive hannah * $alive simon -o mirror.
+
+  hannah_discover_affair
+  : $wig * had_affair simon eve -o hannah_knows.
+
+  hannah_poses_as_eve
+  : wig * hannah_knows -o hannah_in_wig.
+
+  simon_regifts
+  : hannah_in_wig * $mirror -o hannah_rage.
+
+  hannah_break_mirror
+  : hannah_rage * mirror -o mirror_shards.
+
+  hannah_kill_simon
+  : mirror_shards * alive simon -o dead simon.
+}
+
+
+#trace _ beginning init. 
