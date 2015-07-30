@@ -4,46 +4,33 @@ sig
     -> CoreEngine.transition option
 end
 
-(* Simplest prompt - just prints transitions as numbered and accepts numeric
-* choice on STDIN. *)
-structure TextPrompt :> PROMPT =
+structure PromptUtil = 
 struct
+  (* Pair elements of a list with their number in that list. *)
+  fun number' (x::xs) i = (i,x)::(number' xs (i+1))
+    | number' [] _ = []
 
-(* Pair elements of a list with their number in that list. *)
-fun number' (x::xs) i = (i,x)::(number' xs (i+1))
-  | number' [] _ = []
-fun number xs = number' xs 0
-fun numberStrings xs = 
-  let
-    val numbered = number xs
-  in
-    map (fn (i,x) => (Int.toString i)^": "^x) numbered
-  end
+  fun number xs = number' xs 0
+  
+  fun numberStrings xs = 
+    let
+      val numbered = number xs
+    in
+      map (fn (i,x) => (Int.toString i)^": "^x) numbered
+    end
 
-(* ignores ctx *)
-fun prompt Ts ctx =
-let
-  val choices = map CoreEngine.transitionToString Ts
-  val numbered = numberStrings choices
-  val promptString = String.concatWith "\n" numbered
-  val () = print (promptString ^ "\n?- ")
-in
+  fun acceptInput Ts =
     case TextIO.inputLine TextIO.stdIn of
-        NONE => prompt Ts ctx (* try again *)
+        NONE => NONE (* acceptInput Ts (* try again *) *)
       | SOME s =>
           (case Int.fromString s of
                   (* XXX add some error message *)
-                NONE => prompt Ts ctx (* try again *)
+                NONE => acceptInput Ts (* try again *)
               | SOME i =>
                   if i < (List.length Ts) then SOME (List.nth (Ts, i))
-                  else prompt Ts ctx (* try again *) )
-end
-end
+                  else acceptInput Ts (* try again *) )
 
-(* Slightly nicer prompt - prints the context sorted by atoms' head terms *)
-structure ShowCtxPrompt :> PROMPT =
-struct
-
+  (* Context utilities *)
   open Ceptre
   exception IllFormed
 
@@ -88,44 +75,52 @@ struct
                     | _ => EQUAL))
   end
 
-  val sort = Mergesort.sort atom_compare
+  val sortByHeadTerm = Mergesort.sort atom_compare
+
+end
+
+(* Simplest prompt - just prints transitions as numbered and accepts numeric
+* choice on STDIN. *)
+structure TextPrompt :> PROMPT =
+struct
 
 
-  (* Pair elements of a list with their number in that list. *)
-  fun number' (x::xs) i = (i,x)::(number' xs (i+1))
-    | number' [] _ = []
-  fun number xs = number' xs 0
-  fun numberStrings xs = 
-    let
-      val numbered = number xs
-    in
-      map (fn (i,x) => (Int.toString i)^": "^x) numbered
-    end
+(* ignores ctx *)
+fun prompt Ts ctx =
+let
+  val choices = map CoreEngine.transitionToString Ts
+  val numbered = PromptUtil.numberStrings choices
+  val promptString = String.concatWith "\n" numbered
+  val () = print (promptString ^ "\n?- ")
+in
+  PromptUtil.acceptInput Ts
+end
+end
+
+(* Slightly nicer prompt - prints the context sorted by atoms' head terms *)
+structure ShowCtxPrompt :> PROMPT =
+struct
 
   fun prompt Ts ctx = 
   let
     (* context *)
     val ceptre_ctx = CoreEngine.context ctx
-    val sorted_ctx = sort ceptre_ctx
+    val sorted_ctx = PromptUtil.sortByHeadTerm ceptre_ctx
     val ctx_string = Ceptre.contextToString sorted_ctx
     (* transitions *)
     val choices = map CoreEngine.transitionToString Ts
-    val numbered = numberStrings choices
+    val numbered = PromptUtil.numberStrings choices
     val promptString = String.concatWith "\n" numbered
     (* printing *)
     val () = print ctx_string
     val () = print ("\n"^promptString^"\n?- ")
   in
-    case TextIO.inputLine TextIO.stdIn of
-        NONE => prompt Ts ctx (* try again *)
-      | SOME s =>
-          (case Int.fromString s of
-                  (* XXX add some error message *)
-                NONE => prompt Ts ctx (* try again *)
-              | SOME i =>
-                  if i < (List.length Ts) then SOME (List.nth (Ts, i))
-                  else prompt Ts ctx (* try again *) )
-
+    PromptUtil.acceptInput Ts
   end
+end
+
+structure StoryPrompt :> PROMPT =
+struct
+
 end
 
