@@ -5,8 +5,9 @@ xander : character.
 anya : character.
 tara : character.
 giles : character.
+dawn : character.
 spike : character.
-warren : character.
+villain : character.
 
 npc character : pred.
 
@@ -22,13 +23,14 @@ crush character character : pred.
 dating character character : pred.
 dislike character character : pred.
 hunting character character : pred.
+hurt_by character character : pred.
 
 place : type.
 crypt : place.
 graveyard : place.
 buffy_house : place.
 magic_box : place.
-trio_lair : place.
+villain_lair : place.
 
 adjacent place place : bwd.
 adjacent crypt graveyard.
@@ -39,8 +41,8 @@ adjacent buffy_house magic_box.
 adjacent magic_box buffy_house.
 adjacent magic_box graveyard.
 adjacent graveyard magic_box.
-adjacent magic_box trio_lair.
-adjacent trio_lair magic_box.
+adjacent magic_box villain_lair.
+adjacent villain_lair magic_box.
 
 at character place : pred.
 
@@ -52,30 +54,32 @@ joking_with character character : pred.
 accusing character character : pred.
 acting_affectionate character character : pred.
 
-% other character states
-hurt_by character character : pred.
-
 context init_story =
 { friends buffy willow, friends willow buffy,
   friends buffy xander, friends xander buffy,
   friends willow xander, friends xander willow,
+  friends dawn buffy, friends buffy dawn,
+  friends dawn xander, friends xander dawn,
+  friends dawn willow, friends willow dawn,
+  friends dawn tara, friends tara dawn,
   dating willow tara, dating tara willow,
   dating xander anya, dating anya xander,
+  spellcast willow tara,
   friends giles buffy, friends buffy giles,
   friends willow giles, friends giles willow,
   dislike giles spike, dislike spike giles,
   dislike xander spike, dislike spike xander,
   evil spike, crush spike buffy, dislike buffy spike,
-  dislike warren buffy, evil warren,
+  dislike villain buffy, evil villain,
   witch willow, slayer buffy, 
-  strong buffy, strong spike, strong willow, strong warren,
-  weak xander, weak giles, weak anya, weak tara}.
+  strong buffy, strong willow, strong villain,
+  weak xander, weak giles, weak anya, weak tara, weak dawn, weak spike}.
 
 context init_locations =
-{ at buffy buffy_house, at willow buffy_house,
-   at tara buffy_house, at xander magic_box,
-   at anya magic_box, at giles magic_box,
-   at spike crypt, at warren trio_lair
+{ at buffy buffy_house, at willow buffy_house, at dawn buffy_house,
+  at tara magic_box, at xander magic_box,
+  at anya magic_box, at giles magic_box,
+  at spike crypt, at villain villain_lair
 }
 
 
@@ -87,7 +91,7 @@ go : pred. % not end of story.
 
 context init_game =
 {npc buffy, npc willow, npc xander, npc anya, npc tara,
-npc giles, npc spike, npc warren, 
+npc giles, npc spike, npc villain, npc dawn,
 no_pc}.
 
 stage select_character = {
@@ -102,6 +106,13 @@ stage pc_choices = {
       : turn * $pc C 
       * at C L * adjacent L L'
           -o at C L' * go.
+
+  act/kidnap/evil
+      : turn * $pc C
+      * $evil C
+      * at C L * at C' L * weak C'
+      * adjacent L L'
+        -o at C L' * at C' L' * go.
 
   act/attack/evil 
       : turn * $pc C 
@@ -255,6 +266,7 @@ stage npc_reactions = {
 npc_react_to_gen :
 qui * stage npc_reactions
   -o stage gen_npc_turns.
+#interactive npc_reactions. % n.b. not normally.
 
 stage gen_npc_turns = {
   gen_turn : npc C -o npc_turn C.
@@ -277,6 +289,13 @@ stage npc_choices = {
     : npc_turn C
     * $at C L * $at C' L * hunting C C'
       -o attacking C C' * npc C.
+
+  act/kidnap/evil
+      : npc_turn C
+      * $evil C
+      * at C L * at C' L * weak C'
+      * adjacent L L'
+        -o at C L' * at C' L' * npc C.
 
   act/evil_attack_dislike
     : npc_turn C
@@ -340,6 +359,7 @@ stage npc_choices = {
 }
 npc_to_pc :
 qui * stage npc_choices -o stage pc_reactions.
+#interactive npc_choices. % n.b. not normally
 
 stage pc_reactions = {
   %%%% Player Reactions %%%%

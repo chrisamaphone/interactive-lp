@@ -77,14 +77,52 @@ struct
 
   val sortByHeadTerm = Mergesort.sort atom_compare
 
+  fun refers_to (mode, id, args) term =
+  let
+    fun term_match (Fn (term_id, args)) = term_id = term
+      | term_match _ = false
+  in
+    List.exists (fn arg => term_match arg) args
+  end
+
+  (* List utils *)
+  fun dedup' [] accum = accum
+    | dedup' (x::xs) accum = if (List.exists (fn y => y = x) accum) 
+        then dedup' xs accum else dedup' xs (x::accum)
+
+  fun dedup l = dedup' l []
+
+
+  (* Story specific context utils *)
+  fun location (mode, "at", [Fn (ch, []), Fn (loc, [])]) = SOME loc
+    | location _ = NONE
+
+  fun things_at' location ctx accum =
+    case ctx of 
+         ((mode, id, args)::ctx) =>
+          (case (id, args) of
+              ("at", [Fn (ch, []), Fn (loc, [])]) => 
+                if loc = location then things_at' location ctx (ch::accum)
+                else things_at' location ctx accum
+            | _ => things_at' location ctx accum)
+       | nil => accum
+  
+  fun things_at location ctx =
+  let
+    val just_at = things_at' location ctx []
+    fun one_hop atom = List.exists (fn x => refers_to atom x) just_at 
+  in
+    List.filter one_hop ctx
+  end
+
+
+
 end
 
 (* Simplest prompt - just prints transitions as numbered and accepts numeric
 * choice on STDIN. *)
 structure TextPrompt :> PROMPT =
 struct
-
-
 (* ignores ctx *)
 fun prompt Ts ctx =
 let
@@ -100,7 +138,6 @@ end
 (* Slightly nicer prompt - prints the context sorted by atoms' head terms *)
 structure ShowCtxPrompt :> PROMPT =
 struct
-
   fun prompt Ts ctx = 
   let
     (* context *)
@@ -119,8 +156,31 @@ struct
   end
 end
 
+(* Assumes story world with "pc C" meaning C is the player char,
+*   "at C L" meaning character C is at location L, and displays characters by
+*   location *)
 structure StoryPrompt :> PROMPT =
 struct
 
+  
+  fun prompt Ts ctx = 
+  let
+    (* context *)
+    val ceptre_ctx = CoreEngine.context ctx
+    val locations : string list = List.mapPartial PromptUtil.location ceptre_ctx
+    val locations = PromptUtil.dedup locations
+    val lines : Ceptre.context list = map (fn l => PromptUtil.things_at l ceptre_ctx) locations
+    val line_strings : string list = map Ceptre.contextToString lines
+    val lines_string = String.concatWith "\n\n" line_strings
+    (* transitions *)
+    val choices = map CoreEngine.transitionToString Ts
+    val numbered = PromptUtil.numberStrings choices
+    val promptString = String.concatWith "\n" numbered
+    (* printing *)
+    val () = print lines_string
+    val () = print ("\n"^promptString^"\n?- ")
+  in
+    PromptUtil.acceptInput Ts
+  end
 end
 
