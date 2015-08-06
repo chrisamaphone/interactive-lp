@@ -155,7 +155,8 @@ predicates that rules refer to must be declared beforehand.
 
 Ceptre contains a rich predicate and type language that can be used to
 describe data structures like lists, options, and so on. We will describe
-these features in the Types and Indexed Predicates section of the tutorial.
+these features in an introduction to the less beginnerly features of the
+language.
 
 ## Interactivity
 
@@ -181,13 +182,15 @@ a prompt:
 ```
 
 Each of these options corresponds to a different way that the program can
-evolve. But we only have one rule in our program, so how can it have
-multiple choices for what to do?
+evolve, which we call a *transition*. But we only have one rule in our
+program, so how can it have multiple choices for what to do?
 
 The answer is that we started with a context containing *three instances*
 of the predicate `a`, and each of those instances is considered distinct.
 So there really are three possibilities for how the rule may fire,
 corresponding to *which* of the three `a`s is to be replaced.
+When the stage isn't marked as interactive, the engine will choose randomly
+between all available transitions.
 
 Type a number corresponding to one of these choices, for instance 0. Now
 you should see
@@ -327,5 +330,10 @@ program that checks for a particular "win condition" in the simulation.
 ## Intermediate Features
 
 ### Multi-stage programs
-### Backward-chaining rules
+("winnable" blocks world)
+
+### Type constructors and backward-chaining rules
+(nats, lists, lt... tower of hanoi, sorting examples)
+
+
 
