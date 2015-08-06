@@ -236,9 +236,96 @@ structured record of the program's execution:
 
 ## Types and Indexed Predicates
 
-## Multi-stage programs
+Let's look at a slightly more interesting example: a simulation of the
+Blocks World domain (popular in AI literature). We want to simulate a table
+that can have stacks of blocks on it, and a robot arm that can pick up and
+place blocks. To do this, we'll need rules that range over all blocks in
+certain configurations.
+
+Edit a new file `blocks.cep` and add the following text to it:
+
+```
+block : type.
+
+on block block : pred.
+on_table block : pred.
+clear block : pred.
+arm_holding block : pred.
+arm_free : pred.
+```
+
+We have declared a new *type* for blocks, and new predicates `on`,
+`on_table`, `clear`, `arm_holding`, `arm_free`, some of which are *indexed*
+by one or more blocks. This means that we can write predicates like
+`on X Y` in our rules, which are well-formed so long as `X` and `Y` are
+blocks.
+
+Now let's add our main stage:
+
+```
+stage blocks = { 
+pickup_from_block
+  : on X Y * clear X * arm_free -o clear Y * arm_holding X.
+
+pickup_from_table
+  : on_table X * clear X * arm_free -o arm_holding X.
+
+put_on_block
+  : arm_holding X * clear Y -o on X Y * clear X * arm_free.
+
+put_on_table
+  : arm_holding X -o on_table X * clear X * arm_free.
+
+} #interactive blocks.
+```
+This stage establishes rules for picking up and setting down blocks, both
+from/onto the table and from/onto other blocks. The predicate arguments
+starting with capital letters, all named `X` and `Y` in these rules, can be
+*instantiated* with any terms of the appropriate type (`block`) when the
+engine is deciding which transition to take.
+
+To see this behavior in action, let's introduce some block terms, describe
+an initial context, and run the program:
+
+```
+a : block.
+b : block.
+c : block.
+
+context init =
+{ on_table a, on_table b, on c a, clear c, clear b, arm_free }
+
+
+#trace _ blocks init.
+```
+
+This example includes some new syntax for describing initial contexts via the
+`context` declaration: we can give names to contexts, then provide the name
+of a context to the `#trace` directive rather than writing the whole
+context inline.
+
+When we run the program, we see the following options:
+
+```
+0: (pickup_from_table b)
+1: (pickup_from_block c a)
+```
+
+The available transitions include instantiations of the specific block
+terms for which the rules apply. Go ahead and make a few selections to test
+out whether the robot behavior corresponds to what we expect.
+
+### Program termination
+
+A stage is over when it is *quiescent*: no more rules apply to the current
+program state. In this example, we will never reach quiescence --- we have
+not specified computation with any particular goal, just a policy for
+interacting with it. Next, we'll explore how to set up a multi-stage
+program that checks for a particular "win condition" in the simulation.
+
 
 ## Intermediate Features
 
+### Multi-stage programs
 ### Backward-chaining rules
 
