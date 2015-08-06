@@ -35,8 +35,11 @@ first Ceptre program and learning enough to write your own.
 
 ### Hello World
 
-The ``hello world'' example of Ceptre is a program with two predicates and
-a single rule.
+The "hello world" example of Ceptre (i.e. the smallest complete, runnable
+program with nontrivial behavior)  is a program with two predicates and a
+single rule.
+
+Create a file named `hello.cep` and add the following text to it:
 
 ```
 a : pred.
@@ -48,6 +51,28 @@ stage main = {
 
 #trace _ main {a,a,a}.
 ```
+
+Then, run `ceptre` on `hello.cep`. You should see the following output:
+
+```
+Ceptre!
+a: pred.
+b: pred.
+stage main {
+forward chaining rule rule with 0 free variables...
+}
+#trace ...
+
+
+Final state:
+{qui, b, b, b, (stage main)}
+
+Trace: 
+let [x4] = rule  [x1, []];
+let [x5] = rule  [x3, []];
+let [x6] = rule  [x2, []];
+```
+
 
 ### Syntax explained
 
