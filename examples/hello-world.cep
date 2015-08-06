@@ -1,0 +1,8 @@
+a : pred.
+b : pred.
+
+stage main = {
+  rule : a -o b.
+}
+
+#trace _ main {a,a,a}.
