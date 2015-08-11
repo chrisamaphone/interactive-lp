@@ -37,6 +37,7 @@ g : element.
 
 at location element location : pred.
 
+% This is a comment
 succ element element : bwd.
 succ/rb : succ r b.
 succ/bg : succ b g.
@@ -57,8 +58,6 @@ stage sort = {
 }
 
 - : qui * stage sort -o stage getmin.
-% possible alternative syntax:
-% %qui stage sort -o stage getmin.
 
 min element : pred.
 stage getmin = {
