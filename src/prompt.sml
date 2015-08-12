@@ -6,6 +6,10 @@ end
 
 structure PromptUtil = 
 struct
+
+  val prompt_char = "?-"
+  val error = "\nInvalid index! Try again.\n"^prompt_char^" "
+
   (* Pair elements of a list with their number in that list. *)
   fun number' (x::xs) i = (i,x)::(number' xs (i+1))
     | number' [] _ = []
@@ -21,14 +25,24 @@ struct
 
   fun acceptInput Ts =
     case TextIO.inputLine TextIO.stdIn of
-        NONE => NONE (* acceptInput Ts (* try again *) *)
+        NONE => NONE (* a ctrl+D quiesces *)
       | SOME s =>
           (case Int.fromString s of
-                  (* XXX add some error message *)
-                NONE => acceptInput Ts (* try again *)
+                NONE => (print error; acceptInput Ts) (* try again *)
+              | SOME 0 => NONE (* quiesce *)
               | SOME i =>
-                  if i < (List.length Ts) then SOME (List.nth (Ts, i))
-                  else acceptInput Ts (* try again *) )
+                  SOME (List.nth (Ts, i-1))
+                  handle Subscript => 
+                    (print error; acceptInput Ts (* try again *) )
+          )
+
+  fun transitionsToString Ts =
+  let
+    val choices = "(quiesce)" :: (map CoreEngine.transitionToString Ts)
+    val numbered = numberStrings choices
+  in
+    "\n" ^ (String.concatWith "\n" numbered) ^ "\n" ^ prompt_char ^ " "
+  end
 
   (* Context utilities *)
   open Ceptre
@@ -126,10 +140,7 @@ struct
 (* ignores ctx *)
 fun prompt Ts ctx =
 let
-  val choices = map CoreEngine.transitionToString Ts
-  val numbered = PromptUtil.numberStrings choices
-  val promptString = String.concatWith "\n" numbered
-  val () = print (promptString ^ "\n?- ")
+  val () = print (PromptUtil.transitionsToString Ts) 
 in
   PromptUtil.acceptInput Ts
 end
@@ -145,12 +156,10 @@ struct
     val sorted_ctx = PromptUtil.sortByHeadTerm ceptre_ctx
     val ctx_string = Ceptre.contextToString sorted_ctx
     (* transitions *)
-    val choices = map CoreEngine.transitionToString Ts
-    val numbered = PromptUtil.numberStrings choices
-    val promptString = String.concatWith "\n" numbered
+    val promptString = PromptUtil.transitionsToString Ts
     (* printing *)
     val () = print ctx_string
-    val () = print ("\n"^promptString^"\n?- ")
+    val () = print promptString
   in
     PromptUtil.acceptInput Ts
   end
@@ -162,7 +171,6 @@ end
 structure StoryPrompt :> PROMPT =
 struct
 
-  
   fun prompt Ts ctx = 
   let
     (* context *)
@@ -173,12 +181,10 @@ struct
     val line_strings : string list = map Ceptre.contextToString lines
     val lines_string = String.concatWith "\n\n" line_strings
     (* transitions *)
-    val choices = map CoreEngine.transitionToString Ts
-    val numbered = PromptUtil.numberStrings choices
-    val promptString = String.concatWith "\n" numbered
+    val promptString = PromptUtil.transitionsToString Ts
     (* printing *)
     val () = print lines_string
-    val () = print ("\n"^promptString^"\n?- ")
+    val () = print promptString
   in
     PromptUtil.acceptInput Ts
   end

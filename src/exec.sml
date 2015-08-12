@@ -18,6 +18,25 @@ fun pick mode L ctx =
 
 val qui = (Ceptre.Lin, "qui", [])
 
+  fun quiesce take_transition fastctx steps =
+    let
+      (* n.b. var not used *)
+      val (fastctx, var) = CoreEngine.insert fastctx qui
+    in
+      case CoreEngine.possible_steps "outer_level" fastctx of 
+        [] => (fastctx, rev steps) (* DONE *)
+      | L => 
+        (case pick Ceptre.Random L fastctx of
+              SOME T =>
+                let 
+                  val () = print "Applying stage transition "
+                  val () = print (CoreEngine.transitionToString T) 
+                in
+                  take_transition T fastctx
+                end
+            | NONE => (fastctx, rev steps) (* DONE *))
+    end
+
 (*
 fun unzip1_2' ((x,y,z)::l) xs yzs =
       unzip1_2' l (x::xs) ((y,z)::yzs)
@@ -78,23 +97,7 @@ let
   in (* body of loop fn *)
      case CoreEngine.possible_steps stage fastctx of
         [] => (* No steps in current stage: quiescence *)
-        let
-          (* n.b. var not used *)
-          val (fastctx, var) = CoreEngine.insert fastctx qui
-        in
-          case CoreEngine.possible_steps "outer_level" fastctx of 
-              [] => (fastctx, rev steps) (* DONE *)
-            | L => 
-              (case pick Ceptre.Random L fastctx of
-                    SOME T =>
-                      let 
-                        val () = print "Applying stage transition "
-                        val () = print (CoreEngine.transitionToString T) 
-                      in
-                        take_transition T fastctx
-                      end
-                  | NONE => (fastctx, rev steps) (* DONE *))
-        end
+          quiesce take_transition fastctx steps 
       | L => (* Steps available in current stage *)
           (case Ceptre.lookupStage stage stages of
                 NONE => raise BadProg
@@ -107,7 +110,8 @@ let
                           in
                             take_transition T fastctx
                           end
-                      | NONE => loop stage fastctx steps 
+                      | NONE => quiesce take_transition fastctx steps
+                          (* loop stage fastctx steps  *)
                         (* XXX should move to next stage *)))
   end
 
@@ -122,7 +126,7 @@ end
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
   : Ceptre.context * Traces.trace  =
 let
-  (* val senses = asfasdf (* XXX set up sensors *) *)
+  (* val senses = XXX (* set up sensors *) *)
   val logfile = TextIO.openOut "log.txt"
   fun print s = (TextIO.output (logfile, s); TextIO.flushOut logfile)
 in
@@ -133,5 +137,5 @@ end
 
 end
 
-structure Exec = ExecFn (StoryPrompt)
+structure Exec = ExecFn (TextPrompt)
 
