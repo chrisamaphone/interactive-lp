@@ -18,24 +18,24 @@ fun pick mode L ctx =
 
 val qui = (Ceptre.Lin, "qui", [])
 
-  fun quiesce take_transition fastctx steps =
-    let
-      (* n.b. var not used *)
-      val (fastctx, var) = CoreEngine.insert fastctx qui
-    in
-      case CoreEngine.possible_steps "outer_level" fastctx of 
-        [] => (fastctx, rev steps) (* DONE *)
-      | L => 
-        (case pick Ceptre.Random L fastctx of
-              SOME T =>
-                let 
-                  val () = print "Applying stage transition "
-                  val () = print (CoreEngine.transitionToString T) 
-                in
-                  take_transition T fastctx
-                end
-            | NONE => (fastctx, rev steps) (* DONE *))
-    end
+fun quiesce take_transition fastctx steps =
+  let
+    (* n.b. var not used *)
+    val (fastctx, var) = CoreEngine.insert fastctx qui
+  in
+    case CoreEngine.possible_steps "outer_level" fastctx of 
+      [] => (fastctx, rev steps) (* DONE *)
+    | L => 
+      (case pick Ceptre.Random L fastctx of
+            SOME T =>
+              let 
+                val () = print "Applying stage transition "
+                val () = print (CoreEngine.transitionToString T) 
+              in
+                take_transition T fastctx
+              end
+          | NONE => (fastctx, rev steps) (* DONE *))
+  end
 
 (*
 fun unzip1_2' ((x,y,z)::l) xs yzs =
@@ -110,10 +110,12 @@ let
                           in
                             take_transition T fastctx
                           end
-                      | NONE => quiesce take_transition fastctx steps
-                          (* loop stage fastctx steps  *)
-                        (* XXX should move to next stage *)))
+                      | NONE => (* quiesce take_transition fastctx steps *)
+                        (* end the program *)
+                        (fastctx, rev steps)
+                          ))
   end
+
 
   val (stages, ctx) = Ceptre.progToRulesets program
   val senses = PullSensors.builtins (* XXX fix *)
