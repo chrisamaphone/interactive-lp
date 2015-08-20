@@ -33,7 +33,7 @@ mario     scene location : pred. % 10 characters.
 
 context 
 init = {
-  tamara    d15 atrium,?
+  tamara    d15 atrium,
   luisa     a1 offstage,
   emilia    a1 offstage,
   finzi     a1 offstage,
@@ -209,7 +209,7 @@ c_final
    * dante d15 atrium * dannunzio d15 atrium
    * emilia d15 diningroom.
 }
-#interactive all.
+% #interactive all.
 
 #trace _ all init.
 

@@ -1,0 +1,58 @@
+% cloak of darkness.
+
+thing : type.
+cloak : thing.
+hook : thing.
+
+moveable thing : bwd.
+moveable/cloak : moveable cloak.
+
+hangable thing : bwd.
+hangable/cloak : hangable cloak.
+
+actor : type.
+player : actor.
+
+has actor thing : pred.
+
+room : type.
+bar : room.
+foyer : room.
+cloakroom : room.
+
+thing_in thing room : pred.
+actor_in actor room : pred.
+inventory actor thing : pred.
+on thing thing : pred.
+adjacent room room : bwd.
+
+stage go = {
+  take : $actor_in A R * thing_in T R * moveable T
+      -o inventory A T.
+
+  drop : $actor_in A R * inventory A T * moveable T
+      -o thing_in T R.
+
+  hang : $actor_in A R * inventory A C * $thing_in hook R
+          * hangable C
+      -o on C hook.
+
+  unhang : $actor_in A R * on T hook
+      -o inventory A T.
+
+  move : actor_in A R * adjacent R R' -o actor_in A R'. 
+}
+#interactive go.
+
+adjacent foyer cloakroom.
+adjacent cloakroom foyer.
+adjacent bar cloakroom.
+adjacent cloakroom bar.
+adjacent foyer bar.
+adjacent bar foyer.
+
+context init =
+{ thing_in hook cloakroom, inventory player cloak, 
+  actor_in player foyer }.
+
+#trace _ go init.
