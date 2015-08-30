@@ -1,0 +1,231 @@
+chartype : type.
+witch : chartype.
+werewolf : chartype.
+slayer : chartype.
+
+possible_enemy chartype chartype : bwd.
+possible_enemy witch werewolf.
+possible_enemy witch slayer.
+possible_enemy werewolf witch.
+possible_enemy werewolf slayer.
+possible_enemy slayer werewolf.
+possible_enemy slayer witch.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+lt nat nat : bwd.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+      <- lt N M.
+
+player : type.
+
+class player chartype : pred.
+enemy player chartype : pred.
+friend player player : pred.
+dead player : pred.
+
+health player nat : pred.
+attack player nat : pred.
+frozen player : pred.
+
+max_health nat : bwd.
+max_health (s (s (s z))).
+turn player : pred.
+round : pred.
+
+attacking player player nat : pred.
+
+seed player : pred.
+gen_turn player : pred.
+gen_attack player : pred.
+gen_health player : pred.
+gen_enemy player : pred.
+stage setup = {
+
+  gen : seed X -o gen_turn X * gen_attack X * gen_health X * gen_enemy X.
+
+  gen_health/all : gen_health X -o health X (s (s (s z))).
+  gen_att/slayer : gen_attack X * $class X slayer -o attack X (s z).
+  gen_att/wolf : gen_attack X * $class X werewolf -o attack X (s (s z)).
+  gen_att/witch : gen_attack X * $class X witch -o ().
+  gen_enemy/all : 
+    gen_enemy X * $class X Class * possible_enemy Class Class' 
+      -o enemy X Class'.
+
+}
+go : pred. stop : pred.
+do/checkrounds : qui * stage setup -o stage checkrounds * stop.
+
+stage checkrounds = {
+  round * stop -o go.
+}
+do/genturns: qui * stage checkrounds * go -o stage genturns.
+do/done: qui * stage checkrounds * stop -o stage done.
+
+restore_class player chartype : pred.
+stage done = {
+  get_attacked
+  : attacking X Y (s N) * health Y (s H) -o attacking X Y N * health Y H.
+
+  done_attack
+  : attacking X Y z -o ().
+
+  die
+  : health Y z * restore_class Y _ -o dead Y.
+
+  die/frozen
+  : frozen X * restore_class X _ -o dead X.
+}
+
+stage genturns = {
+  gen_turn X -o turn X.
+  restore_class X C -o class X C.
+  frozen X * turn X -o ().
+}
+do/werewolves: qui * stage genturns -o stage werewolves.
+
+stage werewolves = {
+  bite 
+  : turn W * $class W werewolf * $enemy W Enemyclass
+    * $class E Enemyclass * $attack W Att 
+    -o attacking W E Att * enemy E werewolf.
+
+  heal/self
+  : turn W * $class W werewolf * health W H
+    * max_health M * lt H M
+    -o health W (s H).
+
+  heal/other
+  : turn W * $class W werewolf * $class Other C
+    * health Other H * max_health M * lt H M
+  -o health Other (s H) * friend Other W.
+
+  heal/friend
+  : turn W * $class W werewolf * $class Other C
+    * health Other H *  max_health M * lt H M
+    * friend W Other
+  -o health Other (s H) * friend Other W.
+
+  get_hit
+  : $class W werewolf * attacking Other W (s N)
+    * health W (s H) -o attacking Other W N * health W H.
+
+  attack_done
+  : attacking Other W z -o ().
+
+  die
+  : class W werewolf * health W z -o dead W.
+
+}
+#interactive werewolves.
+do/slayers: qui * stage werewolves -o stage slayers.
+
+stage slayers = {
+
+  attack
+  : turn S * $class S slayer * $enemy S Class
+    * $class Other Class * $attack S Att
+    -o attacking S Other Att * enemy Other slayer.
+
+  defend_other
+  : turn S * $class S slayer * $class Other Class
+  * attacking Attacker Other _
+  -o friend Other S.
+
+  defend_friend
+  : turn S * $class S slayer * $class Other Class
+  * attacking Attacker Other _ * friend S Other
+  * health S (s H)
+  -o friend Other S * health S H.
+
+  block
+  : turn S * $class S slayer * attacking Attacker S (s N)
+    -o attacking Attacker S N.
+
+  get_hit
+  : $class S slayer * attacking Attacker S (s N) 
+    * health S (s H)
+    -o attacking Attacker S N * health S H.
+
+  attack_done
+  : attacking _ _ z -o ().
+
+  die
+  : class S slayer * health S z -o dead S.
+
+}
+% #interactive slayers.
+do/witches : qui * stage slayers -o stage witches.
+
+stage witches = {
+
+  freeze
+  : turn W * $class W witch * $enemy W Class
+    * $class Other Class
+    -o frozen Other * enemy Other witch.
+
+  get_attacked
+  : $class W witch * attacking Other W (s N)
+    * health W (s H) -o health W H * attacking Other W N.
+  done_attack
+  : attacking Other W z -o ().
+
+  buff
+  : turn W * $class W witch * $class Other Class
+    * attack Other Attack
+    -o attack Other (s Attack) * friend Other W.
+
+  % more likely to buff friends
+  buff-friend
+  : turn W * $class W witch * $class Other Class
+    * friend W Other
+    * attack Other Attack
+    -o attack Other (s Attack) * friend Other W.
+
+  die
+  : class W witch * health W z -o dead W.
+}
+% #interactive witches.
+do/gengenturns: qui * stage witches -o stage gen_genturns.
+
+stage gen_genturns = {
+  class X C -o gen_turn X * restore_class X C.
+}
+do/genturns' : qui * stage gen_genturns -o stage checkrounds * stop.
+
+willow : player.
+oz : player.
+vic : player.
+buffy : player.
+% karl : player.
+% frank : player.
+% gwenn : player.
+% andre : player.
+% roger : player.
+
+context init =
+{ seed willow, class willow witch,  
+  % seed frank, class frank witch,
+  % seed roger, class roger witch,
+  seed oz, class oz werewolf, 
+  seed vic, class vic werewolf,
+  % seed karl, class karl werewolf,
+  seed buffy, class buffy slayer,
+  % seed gwenn, class gwenn slayer,
+  % seed andre, class andre slayer,
+%  seed willow, class willow witch,  
+%  seed oz, class oz werewolf, 
+%  seed vic, class vic werewolf,
+%  seed buffy, class buffy slayer,
+%  seed karl, class karl werewolf,
+%  seed frank, class frank witch,
+%  seed gwenn, class gwenn slayer,
+%  seed andre, class andre slayer,
+%  seed roger, class roger witch,
+  round, round, round
+}
+
+#trace _ setup init.
