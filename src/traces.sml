@@ -43,11 +43,10 @@ end
 fun makeTransitionNode name label =
   Dot.Node (name, [("shape","box"),("label","\""^label^"\"")])
 
-(* XXX also include its type *)
 fun makeVarNode (x, x_type) =
 let
-  val name = CoreEngine.varToString x
-  val label = name (* ^"\\n"^(Ceptre.atomToString x_type) *)
+  val name = (* CoreEngine.varToString x *)  Ceptre.atomToString x_type
+  val label = name
 in
   Dot.Node (CoreEngine.varToString x, [("label","\""^label^"\"")])
 end
@@ -73,10 +72,11 @@ in
 end
 
 (* convert trace to dot graph *)
-fun traceToGraph trace =
+fun traceToGraph (init : CoreEngine.fastctx) trace =
 let
+  val init_nodes = map makeVarNode (CoreEngine.get_concrete init)
   val lines = map stepToLines trace
-  val lines = List.concat lines
+  val lines = init_nodes @ (List.concat lines)
 in
   Dot.Digraph lines
 end

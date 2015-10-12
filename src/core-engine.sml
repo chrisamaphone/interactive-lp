@@ -60,6 +60,9 @@ sig
    (* Look up all atoms with a particular name *)
    val lookup: fastctx -> Ceptre.ident -> (ctx_var * Ceptre.term list) list
 
+   (* get the (var * Ceptre.atom) list under the fastctx *)
+   val get_concrete : fastctx -> (ctx_var * Ceptre.atom) list
+
 end = 
 struct
 
@@ -648,5 +651,7 @@ fun lookup (FC {prog, ctx}) a =
   (List.mapPartial 
      (fn (x, (m, b, tms)) => if a = b then SOME (x, tms) else NONE)
      (#concrete ctx))
+
+fun get_concrete (FC {prog, ctx}) = #concrete ctx
 
 end

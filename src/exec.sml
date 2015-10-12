@@ -55,7 +55,7 @@ fun fwdchain
   (ctx : Ceptre.atom list) 
   (program as {init_stage,stages,...} : Ceptre.program) 
   (print : string -> unit)
-: Ceptre.context * Traces.trace
+: CoreEngine.fastctx * Ceptre.context * Traces.trace
 =
 let
   fun loop (stage : string) fastctx steps = 
@@ -69,6 +69,7 @@ let
       let
         val (fastctx', newvars : (CoreEngine.ctx_var * Ceptre.atom) list) = 
           CoreEngine.apply_transition ctx T
+
         (* XXX no actions anymore 
         val actions =
           List.mapPartial
@@ -122,11 +123,11 @@ let
   val init_ctx = CoreEngine.init sigma senses stages ctx
   val (end_ctx, trace) = loop init_stage init_ctx []
 in
-   (CoreEngine.context end_ctx, trace)
+   (init_ctx, CoreEngine.context end_ctx, trace)
 end
 
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
-  : Ceptre.context * Traces.trace  =
+  : CoreEngine.fastctx * Ceptre.context * Traces.trace  =
 let
   (* val senses = XXX (* set up sensors *) *)
   val logfile = TextIO.openOut "log.txt"

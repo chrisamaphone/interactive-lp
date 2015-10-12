@@ -38,15 +38,17 @@ do/checkrounds : qui * stage setup -o stage gen_gen_turns * stop.
 
 restore_team player team : pred.
 stage gen_gen_turns = {
+  do/gen_turn : 
   $team_turn T * on_team P T 
     -o gen_turn P * restore_team P T.
 }
-qui * stage gen_gen_turns * team_turn T * opp T T' 
+switch_team_turn
+: qui * stage gen_gen_turns * team_turn T * opp T T' 
   -o team_turn T' * stage checkrounds * stop.
 
 
 stage checkrounds = {
-  round * stop -o go.
+  another_round : round * stop -o go.
 }
 alive_count team nat : pred.
 do/genturns: qui * stage checkrounds * go -o stage genturns.
@@ -59,8 +61,8 @@ stage done = {
 }
 
 stage genturns = {
-  gen_turn X -o turn X.
-  restore_team X C -o on_team X C.
+  do/gen_turn     : gen_turn X -o turn X.
+  do/restore_team : restore_team X C -o on_team X C.
 }
 do/play: qui * stage genturns -o stage play.
 
@@ -72,30 +74,19 @@ subtract/ss : subtract (s N) (s M) P
             <- subtract N M P.
 
 stage play = {
-  target 
+  attack 
   : turn P * $on_team P T * opp T T' * $on_team P' T'
     * $attack P A * health P' H
-  % -o subtract_health P' H A.
     * subtract H A H'
     -o health P' H'.
 
   buff
   : turn P * attack P A -o attack P (s A).
 
-%   buff_other
-%   : turn P * $on_team P T * $on_team Other T
-%     * attack Other A
-%     -o attack Other (s A).
-
-%   subtract/s
-%   : subtract_health P (s H) (s A)
-%     -o subtract_health P H A.
-% 
-%   subtract/done
-%   : subtract_health P H z -o health P H.
-% 
-%   subtract/die
-%   : subtract_health P z A * on_team P _ -o dead P.
+  buff_other
+  : turn P * $on_team P T * $on_team Other T
+     * attack Other A
+     -o attack Other (s A).
 
   die
   : health P z * on_team P _ -o ().

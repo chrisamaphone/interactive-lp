@@ -41,16 +41,16 @@ struct
    fun run fname index =
      let
        val (sigma, progs) = progs fname
-       val (res_ctx, trace) = Exec.run sigma (List.nth (progs, index))
+       val (init_ctx, end_ctx, trace) = Exec.run sigma (List.nth (progs, index))
        (* convert the trace to a graph and write it to a dotfile *)
-       val traceGraph = Traces.traceToGraph trace
+       val traceGraph = Traces.traceToGraph init_ctx trace
        val graphString = Dot.graphToString traceGraph
        val dotfile = TextIO.openOut "trace.dot"
        val () = TextIO.output (dotfile, graphString)
        val () = TextIO.flushOut dotfile
        val () = TextIO.closeOut dotfile
        (* Print out the context and trace *)
-       val ctx_string = Ceptre.contextToString res_ctx
+       val ctx_string = Ceptre.contextToString end_ctx
        val trace_strings = map Traces.stepToString trace
        val trace_string = String.concatWith "\n" trace_strings
        val result_string = 
@@ -60,7 +60,7 @@ struct
         ^ trace_string ^ "\n"
      in
        print result_string
-       ; SOME res_ctx (* XXX also trace? *)
+       ; SOME end_ctx (* XXX also trace? *)
      end
      handle Subscript => 
        (print ((Int.toString index)^" is an invalid program index!\n")
