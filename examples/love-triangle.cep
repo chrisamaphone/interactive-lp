@@ -23,10 +23,13 @@ context init =
 
 stage go = {
 jealousy
-  : eros A B * eros C A * diseq C A
-  -o eros A B  % * eros C A 
-    * eros B A * anger C A * anger C B.
+  : $eros A B * $eros C A * diseq C A
+  -o anger C A * anger C B.
+
+move_on
+  : eros A B * anger A B * anger A B * anger A B
+    -o ().
 }
-#interactive go.
+% #interactive go.
 
 #trace _ go init.

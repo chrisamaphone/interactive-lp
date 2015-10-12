@@ -41,14 +41,14 @@ in
 end
 
 fun makeTransitionNode name label =
-  Dot.Node (name, [("shape","box"),("label","\""^label^"\"")])
+  Dot.Node (name, [("shape","box"),("style","filled"),("fillcolor","green"),("label","\""^label^"\"")])
 
 fun makeVarNode (x, x_type) =
 let
   val name = (* CoreEngine.varToString x *)  Ceptre.atomToString x_type
   val label = name
 in
-  Dot.Node (CoreEngine.varToString x, [("label","\""^label^"\"")])
+  Dot.Node (CoreEngine.varToString x, [("style","filled"),("fillcolor","skyblue"),("label","\""^label^"\"")])
 end
 
 fun makeEdgeTo   n2 n1 = Dot.Edge (n1,n2)
