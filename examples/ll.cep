@@ -1,0 +1,56 @@
+% toy lin log interactive thm prover
+
+prop : type.
+atom : type.
+a : atom. b : atom. c : atom. d : atom.
+
+at atom : prop.
+one : prop.
+top : prop.
+tensor prop prop : prop.
+lolli prop prop : prop.
+with prop prop : prop.
+
+goal prop : pred.
+ctx prop : pred.
+
+stage prove = {
+
+lolliR 
+: goal (lolli A B) -o ctx A * goal B.
+
+lolliL
+: ctx (lolli A B) -o goal A * ctx B.
+
+oneL
+: ctx one -o ().
+
+% XXX oneR requires quiescence/absence?
+
+topR
+: goal top -o ().
+topR'
+: goal top * ctx _ -o goal top.
+
+tensorL
+: ctx (tensor A B) -o ctx A * ctx B.
+
+tensorR
+: goal (tensor A B) -o goal A * goal B.
+
+% withL1
+% : ctx (with A B) -o ctx A.
+% withL2
+% : ctx (with A B) -o ctx B.
+% 
+% withR XXX not really possible w/FC. let/cc...?!
+
+init
+: goal (at A) * ctx (at A) -o ().
+
+} #interactive prove.
+
+context test =
+{ goal (lolli (tensor (at a) ((lolli (at a) (tensor (at a) (at b))))) (tensor (at b) (at a))) }.
+
+#trace _ prove test.

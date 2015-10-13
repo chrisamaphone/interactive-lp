@@ -18,7 +18,7 @@ oven : pred.
 counter : pred.
 
 context dinner = 
-{ counter, counter, burner, burner, oven, oven,
+{ counter, burner, burner, oven,
   uncooked asparagus, uncooked cranberry,
   uncooked potatoes, uncooked turkey,
   uncooked potpie, uncooked salad
