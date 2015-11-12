@@ -1,171 +1,56 @@
-% cloak of darkness in ceptre
-% state as of 5/6/2014: buggy nondet in special case handling
+%% IF example for EXAG tutorial
 
-noun : type.
+entity : type.
+alice : entity.
+bob : entity.
 
-portable noun : bwd.
-fixed noun : bwd.
+location : type.
+door : type.
+key door : entity.
 
-cmd : type.
-north : cmd.
-south : cmd.
-west : cmd.
-east : cmd.
-quit : cmd.
-take noun : cmd.
-drop noun : cmd.
-put_on noun noun : cmd.
-examine noun : cmd.
-look : cmd.
-inventory : cmd.
+playable entity : bwd.
+portable entity : bwd.
+playable alice.
+playable bob.
+portable (key D).
 
-dir cmd : bwd.
-dir north.
-dir south.
-dir west.
-dir east.
+adjacent location location : pred.
+at entity location : pred.
+%% step 2:
+locked door location location : pred.
+contains entity entity : pred.
 
-do cmd : pred.
+stage main = {
 
-% game state
-inv noun : pred.
+  move 
+  : at C L * playable C * $adjacent L L'
+   -o at C L'.
 
-place : type.
-adj place cmd place : bwd. % adjacency
+  take
+  : $at C L * playable C * at E L * portable E
+  -o contains C E.
 
-description : type.
-desc_place place description : bwd.
-desc_noun noun description : bwd.
+  unlock
+  : contains C (key D) * playable C
+  * $at C L
+  * locked D L L'
+  -o adjacent L L' * adjacent L' L.
 
-dark place : pred.
-at noun place : pred.
+} #interactive main.
 
-%% XXX once builtins are a thing, do syntax for this.
-% describe [place/noun] : action.
-% report cmd outcome : action.
-% list_inventory : action.
-% list_things_at place : action.
+foyer : location.
+kitchen : location.
+street : location.
+d1 : door.
 
-% if we're in the bar and it's dark, doing anything just increments a
-% counter of foolishness.
-% (i kind of want nested stages here.)
+context init =
+{ at alice street,
+  at bob kitchen,
+at (key d1) street,
+locked d1 foyer kitchen,
+locked d1 kitchen foyer,
+adjacent foyer street,
+adjacent street foyer}
 
-check_dark : pred.
-stage process = {
-  dark : check_dark * $at player L * $dark L * $do A -o handle_dark.
-}
-
-qui * stage process * $handle_dark -o stage dark1.
-qui * stage process * check_dark -o stage try_failing.
-
-leave_dark : pred.
-stage dark1 = {
-  do/leave : handle_dark * $do Dir * dir Dir * $at player L * adj L Dir L'
-            -o leave_dark.
-  do/look : handle_dark * do look -o describe darkness * success. 
-}
-
-qui * stage dark1 * leave_dark -o stage try_failing.
-qui * stage dark1 * $handle_dark -o stage dark2.
-qui * stage dark1 * success -o stage accept_input * listen.
-
-stage dark2 = {
-  do/anything : handle_dark * do _ -o fool * report_fooling * success.
-}
-
-qui * stage dark2 -o stage accept_input * listen.
-
-% positively characterized failures
-stage try_failing = {
-%   fail/take/fixed : do (take Noun) * $at player Place * $at Noun Place
-%                   * fixed Noun
-%                 -o 
-}
-
-qui * stage try_failing * $do A -o stage try_action.
-
-stage try_action = {
-
-  do/go : do Dir * dir Dir * at player Place1 * adj Place1 Dir Place2
-              -o at player Place2 * describe Place2 * success.
-
-  do/look : do look * $at player Place
-              -o describe Place * list_things_at Place * success.
-
-  do/examine : do (examine Noun) * $at player Place * $at Noun Place
-            -o describe Noun * list_things_at (on Noun) * success.
-
-  do/x'      : do (examine Noun) * $inventory Noun
-            -o describe Noun * list_things_at (on Noun) * success.
-
-  do/xme     : do (examine player) -o describe player * success.
-
-  do/take    : do (take Noun) * $at player Place * at Noun Place
-              * portable Noun
-            -o inventory Noun * report_taking Noun * success.
-
-  do/take/on : do (take Noun) * $at player Place * at Noun (on Surface)
-              * $at Surface Place * portable Noun
-            -o inventory Noun * report_taking Noun * success.
-
-  do/drop    : do (drop Noun) * inventory Noun * $at player Place
-              -o at Noun Place * report_dropping Noun * success.
-
-  % e.g. hang coat on hook 
-  do/put_on  : do (put_on Top Bottom) * inventory Top * $at player Place
-                * $at Bottom Place
-              -o at Top (on Bottom) * report_putting_on Top Bottom * success.
-
-  do/inv     : do inv -o list_inventory * success.
-
-  do/q  : do quit -o done.
-}
-
-try_action_succeed : 
-  qui * stage try_action * success -o stage accept_input * listen.
-try_action_nonsense : 
-  qui * stage try_action * do _ 
-  -o stage accept_input * listen * report_fail.
-try_action_done : qui * stage try_action * done -o ().
-
-
-listen : pred.
-got : pred.
-
-stage accept_input = {
-  accept : listen * inputCmd Cmd -o do Cmd * got.
-}
-
-accept_succeed : 
-  qui * stage accept_input * got -o stage process * check_dark.
-accept_fail : 
-  qui * stage accept_input * listen -o stage accept_input * listen.
-
-% game specific stuff
-
-bar : place.
-cloakroom : place.
-foyer : place.
-on noun : place.
-
-adj foyer west bar.
-adj bar east foyer.
-adj foyer east cloakroom.
-adj cloakroom west foyer.
-
-cloak : noun.
-trinket : noun.
-hook : noun.
-player : noun.
-
-portable cloak.
-portable trinket.
-fixed hook.
-
-context init = 
-{at player foyer, at hook cloakroom, inventory cloak, at trinket bar, 
-  dark bar,
- do look, got}.
-
-#trace _ accept_input init.
+#trace _ main init.
 
