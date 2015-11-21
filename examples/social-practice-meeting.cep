@@ -34,6 +34,8 @@ stage start = {
 
 qui * stage start -o stage discuss.
 
+% a node for the call-and-response synchronization of asking a question:
+ask topic : pred.
 stage discuss = {
   bring_up_related
   : $meeting
@@ -50,12 +52,22 @@ stage discuss = {
   * expert C Topic
   -o relevance Topic (s (s N)).
 
+  ask_about
+  : meeting
+  * $relevance Topic (s N)
+  -o ask Topic.
+
+  answer_question
+  : ask Topic
+  * expert C Topic
+  -o meeting.
+
   conclude
   : meeting -o ().
   
 } #interactive discuss.
 
-%%% domain
+%%% domain instantiation
 narrative : topic.
 programming : topic.
 psychology : topic.
@@ -74,16 +86,16 @@ related narrative psychology.
 
 alice : speaker.
 rohan : speaker.
-mitu : speaker.
+ines : speaker.
 shonda : speaker.
 
-moderator mitu.
+moderator ines.
 
 expert alice ai.
 expert alice programming.
 expert rohan psychology.
-expert mitu believable_agents.
-expert mitu programming.
+expert ines believable_agents.
+expert ines programming.
 expert shonda narrative.
 expert shonda believable_agents.
 
