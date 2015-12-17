@@ -31,6 +31,7 @@ fun quiesce take_transition fastctx steps =
               let 
                 val () = print "Applying stage transition "
                 val () = print (CoreEngine.transitionToString T) 
+                val () = print "\n"
               in
                 take_transition T fastctx
               end
