@@ -1,0 +1,143 @@
+% virtual kitchen simulator
+
+ingredient : type.
+egg : ingredient.
+flour : ingredient.
+sugar : ingredient.
+rice : ingredient.
+pasta : ingredient.
+potato : ingredient.
+water : ingredient.
+butter : ingredient.
+oil : ingredient.
+vanilla : ingredient.
+chocolate : ingredient.
+garlic : ingredient.
+tomato : ingredient.
+
+melted ingredient : ingredient.
+chopped ingredient : ingredient.
+baked ingredient : ingredient.
+sauteed ingredient : ingredient.
+boiled ingredient : ingredient.
+combined ingredient ingredient : ingredient.
+
+property : type.
+fatty : property.
+starchy : property.
+dry : property.
+liquid : property.
+solid : property.
+doughy : property.
+acidic : property.
+water_soluble : property.
+
+has_prop ingredient property : bwd.
+
+% water
+has_prop water liquid.
+
+% egg
+has_prop egg liquid.
+
+% flour
+has_prop flour dry.
+
+% sugar
+has_prop sugar dry.
+has_prop sugar water_soluble.
+
+% pasta
+has_prop pasta dry.
+has_prop pasta starchy.
+
+% potato
+has_prop potato starchy.
+has_prop potato solid.
+
+% tomato
+has_prop tomato solid.
+has_prop tomato acidic.
+
+% rice
+has_prop rice starchy.
+has_prop rice dry.
+
+% butter
+has_prop butter fatty.
+has_prop butter solid.
+
+% chocolate
+has_prop chocolate fatty.
+has_prop chocolate solid.
+
+% oil
+has_prop oil fatty.
+has_prop oil liquid.
+
+% garlic
+has_prop garlic solid.
+
+% vanilla
+has_prop vanilla liquid.
+
+has_prop (melted X) fatty
+  <- has_prop X fatty.
+has_prop (melted X) liquid.
+
+%
+% has_prop (combined X Y) P
+%  <- has_prop (combined Y X) P.
+
+has_prop (combined X Y) doughy 
+  <- has_prop X dry
+  <- has_prop Y liquid.
+
+has_prop (combined X Y) liquid
+  <- has_prop X doughy
+  <- has_prop Y liquid.
+
+has_prop (baked X) solid.
+has_prop (baked X) dry.
+
+% processes:
+% cut, smash, roll
+% marinate/soak/let rise/let sit
+% stir, combine
+% bake, boil, melt, saute
+
+have ingredient : pred.
+
+stage main = {
+
+melt : have I * has_prop I solid * has_prop I fatty
+        -o have (melted I).
+
+chop : have I * has_prop I solid -o have (chopped I).
+
+combine : have I * have I' -o have (combined I I').
+
+boil : have I * $have water -o have (boiled I).
+
+saute : have Fat * has_prop Fat fatty * has_prop Fat liquid
+          * have (chopped Stuff)
+          -o have (sauteed Stuff).
+
+add_to_sautee :
+  have (sauteed Stuff) * have (chopped Thing)
+    -o have (sauteed (combined Stuff Thing)).
+
+bake :
+  have X * has_prop X doughy -o have (baked X).
+
+switch
+: have (combined X Y) -o have (combined Y X).
+
+}
+#interactive main.
+
+context init =
+{ !have water, have pasta, have rice, have oil, have flour,
+  have butter, have potato, have garlic, have tomato }.  
+
+#trace _ main init.
