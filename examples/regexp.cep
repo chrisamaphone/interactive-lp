@@ -1,0 +1,105 @@
+% Nondeterministic standard regular expression accepter
+
+char : type.
+a : char.
+b : char.
+
+exp : type.
+nil : exp.
+lit char : exp.
+cat exp exp : exp.
+alt exp exp : exp.
+rep exp : exp.
+
+str : type.
+empty : str.
+single char : str.
+append str str : str.
+
+regex exp : pred.
+
+accepts exp str : pred.
+
+goal exp str : bwd.
+goal (rep (alt (lit a) (lit b)))
+     (single a).
+
+run : pred.
+pause : pred.
+halt : pred.
+
+stage setup = {
+
+regex/alt
+: regex (alt E1 E2)
+  -o regex E1 *
+     regex E2.
+
+regex/cat
+: regex (cat E1 E2)
+  -o regex E1 *
+     regex E2.
+
+regex/rep
+: regex (rep E)
+  -o regex E.
+
+}.
+
+stage transition = {
+
+accepts/nil
+: regex nil *
+  run
+  -o accepts nil empty *
+     pause.
+
+accepts/lit
+: regex (lit C) *
+  run
+  -o accepts (lit C) (single C) *
+     pause.
+
+accepts/rep
+: $accepts E S *
+  run
+  -o accepts (rep E) S *
+     pause.
+
+accepts/alt
+: $accepts E1 S1 *
+  $accepts E2 S2 *
+  run
+  -o accepts (alt E1 E2) S1 *
+     accepts (alt E1 E2) S2 *
+     pause.
+
+accepts/cat
+: $accepts E1 S1 *
+  $accepts E2 S2 *
+  run
+  -o accepts (cat E1 E2) (append S1 S2) *
+     pause.
+}
+#interactive transition.
+
+stage final = {
+
+accepts/goal
+: $accepts E S *
+  goal E S *
+  run
+  -o halt.
+
+}
+#interactive final.
+
+setup/transition : qui * stage setup -o stage transition * run.
+transition/final : qui * stage transition * pause -o stage final * run.
+final/transition : qui * stage final * run  -o stage transition * run.
+
+context init = {
+  regex (rep (alt (lit a) (lit b)))
+}
+
+#trace _ setup init.
