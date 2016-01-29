@@ -1,0 +1,98 @@
+
+generation : type.
+z : generation.
+s generation : generation.
+
+gt generation generation : bwd.
+gt (s N) z.
+gt (s N) (s M)
+  <- gt N M.
+
+name : type.
+laura : name.
+mohammed : name.
+xi : name.
+ulrich : name.
+lin : name.
+jo : name.
+alice : name.
+michael : name.
+salil : name.
+
+isname name : bwd.
+isname laura.
+isname mohammed.
+isname xi.
+isname ulrich.
+isname lin.
+isname jo.
+isname alice.
+isname michael.
+isname salil.
+
+family : type.
+smith : family.
+ahn : family.
+muller : family.
+davy : family.
+zhu : family.
+suresh : family.
+
+overrides family family : bwd.
+overrides ahn smith.
+overrides smith muller.
+overrides davy smith.
+overrides zhu smith.
+overrides suresh smith.
+overrides ahn muller.
+overrides ahn davy.
+overrides zhu ahn.
+overrides suresh ahn.
+overrides davy muller.
+overrides zhu muller.
+overrides suresh muller.
+overrides davy zhu.
+overrides suresh davy.
+overrides zhu suresh.
+
+person name family generation : pred.
+union name name family generation : pred.
+depth generation : pred.
+curgen generation : pred.
+
+stage main = {
+
+% die-old : person _ _ G * $curgen (s (s G)) -o ().
+% die-young : person _ _ _ -o ().
+die : union N1 N2 S G -o ().
+die-curtail : person _ _ G * depth G -o ().
+
+repro-new : 
+  person N1 S1 G * person N2 S2 G * overrides S1 S2 
+  * isname N
+     -o union N1 N2 S1 G 
+        * person N S1 (s G) * curgen (s G).
+
+repro-old :
+  union N1 N2 S G * isname N
+    -o person N S (s G).
+
+breakup :
+  union N1 N2 S G -o person N1 S G * person N2 S G.
+
+
+} 
+% #interactive main.
+
+context init =
+{ person laura davy z, 
+  person ulrich muller z,
+  person jo smith z,
+  person lin zhu z,
+  person xi zhu z,
+  person salil suresh z,
+  !depth (s (s (s z))),
+  curgen z
+}.
+
+#trace _ main init.
