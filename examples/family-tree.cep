@@ -13,6 +13,8 @@ laura : name.
 mohammed : name.
 xi : name.
 ulrich : name.
+ana : name.
+pablo : name.
 lin : name.
 jo : name.
 alice : name.
@@ -29,6 +31,8 @@ isname jo.
 isname alice.
 isname michael.
 isname salil.
+isname ana.
+isname pablo.
 
 family : type.
 smith : family.
@@ -58,27 +62,31 @@ overrides zhu suresh.
 person name family generation : pred.
 union name name family generation : pred.
 depth generation : pred.
-curgen generation : pred.
+maxgen generation : pred.
 
 stage main = {
 
-% die-old : person _ _ G * $curgen (s (s G)) -o ().
-% die-young : person _ _ _ -o ().
-die : union N1 N2 S G -o ().
-die-curtail : person _ _ G * depth G -o ().
+die : union N1 N2 S G * $maxgen Max * gt Max (s G) -o ().
+% die-alone : person N S G -o ().
 
-repro-new : 
+union : 
   person N1 S1 G * person N2 S2 G * overrides S1 S2 
   * isname N
-     -o union N1 N2 S1 G 
-        * person N S1 (s G) * curgen (s G).
+     -o union N1 N2 S1 G.
 
+repro-newmax :
+  $union N1 N2 S G * isname N * maxgen G * depth D * gt D G
+    -o person N S (s G) * maxgen (s G).
+
+% can't repro if more than 2 generations old
 repro-old :
-  union N1 N2 S G * isname N
-    -o person N S (s G).
+  $union N1 N2 S G * isname N 
+      * $maxgen G' * gt (s (s  G)) G'
+      * depth D * gt D G'
+   -o person N S (s G).
 
-breakup :
-  union N1 N2 S G -o person N1 S G * person N2 S G.
+% breakup :
+%  union N1 N2 S G -o person N1 S G * person N2 S G.
 
 
 } 
@@ -91,8 +99,8 @@ context init =
   person lin zhu z,
   person xi ahn z,
   person salil suresh z,
-  !depth (s (s (s z))),
-  curgen z
+  !depth (s (s z)),
+  maxgen z
 }.
 
 #trace _ main init.
