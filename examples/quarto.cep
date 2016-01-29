@@ -1,0 +1,140 @@
+% Quarto
+
+colour : type.
+red : colour.
+blue : colour.
+
+size : type.
+tall : size.
+short : size.
+
+shape : type.
+square : shape.
+circular : shape.
+
+top : type.
+hollow : top.
+solid : top.
+
+id : type.
+a : id.
+b : id.
+c : id.
+d : id.
+
+piece colour size shape top : pred.
+empty id id : pred.
+slot id id colour size shape top : pred.
+current_colour colour : pred.
+
+nonfinal : pred.
+final : pred.
+winner colour : pred.
+
+next_colour colour colour : bwd.
+next_colour red blue.
+next_colour blue red.
+
+sequence id id id id id id id id : bwd.
+sequence a a a b a c a d.
+sequence b a b b b c b d.
+sequence c a c b c c c d.
+sequence d a d b d c d d.
+sequence a a b a c a d a.
+sequence a b b b c b d b.
+sequence a c b c c c d c.
+sequence a d b d c d d d.
+sequence a a b b c c d d.
+sequence a d b c c b d a.
+
+stage play = {
+
+place/piece
+: $piece C S S' T *
+  current_colour C' *
+  next_colour C' C *
+  empty X Y * nonfinal
+  -o slot X Y C S S' T * final * current_colour C.
+
+}
+
+stage check = {
+
+win/colour
+: slot X1 Y1 C _ _ _ *
+  slot X2 Y2 C _ _ _ *
+  slot X3 Y3 C _ _ _ *
+  slot X4 Y4 C _ _ _ *
+  sequence X1 Y1 X2 Y2 X3 Y3 X4 Y4 *
+  current_colour C' *
+  nonfinal
+  -o final * winner C'.
+
+win/size
+: slot X1 Y1 _ S _ _ *
+  slot X2 Y2 _ S _ _ *
+  slot X3 Y3 _ S _ _ *
+  slot X4 Y4 _ S _ _ *
+  sequence X1 Y1 X2 Y2 X3 Y3 X4 Y4 *
+  current_colour C' *
+  nonfinal
+  -o final * winner C'.
+
+win/shape
+: slot X1 Y1 _ _ S' _ *
+  slot X2 Y2 _ _ S' _ *
+  slot X3 Y3 _ _ S' _ *
+  slot X4 Y4 _ _ S' _ *
+  sequence X1 Y1 X2 Y2 X3 Y3 X4 Y4 *
+  current_colour C' *
+  nonfinal
+  -o final * winner C'.
+
+win/top
+: slot X1 Y1 _ _ _ T *
+  slot X2 Y2 _ _ _ T *
+  slot X3 Y3 _ _ _ T *
+  slot X4 Y4 _ _ _ T *
+  sequence X1 Y1 X2 Y2 X3 Y3 X4 Y4 *
+  current_colour C' *
+  nonfinal
+  -o final * winner C'.
+
+}
+
+context init = {
+  empty a a, empty a b, empty a c, empty a d,
+  empty b a, empty b b, empty b c, empty b d,
+  empty c a, empty c b, empty c c, empty c d,
+  empty d a, empty d b, empty d b, empty d d,
+
+  piece red tall square hollow,
+  piece red tall square solid,
+  piece red tall circular hollow,
+  piece red tall circular solid,
+  piece red short square hollow,
+  piece red short square solid,
+  piece red short circular hollow,
+  piece red short circular solid,
+
+  piece blue tall square hollow,
+  piece blue tall square solid,
+  piece blue tall circular hollow,
+  piece blue tall circular solid,
+  piece blue short square hollow,
+  piece blue short square solid,
+  piece blue short circular hollow,
+  piece blue short circular solid,
+
+  current_colour red,
+
+  nonfinal
+}.
+
+go/check
+: qui * stage play * final -o stage check * nonfinal.
+
+go/play'
+: qui * stage check * nonfinal -o stage play * nonfinal.
+
+#trace _ check init.
