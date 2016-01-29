@@ -71,7 +71,6 @@ die : union N1 N2 S G * $maxgen Max * gt Max (s G) -o ().
 
 union : 
   person N1 S1 G * person N2 S2 G * overrides S1 S2 
-  * isname N
      -o union N1 N2 S1 G.
 
 repro-newmax :
