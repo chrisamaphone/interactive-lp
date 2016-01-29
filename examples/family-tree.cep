@@ -89,7 +89,7 @@ context init =
   person ulrich muller z,
   person jo smith z,
   person lin zhu z,
-  person xi zhu z,
+  person xi ahn z,
   person salil suresh z,
   !depth (s (s (s z))),
   curgen z
