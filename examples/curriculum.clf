@@ -1,0 +1,42 @@
+
+some_programming : type.
+imperative_prog : type.
+big_o : type.
+data_structures : type.
+discrete_math : type.
+functional_prog : type.
+machine_model : type.
+alg_design : type.
+system_building : type.
+concurrency : type.
+parallelism : type.
+logic : type.
+pl : type.
+proofs : type.
+
+fifteen251 : type = discrete_math -o {!proofs}.
+fifteen122 : type = some_programming
+              -o {!big_o * !data_structures * !imperative_prog}.
+fifteen150 : type = some_programming * discrete_math
+              -o {!functional_prog}.
+fifteen210 : type = functional_prog * data_structures
+              -o {!parallelism}.
+fifteen213 : type = imperative_prog * data_structures
+              -o {!machine_model}.
+fifteen451 : type = proofs * data_structures * big_o
+              -o {!alg_design}.
+fifteen410 : type = imperative_prog * data_structures * machine_model
+              -o {!system_building * !concurrency}.
+fifteen312 : type = functional_prog * proofs
+              -o {!logic * !pl}.
+fifteen317 : type = functional_prog
+              -o {!logic * !proofs}.
+
+init : type = {!some_programming * !discrete_math
+          * @fifteen251
+          * @fifteen122 * @fifteen150 * @fifteen210 * @fifteen213
+          * @fifteen451 * @fifteen410 * @fifteen312 * @fifteen317}.
+
+#trace * init.
+
+#query * * * 1 init -o {1}.

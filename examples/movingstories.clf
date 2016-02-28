@@ -1,0 +1,53 @@
+item : type.
+work_clothes : item.
+party_clothes : item.
+saucer : item.
+scarf : item.
+teddy_bear : item.
+gun : item.
+passport :  item.
+
+on_floor : item -> type.
+in_luggage : item -> type.
+in_trash_can : item -> type.
+packed : item -> type.
+
+% actions: 
+% move item
+% say "done"
+
+% phase packing = {
+pack : on_floor I -o {in_luggage I}.
+discard : on_floor I -o {in_trash_can I}.
+% unpack : in_luggage I -o {on_floor I}.
+% decide : in_luggage I -o {packed I}.
+% }
+
+% qui * phase packing -o {phase story1}.
+story : type.
+breakup : story.
+promotion : story.
+tell : story -> type.
+trash_time : story -> type.
+trash_story : story -> item -> type.
+
+% phase tell_story = {
+breakup_story : in_luggage party_clothes -o {tell breakup}.
+promo_story : in_luggage work_clothes -o {tell promotion}.
+% }
+
+% qui * phase tell_story -o {phase dumpster}.
+
+tt : tell S -o {trash_time S}.
+
+junk : trash_time S * in_trash_can I
+           -o {trash_time S * trash_story S I}.
+
+#trace * {
+  on_floor work_clothes
+* on_floor party_clothes
+* on_floor saucer
+* on_floor scarf
+* on_floor teddy_bear
+* on_floor gun
+* on_floor passport }.

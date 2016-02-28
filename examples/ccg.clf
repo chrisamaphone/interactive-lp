@@ -1,0 +1,123 @@
+nat : type.
+z : nat.
+s : nat -> nat.
+
+plus : nat -> nat -> nat -> type.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+          <- plus N M P.
+
+sign : type.
+pos : sign.
+neg : sign.
+
+minus : nat -> nat -> nat -> sign -> type.
+minus/z1 : minus z M M neg.
+minus/z2 : minus (s N) z (s N) pos.
+minus/s  : minus (s N) (s M) P Sign
+            <- minus N M P Sign.
+
+hero : type.
+p1 : hero.
+p2 : hero.
+opp : hero -> hero -> type.
+opp/1 : opp p1 p2.
+opp/2 : opp p2 p1.
+
+hp : hero -> nat -> type.
+mana : hero -> nat -> type.
+
+minion : type.
+cost : minion -> nat -> type.
+
+loc : type.
+empty_slot : loc -> type.
+minion_slot : hero -> loc -> minion -> nat -> nat -> type.
+
+cards : type.
+none : cards.
+some : minion -> cards -> cards.
+
+bool : type.
+tt : bool.
+ff : bool.
+contains : cards -> minion -> bool -> type.
+contains/none : contains none _ ff.
+contains/hit  : contains (some M Cs) M tt.
+contains/miss : contains (some M Cs) M' Ans
+                 <- contains Cs M' Ans.
+
+append : cards -> cards -> cards -> type.
+append/nil : append none Cs Cs.
+append/cons : append (some C Cs) Cs' (some C Cs'')
+               <- append Cs Cs' Cs''.
+
+remove : cards -> minion -> cards -> bool -> type.
+remove/none : remove none _ none ff.
+remove/hit  : remove (some M Cs) M Cs tt.
+remove/miss : remove (some M' Cs) M (some M' Cs') Ans
+               <- remove Cs M Cs' Ans.
+
+leq : nat -> nat -> bool -> type.
+leq/z : leq z N tt.
+leq/sz : leq (s N) z ff.
+leq/ss : leq (s N) (s M) Ans
+         <- leq N M.
+
+filter-leq : cards -> nat -> cards -> type.
+filter-leq/none : filter-leq none _ none.
+filter-leq/hit  : filter-leq (some C Cs) N (some C Cs')
+                  <- cost C Cost
+                  <- leq Cost N tt
+                  <- filter-leq Cs N Cs'.
+filter-leq/miss : filter-leq (some C Cs) N Cs'
+                  <- cost C Cost
+                  <- leq Cost N ff
+                  <- filter-leq Cs N Cs'.
+                     
+
+deck : hero -> minion -> type.
+hand : hero -> cards -> type.
+turn : hero -> type.
+
+play_min : turn Hero * hand Hero Cards * remove Cards Minion Cards' tt
+               * empty_slot Hero Slot
+               * mana Hero Mana * cost Minion Cost
+               * start_hp Minion Hp * start_att Minion Att
+               * plus Cost NewMana Mana
+               -o {minion_slot Hero Slot Minion Att Hp
+                 * hand Hero Cards'
+                 * mana Hero NewMana * turn Hero}.
+
+% ...and all minions have attacked?
+job_done : turn Hero * mana Hero Mana * hand Hero Cards
+               * filter-leq Cards Mana nil
+               * opp Hero Hero'
+               * mana_slots Hero' MS
+               -o {turn Hero' * mana Hero z * hand Hero Cards
+                   * mana_slots Hero' (s MS)
+                   * mana Hero' (s MS)}.
+
+% XXX minions can attack arbitrarily often!
+att_min_min : turn Hero * minion_slot Hero Slot Minion Att HP
+              * opp Hero Hero'
+              * minion_slot Hero' Slot' Minion' Att' HP'
+              * minus HP Att' HP1 Sign1
+              * minus HP' Att HP2 Sign2
+                  -o {resolve Hero Slot Minion Att HP1 Sign1
+                    * resolve Hero' Slot' Minion' Att' HP2 Sign2
+                    * turn Hero}.
+
+resolve/pos : resolve Hero Slot Min Att HP pos
+                  -o {minion_slot Hero Slot Min Att HP}.
+resolve/neg : resolve Hero Slot Min Att HP neg
+                  -o {1}.
+
+att_min_hero : turn Hero * minion_slot Hero Slot Minion Att Hp
+                   * opp Hero Hero'
+                   * hp Hero' HP
+                   * minus HP Att HP' pos
+                -o {turn Hero * minion_slot Hero Slot Minion Att Hp
+                     * hp Hero' HP'}.
+
+murloc : minion.

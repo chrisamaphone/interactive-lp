@@ -1,0 +1,27 @@
+
+% resources: treasure, stamina, damage, skill
+treasure : type.
+stamina : type.
+damage : type.
+skill : type.
+alive : type.
+
+% actions: train, fight, rest, buy
+train : stamina * alive -o {@skill * @alive}.
+fight : skill * stamina * alive -o {@treasure * @damage * @damage * @alive}.
+rest : alive -o {@stamina * @alive}.
+buy_weapon : treasure * treasure * treasure * treasure * alive -o 
+                 {@skill * @alive}.
+% buy_armor : treasure -o {stamina}.
+
+get_tired : damage * stamina * alive -o {@damage * @alive}.
+die : damage * damage * damage * alive -o {1}.
+
+init : type = {@stamina * @stamina * @stamina * @alive}.
+#trace * init.
+#query * * * 5 init -o {1}.
+
+% TODO:
+% add levels
+% add emergent character classes
+% make end condition be "picking a specialty"
