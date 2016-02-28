@@ -1,0 +1,78 @@
+name ParseFn
+
+terminal PRED 
+terminal STAGE
+terminal CONTEXT
+terminal IDENT of string
+terminal NUM of int
+terminal HASHDENT of string
+terminal LBRACE
+terminal RBRACE
+terminal LPAREN
+terminal RPAREN
+terminal PERIOD
+terminal COLON    precr 20 /* nonassoc */
+terminal COMMA    precr 10
+terminal EQUALS
+terminal USCORE
+terminal DOLLAR   precl 60
+terminal BANG     precl 60
+terminal STAR     precr 50
+terminal LARROW   precl 30
+terminal RARROW   precr 40
+terminal LLOLLI   precl 30
+terminal RLOLLI   precr 40
+terminal UNIFY    precr 80 /* nonassoc */
+terminal DIFFER   precr 80 /* nonassoc */
+
+start Tops
+
+nonterminal Top: top = 
+   1:Syn PERIOD                                                 => Decl
+   STAGE 1:IDENT OpEquals LBRACE 2:Tops RBRACE OpPeriod         => Stage
+   CONTEXT 1:IDENT OpEquals LBRACE 2:OpSyn RBRACE OpPeriod      => Context
+   1:HASHDENT 2:Atomics PERIOD                                  => Special
+
+nonterminal Tops: tops =       => NilT
+   1:Top 2:Tops                => ConsT
+
+nonterminal Syn: syn =
+   1:Syn COLON 2:Syn           => Ascribe
+   1:Syn LLOLLI 2:Syn          => LolliL
+   1:Syn LARROW 2:Syn          => ArrowL
+   1:Syn RLOLLI 2:Syn          => Lolli
+   1:Syn RLOLLI                => LolliOne
+   1:Syn RARROW 2:Syn          => Arrow  
+   1:Syn STAR 2:Syn            => Star
+   1:Syn COMMA 2:Syn           => Comma
+   1:Syn UNIFY 2:Syn           => Unify
+   1:Syn DIFFER 2:Syn          => Differ
+
+   BANG 1:Syn                  => Bang
+   DOLLAR 1:Syn                => Dollar
+
+   STAGE 1:IDENT               => StagePred
+   1:Atomic 2:Atomics          => app
+
+nonterminal Atomics: syns =    => Nil
+   1:Atomic 2:Atomics          => Cons precl 90
+
+nonterminal Atomic: syn =
+   LPAREN 1:Syn RPAREN         => parens
+   LBRACE 1:Syn RBRACE         => Braces
+   LPAREN RPAREN               => One
+   LBRACE RBRACE               => EmptyBraces
+   1:IDENT                     => Id
+   USCORE                      => Wild
+   PRED                        => Pred
+   1:NUM                       => Num
+   
+nonterminal OpEquals: ign =    => Ign
+   EQUALS                      => Ign
+
+nonterminal OpPeriod: ign =    => Ign
+   PERIOD                      => Ign
+
+nonterminal OpSyn: synopt =    => noneSyn
+   1:Syn                       => someSyn
+

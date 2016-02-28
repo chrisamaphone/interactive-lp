@@ -1,0 +1,51 @@
+%% First-past-the-post voting.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+candidate : type.
+elected candidate : pred.
+defeated candidate : pred.
+ballot candidate : pred.
+hopeful candidate nat : pred.
+max nat : pred.
+
+stage count = {
+  count_ballot : ballot C * hopeful C N -o hopeful C (s N).
+}
+
+qui * stage count -o stage pick * max z.
+
+lt nat nat : bwd.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+      <- lt N M.
+
+stage pick = {
+  increase : max N * hopeful C N' * lt N N'  
+               -o hopeful C N' * max N'.
+  eliminate : max N * hopeful C N' * lt N' N
+               -o max N * !defeated C.
+}
+
+qui * stage pick * hopeful C N -o stage done * !elected C.
+
+stage done = {
+  cleanup : max _ -o ().
+}
+
+
+alice : candidate.
+bob : candidate.
+charlie : candidate.
+
+context init =
+{ballot alice, ballot alice, ballot charlie, ballot bob,
+ballot bob, ballot alice,
+hopeful alice z,
+hopeful bob z,
+hopeful charlie z }.
+
+
+#trace _ count init.

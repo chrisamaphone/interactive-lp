@@ -1,0 +1,20 @@
+
+item : type.
+a : item.
+b : item.
+c : item.
+
+list : type.
+nil : list.
+cons item list : list.
+
+member item : pred.
+list list : pred.
+
+stage shuffle = {
+pick : member E * list L -o list (cons E L).
+}
+
+context init = {member a, member b, member c, list nil}.
+
+#trace _ shuffle init.

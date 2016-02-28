@@ -1,0 +1,49 @@
+
+strong : pred.
+sweet : pred.
+sour : pred.
+bitter : pred.
+herbal : pred.
+
+% ingredients
+gin : pred.
+tequila : pred.
+bourbon : pred.
+rum : pred.
+sugar : pred.
+maraschino : pred.
+vermouth : pred.
+tonic : pred.
+campari : pred.
+cynar : pred.
+lime : pred.
+lemon : pred.
+bitters : pred.
+basil : pred.
+chartreuse : pred.
+
+stage mix = {
+s1 : strong -o tequila.
+s2 : strong -o gin.
+s3 : strong -o bourbon.
+s4 : strong -o rum.
+
+sw1 : sweet -o sugar.
+sw2 : sweet -o maraschino.
+sw3 : sweet -o vermouth.
+sw4 : sweet -o tonic.
+
+b1 : bitter -o campari.
+b2 : bitter -o cynar.
+b3 : bitter -o bitters.
+
+sour1 : sour -o lime.
+sour2 : sour -o lemon.
+
+h1 : herbal -o basil.
+h2 : herbal -o chartreuse.
+}
+
+#trace _ mix {strong, bitter, sweet}. 
+
+

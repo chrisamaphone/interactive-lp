@@ -1,0 +1,56 @@
+ring : type.
+smaller ring ring : bwd.
+
+place : type.
+post : type.
+top_of ring : place.
+bottom post : place.
+post : place.
+
+on ring place : pred.
+clear place : pred.
+arm_free : pred.
+arm_holding ring : pred.
+
+stage do = {
+pickup 
+  : clear (top_of R) * on R P * arm_free -o arm_holding R * clear P.
+
+putdown_on_ring
+  : arm_holding R * clear (top_of R') * smaller R R'
+      -o arm_free * on R (top_of R') * clear (top_of R).
+
+putdown_on_post
+  : arm_holding R * clear (bottom P)
+      -o arm_free * on R (bottom P) * clear (top_of R).
+}
+#interactive do.
+
+% domain instantiation
+p1 : post.
+p2 : post.
+p3 : post.
+
+r1 : ring. 
+r2 : ring.
+r3 : ring.
+
+succ ring ring : bwd.
+succ r1 r2.
+succ r2 r3.
+
+smaller R R'
+  <- succ R R'.
+smaller R R''
+  <- succ R R'
+  <- smaller R' R''.
+
+context init =
+{clear (bottom p2), clear (bottom p3),
+    on r3 (bottom p1),
+    on r2 (top_of r3),
+    on r1 (top_of r2), 
+    clear (top_of r1),
+    arm_free}.
+
+#trace _ do init.

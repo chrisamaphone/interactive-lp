@@ -1,0 +1,52 @@
+ingredient : type.
+
+uncooked ingredient : pred.
+cooking ingredient : pred.
+cooking2 ingredient : pred.
+cooking3 ingredient : pred.
+cooked ingredient : pred.
+
+asparagus : ingredient.
+cranberry : ingredient.
+potatoes : ingredient.
+turkey : ingredient.
+potpie : ingredient.
+salad : ingredient.
+
+burner : pred.
+oven : pred.
+counter : pred.
+
+context dinner = 
+{ counter, burner, burner, oven,
+  uncooked asparagus, uncooked cranberry,
+  uncooked potatoes, uncooked turkey,
+  uncooked potpie, uncooked salad
+}.
+
+stage cook = {
+  start_cranberry : uncooked cranberry * burner -o cooking cranberry.
+  finish_cranberry : cooking cranberry -o cooked cranberry * burner.
+  
+  start_asparagus : uncooked asparagus * burner -o cooking asparagus.
+  finish_asparagus : cooking asparagus -o cooked asparagus * burner.
+  
+  start_potatoes : uncooked potatoes * burner -o cooking potatoes.
+  continue_potatoes : cooking potatoes -o cooking2 potatoes.
+  finish_potatoes : cooking2 potatoes -o cooked potatoes * burner.
+
+  prep_turkey : uncooked turkey * counter -o cooking turkey.
+  start_turkey : cooking turkey * oven -o counter * cooking2 turkey.
+  continue_turkey : cooking2 turkey -o cooking3 turkey.
+  finish_turkey : cooking3 turkey -o cooked turkey * oven.
+
+  start_potpie : uncooked potpie * oven -o cooking potpie.
+  continue_potpie : cooking potpie -o cooking2 potpie.
+  continue__potpie : cooking2 potpie -o cooking3 potpie.
+  finish_potpie : cooking3 potpie -o cooked potpie * oven.
+
+  start_salad : uncooked salad * counter -o cooking salad.
+  finish_salad : cooking salad -o cooked salad * counter.
+}
+
+#trace _ cook dinner.

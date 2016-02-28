@@ -1,0 +1,56 @@
+%% IF example for EXAG tutorial
+
+entity : type.
+alice : entity.
+bob : entity.
+
+location : type.
+door : type.
+key door : entity.
+
+playable entity : bwd.
+portable entity : bwd.
+playable alice.
+playable bob.
+portable (key D).
+
+adjacent location location : pred.
+at entity location : pred.
+%% step 2:
+locked door location location : pred.
+contains entity entity : pred.
+
+stage main = {
+
+  move 
+  : at C L * playable C * $adjacent L L'
+   -o at C L'.
+
+  take
+  : $at C L * playable C * at E L * portable E
+  -o contains C E.
+
+  unlock
+  : contains C (key D) * playable C
+  * $at C L
+  * locked D L L'
+  -o adjacent L L' * adjacent L' L.
+
+} #interactive main.
+
+foyer : location.
+kitchen : location.
+street : location.
+d1 : door.
+
+context init =
+{ at alice street,
+  at bob kitchen,
+at (key d1) street,
+locked d1 foyer kitchen,
+locked d1 kitchen foyer,
+adjacent foyer street,
+adjacent street foyer}
+
+#trace _ main init.
+

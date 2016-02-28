@@ -1,0 +1,220 @@
+%% Shakespearean Tragedy Story World
+
+character : type.
+location : type.
+accessible location location : bwd.
+
+object : type.
+% a useful kind of object for the genre.
+weapon : object.
+
+% states
+at character location : pred.
+has character object : pred.
+wants character object : pred.
+dead character : pred.
+murdered character character : pred.
+anger character character : pred.
+eros character character : pred.
+philia character character : pred.
+married character character : pred.
+unmarried character : pred.
+neutral character character : pred.
+depressed character : pred.
+suicidal character : pred.
+boredom : pred.
+
+nonfinal : pred.
+final : pred. % story ends with wedding.
+
+stage all = {
+
+% C travels to be near C'.
+do/travelTo
+: $philia C C' * $at C' L' * at C L * accessible L L'
+  -o at C L'.
+
+do/travelBored
+: at C L * accessible L L' * boredom * boredom
+  -o at C L'.
+
+% eros to philia
+do/fallInLove
+: $at C L * $at C' L' * eros C C' -o philia C C'.
+
+% philia to eros
+do/eroticize
+: $at C L * $at C' L' *
+  $philia C C' * philia C C' * philia C C' * philia C C'
+  -o eros C C'.
+
+do/flirt
+: $at C L * $at C' L * $eros C C' -o eros C' C.
+
+do/flirt/conflict 
+: $at C L * $at C' L * $at C'' L * $eros C C' * $eros C'' C
+  -o eros C' C * anger C'' C' * anger C'' C'.
+
+do/divorce
+: $at C L * $at C' L' *
+  married C C' * married C' C * $anger C C' * $anger C C'
+  -o unmarried C * unmarried C.
+
+do/widdow
+: married C C' * at C L * dead C'
+  -o unmarried C * at C L.
+
+do/marry 
+: at C L * at C' L * 
+  eros C C' * philia C C' * 
+  eros C' C * philia C' C * 
+  unmarried C * unmarried C'
+               -o married C C' * married C' C * at C L * at C' L *
+                    eros C C' * eros C' C *
+                    philia C C' * philia C' C.
+
+do/formOpinion/like
+: at C L * at C' L *
+  neutral C C'
+  -o at C L * at C' L * philia C C'.
+
+do/formOpinion/dislike
+: at C L * at C' L *
+  neutral C C'
+  -o at C L * at C' L * anger C C'.
+
+do/compliment/private
+: at C L * at C' L * philia C C' -o
+          at C L * at C' L * philia C C' * philia C' C.
+
+do/compliment/witnessed
+: at C L * at C' L * at Witness L * philia C C' *
+  anger Witness C' -o
+          at C L * at C' L * at Witness L * philia C C' * anger Witness C'  
+            * philia C' C * anger Witness C.
+
+do/insult/private
+: at C L * at C' L * anger C C' -o
+          at C L * at C' L * anger C C' * anger C' C * depressed C'.
+
+do/insult/witnessed
+: at C L * at C' L * at Witness L * anger C C' * philia Witness C' -o
+          at C L * at C' L * at Witness L * anger C C' * 
+            philia Witness C' * anger C' C * depressed C' * anger Witness C.
+
+%% Violence module
+
+do/murder 
+: anger C C' * anger C C' * anger C C' * anger C C' *
+  at C L * at C' L  * has C weapon
+                -o at C L * !dead C' * !murdered C C' *
+                      has C weapon.
+
+do/becomeSuicidal
+: at C L *
+  depressed C * depressed C * depressed C * depressed C
+  -o at C L * suicidal C * wants C weapon.
+
+do/comfort
+: at C L * at C' L *
+  suicidal C' * philia C C' * philia C' C
+  -o at C L * at C' L * 
+      philia C C' * philia C' C * philia C' C.
+
+do/suicide
+: at C L * suicidal C * has C weapon -o !dead C. 
+
+do/mourn 
+: at C L * philia C C' * dead C' 
+  -o at C L * depressed C * depressed C.
+
+do/thinkVengefully
+: at C L * at Killer L' * 
+  philia C Dead * murdered Killer Dead
+  -o at C L * at Killer L' * philia C Dead *
+      anger C Killer * anger C Killer.
+
+do/give
+ : at C L * at C' L * has C O * wants C' O * philia C C'
+         -o at C L * at C' L * has C' O * philia C C'.
+
+do/steal
+  : at C L * at C' L * has C O * wants C' O
+         -o at C L * at C' L * has C' O * anger C C'.
+
+do/loot
+  : at C L * dead C' * has C' O * wants C O
+    -o at C L * has C O.
+
+mixed_feelings 
+: anger C C' * philia C C' * $at C L -o neutral C C'.
+
+ending_1 % a marriage and a death
+: nonfinal *
+  at C1 L * married C1 C2 * dead C3
+  -o final.
+
+ending_2 % love triangle
+: nonfinal *
+  eros C1 C2 * eros C2 C3 * eros C3 C1
+  -o final.
+
+ending_3 % vengeance
+: nonfinal *
+  murdered C1 C2 * philia C3 C2 * murdered C3 C1
+  -o final.
+
+} % end stage all
+
+% #interactive all.
+
+
+% story-specific terms.
+romeo : character.
+juliet : character.
+montague : character.
+capulet : character.
+mercutio : character.
+nurse : character.
+tybalt : character.
+apothecary : character.
+
+mon_house : location.
+cap_house : location.
+town : location.
+
+% story-specific permastates
+mon/town : accessible mon_house town.
+town/mon : accessible town mon_house.
+cap/town : accessible cap_house town.
+town/cap : accessible town cap_house.
+
+%% initial state
+
+context init
+= { 
+  at romeo town, at montague mon_house, at capulet cap_house,
+  at mercutio town, at nurse cap_house, at juliet town,
+  at tybalt town, at apothecary town,
+
+  unmarried romeo, unmarried juliet,
+  unmarried nurse, unmarried mercutio, unmarried tybalt,
+  unmarried apothecary,
+
+  anger montague capulet, anger capulet montague,
+  anger tybalt romeo, anger capulet romeo, anger montague tybalt,
+
+  philia mercutio romeo, philia romeo mercutio,
+  philia montague romeo, philia capulet juliet,
+
+  has tybalt weapon, has romeo weapon, has apothecary weapon,
+
+  philia juliet nurse, philia nurse juliet,
+  neutral nurse romeo,
+  neutral mercutio juliet, neutral juliet mercutio,
+  neutral apothecary nurse, neutral nurse apothecary,
+           
+  nonfinal}.
+
+#trace _ all init.
+

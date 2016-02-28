@@ -1,0 +1,19 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+things nat : pred.
+four_things : pred.
+
+stage foo = {
+  remove : things (s N) -o things N.
+  four : things 4 -o four_things.
+}
+
+context init = {things (s (s (s (s (s 3)))))}.
+
+#trace _ foo init.

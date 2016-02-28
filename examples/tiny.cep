@@ -1,0 +1,7 @@
+item : type.
+red item : pred.
+blue item : pred.
+purple item : pred.
+
+r1 : red X -o blue X.
+r2 : red X * $blue X -o purple X.

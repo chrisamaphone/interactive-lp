@@ -1,0 +1,67 @@
+% testing move dir sensing pred
+
+cmd : type.
+north : cmd.
+south : cmd.
+west : cmd.
+east : cmd.
+quit : cmd.
+
+dir cmd : bwd.
+dir north.
+dir south.
+dir west.
+dir east.
+
+% world map
+
+place : type.
+forest : place.
+castle : place.
+town : place.
+desert : place.
+lake : place.
+
+entity : type.
+player : entity.
+
+at entity place : pred.
+
+adj place cmd place : bwd.
+adj town north forest.
+adj forest south town.
+adj forest west lake.
+adj lake east forest.
+adj forest east desert.
+adj desert west forest.
+adj forest north castle.
+adj castle south forest.
+
+done : pred.
+do cmd : pred.
+go cmd : pred.
+listen : pred.
+got : pred.
+success : pred.
+
+stage process = {
+  do/go : do Dir * at player Place1 * adj Place1 Dir Place2
+             -o at player Place2 * success.
+  do/q  : do quit -o done.
+}
+
+process_succeed : qui * stage process * success -o stage accept_input * listen.
+process_fail : qui * stage process * do _ -o stage accept_input * listen.
+process_done : qui * stage process * done -o ().
+
+stage accept_input = {
+  accept : listen * inputCmd Cmd -o do Cmd * got.
+}
+
+accept_succeed : qui * stage accept_input * got -o stage process.
+accept_fail : qui * stage accept_input * listen -o stage accept_input * listen.
+
+context init = {at player town, listen}.
+
+#trace _ accept_input init.
+

@@ -1,0 +1,15 @@
+
+a : pred.
+b : pred.
+c : pred.
+
+stage one = {
+  r1 : a -o b.
+  r2 : a -o c.
+}
+
+#interactive one.
+
+context init = {a,a,a,a}.
+
+#trace _ one init.

@@ -1,0 +1,230 @@
+% Hack & slash RPG demo (akin to Twine blog post)
+
+nat : type.   #builtin NAT nat.
+z : nat.      #builtin NAT_ZERO z.
+s nat : nat.  #builtin NAT_SUCC s.
+
+nat-option : type.
+none : nat-option.
+some nat : nat-option.
+
+subtract nat nat nat-option : bwd.
+subtract/z : subtract N z (some N).
+subtract/fail : subtract z (s N) none.
+subtract/s/succeed 
+  : subtract (s N) (s M) (some P)
+    <- subtract N M (some P).
+subtract/s/fail 
+  : subtract (s N) (s M) none
+    <- subtract N M none.
+
+lt nat nat : bwd.
+lt/z : lt z (s N).
+lt/s : lt (s N) (s M)
+      <- lt N M.
+
+geq nat nat : bwd.
+geq/z : geq N z.
+geq/s : geq (s N) (s M)
+      <- geq N M.
+
+plus nat nat nat : bwd.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+        <- plus N M P.
+
+% capped addition
+cplus nat nat nat nat : bwd.
+cplus/met : cplus N M T T
+          <- geq M T.
+cplus/s   : cplus (s N) M T P
+          <- lt M T
+          <- cplus N (s M) T P.
+cplus/z   : cplus z M T M.
+
+max_hp nat : bwd.
+max_hp (s (s (s (s (s (s (s (s (s z))))))))).
+recharge_hp nat : bwd.
+recharge_hp (s (s (s (s (s (s (s (s (s (s z)))))))))).
+
+ndays nat : pred.
+health nat : pred.
+treasure nat : pred.
+
+init_tok : pred.
+context init_ctx = {init_tok}.
+
+weapon_damage nat : pred.
+weapon : type.
+damage_of weapon nat : bwd.
+cost weapon nat : bwd.
+
+sword : weapon.
+mace : weapon.
+grenade : weapon.
+
+damage_of sword 4.
+damage_of mace 5.
+damage_of grenade 10.
+
+cost sword 10.
+cost mace 20.
+cost grenade 50.
+
+main_screen : pred.
+shop_screen : pred.
+rest_screen : pred.
+adventure_screen : pred.
+quit : pred.
+
+stage init = {
+  i : init_tok * max_hp N
+      -o health N * treasure z * ndays z
+          * weapon_damage (s (s z)).
+}
+qui * stage init -o stage main * main_screen.
+
+stage main = {
+  do/rest : main_screen -o rest_screen. 
+  do/adventure : main_screen -o adventure_screen.
+  do/shop : main_screen -o shop_screen.
+
+  % comment out for autogen version
+  do/quit : main_screen -o quit.
+}
+#interactive main.
+
+qui * stage main * $rest_screen -o stage rest.
+qui * stage main * $shop_screen -o stage shop.
+qui * stage main * $adventure_screen -o stage adventure.
+qui * stage main * quit -o ().
+
+stage rest = {
+  recharge : rest_screen
+               * health HP * max_hp Max * recharge_hp Recharge 
+               * cplus HP Recharge Max N
+               * ndays NDAYS
+              -o health N * ndays (s NDAYS).
+}
+qui * stage rest -o stage main * main_screen.
+
+stage shop = {
+  leave : shop_screen -o main_screen.
+  buy : treasure T * cost W C * damage_of W D * weapon_damage _
+          * subtract T C (some T')
+          -o treasure T' * weapon_damage D.
+}
+#interactive shop.
+qui * stage shop * $main_screen -o stage main.
+
+monster_size nat : bwd.
+monster_size (s (s z)).
+monster_size (s (s (s z))).
+monster_size (s (s (s (s (s z))))).
+
+monster nat : pred.
+monster_hp nat : pred.
+fight_screen : pred.
+flee_screen : pred.
+spoils nat : pred.
+mkchoice : pred.
+
+stage adventure = {
+  init : adventure_screen -o spoils z.
+}
+qui * stage adventure -o stage fight_init * fight_screen.
+
+fought : pred.
+drop nat : pred.
+win_screen : pred.
+lose_screen : pred.
+die_screen : pred.
+gen_monster : pred.
+try_fight : pred.
+fight_in_progress : pred.
+choice : pred.
+
+% drop_amount M N means a monster of size M can drop N coins
+drop_amount nat nat : bwd.
+drop_amount X X. % for now
+
+stage fight_init = {
+  init : fight_screen -o gen_monster * fight_in_progress.
+  gen_a_monster : gen_monster * monster_size Size
+                    -o monster Size * monster_hp Size.
+}
+qui * stage fight_init -o stage fight * choice.
+
+stage fight_auto = {
+  fight/hit
+    : try_fight * $fight_in_progress * monster_hp MHP * $weapon_damage D
+        * subtract MHP D (some MHP')
+        -o monster_hp MHP'.
+  win
+    : fight_in_progress * monster_hp MHP * $weapon_damage D
+        * subtract MHP D none
+        -o win_screen.
+  fight/miss
+    : try_fight * $fight_in_progress * $monster Size * health HP
+            * subtract HP Size (some HP')
+        -o health HP'.
+  die_from_damages
+    : health z * fight_in_progress -o die_screen.
+  fight/die  
+    : try_fight * fight_in_progress * monster Size * health HP
+            * subtract HP Size none
+            -o die_screen.
+}
+qui * stage fight_auto * $fight_in_progress -o stage fight * choice.
+qui * stage fight_auto * $win_screen -o stage win.
+qui * stage fight_auto * $die_screen -o stage die.
+
+stage fight = {
+  do_fight : choice * $fight_in_progress -o try_fight.
+  do_flee  : choice * fight_in_progress -o flee_screen.
+}
+#interactive fight.
+qui * stage fight * $fight_in_progress -o stage fight_auto.
+qui * stage fight * $flee_screen -o stage flee.
+
+stage flee = {
+  % lose spoils
+  do/flee : flee_screen * spoils X * monster _ * monster_hp _
+              -o ().
+}
+qui * stage flee -o stage main * main_screen.
+
+go_home_or_continue : pred.
+stage win = {
+  win  
+    : win_screen * monster Size * drop_amount Size Drop 
+          -o drop Drop. 
+  collect_spoils
+    : drop X * spoils Y * plus X Y Z
+      -o spoils Z * go_home_or_continue.
+  go_home
+    : go_home_or_continue
+      * spoils X * treasure Y * plus X Y Z
+      -o treasure Z * main_screen.
+  continue
+    : go_home_or_continue -o fight_screen.
+}
+#interactive win.
+qui * stage win * $main_screen -o stage main.
+qui * stage win * $fight_screen -o stage fight_init.
+
+end : pred.
+stage die = {
+  quit : die_screen -o end.
+  restart : die_screen * monster_hp _ 
+              * spoils _ * ndays _ * treasure _
+              * weapon_damage _ -o init_tok.
+}
+#interactive die.
+
+qui * stage die * end -o ().
+qui * stage die * $init_tok -o stage init.
+
+#trace _ init init_ctx.
+
+

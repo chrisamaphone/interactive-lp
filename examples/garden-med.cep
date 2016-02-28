@@ -1,0 +1,87 @@
+% slightly bigger garden sim
+% in this version we make all plants do something each turn
+% and restrict turns to 3.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+day nat : pred.
+
+plant_type : type.
+flower : plant_type.
+herb : plant_type.
+vine : plant_type.
+succulent : plant_type.
+
+plant_phase : type.
+seed : plant_phase.
+seedling : plant_phase.
+mature : plant_phase.
+
+next plant_phase plant_phase : bwd.
+next seed seedling.
+next seedling mature.
+
+health : type.
+healthy : health.
+overgrowing : health.
+wilting : health.
+dead : health.
+
+harvested plant_type : pred.
+have_seed plant_type : pred.
+% last var is for synchronization
+plant plant_type plant_phase health nat : pred.
+
+step : pred.
+turns nat : pred.
+
+soil_space : pred.
+
+stage play {
+  get_seeds : 
+    turns (s N) * harvested Type 
+      -o have_seed Type * have_seed Type * turns N.
+
+  plant : 
+    turns (s N) * have_seed Type * soil_space * $day D 
+      -o plant Type seed healthy D * turns N.
+  
+  harvest : turns (s N) * plant Type mature healthy _ 
+      -o harvested Type * soil_space * turns N.
+  
+  clear : turns (s N) * plant Type _ dead _
+      -o soil_space * turns N.
+  
+  water : turns (s N) * plant Type Phase wilting D 
+      -o plant Type Phase healthy D * turns N.
+  
+  done : turns _ -o ().
+}
+#interactive play.
+
+qui * stage play -o stage advance_day * step.
+
+stage advance_day = {
+  advance : day N * step -o day (s N).
+}
+
+qui * stage advance_day -o stage grow.
+
+stage grow = {
+  grow : plant Type Phase healthy D * next Phase Phase' * $day (s D)
+            -o plant Type Phase' healthy (s D).
+  wilt : plant Type Phase healthy D * $day (s D)
+            -o plant Type Phase wilting (s D).
+  die : plant Type Phase wilting D * $day (s D)
+            -o plant Type Phase dead (s D).
+}
+qui * stage grow -o stage play * turns (s (s (s z))).
+
+context init = {day z, 
+  have_seed flower, have_seed herb, have_seed vine, have_seed succulent,
+  soil_space, soil_space, soil_space, soil_space, turns (s (s (s z)))}.
+#trace _ play init.
+
+

@@ -1,0 +1,40 @@
+
+character : type.
+location : type.
+
+at character location : pred. 
+
+message : type.
+says character message : pred.
+knows character message : pred.
+
+broadcast location message : pred.
+
+stage say = {
+  say : says C M * $at C L -o broadcast L M.
+}
+
+restore character location : pred.
+
+stage hear = {
+  hear : $broadcast L M * at C L -o knows C M * restore C L.
+}
+
+stage restore = {
+  restore : restore C L -o at C L.
+} 
+
+qui * stage say -o stage hear.
+qui * stage hear -o stage restore.
+
+alice : character.
+bob : character.
+charlie : character.
+hall : location.
+foyer : location.
+hi : message.
+
+context init =
+{at alice hall, at bob hall, at charlie foyer, says alice hi}.
+
+#trace _ say init.

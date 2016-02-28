@@ -1,0 +1,87 @@
+
+generation : type.
+z : generation.
+s generation : generation.
+
+gt generation generation : bwd.
+gt (s N) z.
+gt (s N) (s M)
+  <- gt N M.
+
+name : type.
+laura : name.
+mohammed : name.
+xi : name.
+ulrich : name.
+lin : name.
+jo : name.
+alice : name.
+michael : name.
+salil : name.
+
+isname name : bwd.
+isname laura.
+isname mohammed.
+isname xi.
+isname ulrich.
+isname lin.
+isname jo.
+isname alice.
+isname michael.
+isname salil.
+
+family : type.
+smith : family.
+ahn : family.
+muller : family.
+davy : family.
+zhu : family.
+suresh : family.
+
+overrides family family : bwd.
+overrides ahn smith.
+overrides smith muller.
+overrides davy smith.
+overrides zhu smith.
+overrides suresh smith.
+overrides ahn muller.
+overrides ahn davy.
+overrides zhu ahn.
+overrides suresh ahn.
+overrides davy muller.
+overrides zhu muller.
+overrides muller suresh.
+overrides davy zhu.
+overrides suresh davy.
+overrides zhu suresh.
+
+orphan name family generation : pred.
+person name family generation : pred.
+union name name family generation : pred.
+depth generation : pred.
+curgen generation : pred.
+
+stage main = {
+
+gen_union
+: orphan Name Fam Gen * depth D * gt D Gen
+    * isname Mom * isname Dad
+  -o person Name Fam Gen * union Mom Dad Fam (s Gen).
+
+gen_siblings
+: $union Mom Dad Fam (s Gen) * isname Sib
+    -o person Sib Fam Gen.
+  
+gen_parents
+: union Mom Dad Fam Gen * overrides Fam Fam'
+  -o orphan Mom Fam Gen * orphan Dad Fam' Gen.
+
+} 
+% #interactive main.
+
+context init =
+{ orphan laura davy z, 
+  !depth (s (s (s z)))
+}.
+
+#trace _ main init.

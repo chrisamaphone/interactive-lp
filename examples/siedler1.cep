@@ -1,0 +1,150 @@
+% "mini siedler" - no full map.
+% just players with turns, hands, trading, settlements, and cities.
+% resource production still constrained by geometry, but building is not.
+
+player : type.
+red : player. blue : player. yellow : player.
+
+% turn order
+next player player : bwd.
+next red blue.
+next blue yellow.
+next yellow red.
+
+resource : type.
+brick : resource.
+lumber : resource.
+wool : resource.
+grain : resource.
+ore : resource.
+
+holds player resource : pred.
+
+turn player : pred.
+done player : pred.
+
+hex : type.
+h1 : hex. h2 : hex. h3 : hex. h4 : hex. h5 : hex. h6 : hex.
+
+produces hex resource : bwd.
+produces h1 grain.
+produces h2 lumber.
+produces h3 ore.
+produces h4 wool.
+produces h5 grain.
+produces h6 brick.
+
+intersection : type.
+i1 : intersection.
+i2 : intersection.
+i3 : intersection.
+i4 : intersection.
+i5 : intersection.
+i6 : intersection.
+
+ilist : type.
+nil : ilist.
+cons intersection ilist : ilist.
+
+adjacent hex ilist : bwd.
+adjacent h1 (cons i1 (cons i2 nil)). 
+adjacent h2 (cons i1 (cons i3 nil)).
+adjacent h3 (cons i2 (cons i4 nil)).
+adjacent h4 
+  (cons i1 (cons i2 (cons i3 (cons i4 (cons i5 (cons i6 nil)))))).
+adjacent h5 (cons i3 (cons i6 nil)).
+adjacent h6 (cons i5 (cons i6 nil)).
+
+available_land intersection : pred.
+has_settlement player intersection : pred.
+has_city player intersection : pred.
+
+context board =
+{ available_land i1,
+  available_land i2,
+  available_land i3,
+  available_land i4,
+  available_land i5,
+  available_land i6 }.
+
+init_settlement player : pred.
+context players = 
+{turn red, 
+  init_settlement red,
+  init_settlement yellow,
+  init_settlement blue }.
+
+context init = {board, players}.
+
+stage setup = {
+  % everyone gets one settlement to start,
+  % going in random order.
+  settle
+  : init_settlement P * available_land X 
+    -o has_settlement P X.
+}
+#interactive setup.
+
+die : pred.
+setup_to_rolling : qui * stage setup -o stage roll * die.
+
+roll hex : pred.
+stage roll = {
+  roll1 : die -o roll h1.
+  roll2 : die -o roll h2.
+  roll3 : die -o roll h3.
+  roll4 : die -o roll h4. 
+  roll5 : die -o roll h5.
+  roll6 : die -o roll h6.
+}
+roll_to_prod : qui * stage roll -o stage produce.
+
+prod intersection : pred.
+mete resource ilist : pred.
+stage produce = {
+  process_roll : 
+    roll H * produces H R * adjacent H Is
+    -o mete R Is.
+
+  mete/nil : mete R nil -o ().
+  mete/skip : mete R (cons I Is) * $available_land I
+              -o mete R Is.
+  mete/settlement 
+    : mete R (cons I Is) * $has_settlement Player I
+              -o holds Player R * mete R Is.
+  mete/city
+    :  mete R (cons I Is) * $has_city Player I
+              -o holds Player R * holds Player R
+                  * mete R Is.
+}
+prod_to_trade : qui * stage produce -o stage trade.
+
+stage trade = {
+  do/trade : $turn P * holds P R * holds P' R'
+            -o holds P R' * holds P' R.
+  donetrading : turn P -o done P.
+}
+#interactive trade.
+trade_to_build : qui * stage trade * done P -o stage build * turn P.
+
+stage build = {
+  build_settlement : 
+    $turn P 
+      * holds P brick * holds P lumber * holds P wool * holds P grain 
+      * available_land L
+    -o has_settlement P L.
+
+  build_city :
+    $turn P
+      * has_settlement P I * holds P ore * holds P ore * holds P ore
+        * holds P grain * holds P grain
+    -o has_city P I.
+
+  finished : turn P -o done P.
+}
+#interactive build.
+build_to_roll : 
+  qui * stage build * done P * next P P'
+   -o stage roll * turn P' * die.
+
+#trace _ setup init.

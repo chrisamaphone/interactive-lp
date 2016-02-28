@@ -2,6 +2,7 @@
 
 red : pred.
 blue : pred.
+green : pred.
 
 stage red_blue = {
   r1 : red -o blue.
@@ -13,13 +14,21 @@ stage blue_green = {
 
 link1 : qui * stage red_blue -o stage blue_green.
 
-init = red_blue {red, red, red, red}.
+context init = {red, red, red, red}.
+context init' = {init, red}.
+
+#trace _ red_blue init.
 
 %%%% List sorter/minimum getter %%%% 
 
 location : type.
 start : location.
 end : location.
+l1 : location.
+l2 : location.
+l3 : location.
+l4 : location.
+l5 : location.
 
 element : type.
 r : element.
@@ -28,13 +37,17 @@ g : element.
 
 at location element location : pred.
 
-!lt element element : pred.
+lt element element : bwd.
 lt r b.
 lt b g.
 
-!leq element element : pred.
+leq element element : bwd.
 leq X X.
 leq X Y <- lt X Y.
+% This is a comment
+succ element element : bwd.
+succ/rb : succ r b.
+succ/bg : succ b g.
 
 stage sort = {
   swap : at L1 E1 L2 * at L2 E2 L * lt E2 E1
@@ -45,9 +58,16 @@ stage sort = {
 % possible alternative syntax:
 % %qui stage sort -o stage getmin.
 
+
 min element : pred.
 stage getmin = {
-  pluck : at start M -o min M.
+  pluck : at start M _ -o min M.
   cleanup : min M * at _ _ _ -o min M.
 }
+
+context sort_init = 
+{at start g l2, at l2 r l3, at l3 g l4,
+  at l4 b l5, at l5 r end}.
+
+#trace _ sort sort_init.
 

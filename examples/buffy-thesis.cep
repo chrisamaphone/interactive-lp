@@ -1,0 +1,390 @@
+character : type.
+buffy : character.
+willow : character.
+xander : character.
+anya : character.
+tara : character.
+giles : character.
+spike : character.
+warren : character.
+
+npc character : pred.
+
+evil character : pred.
+witch character : pred.
+slayer character : pred.
+
+weak character : pred.
+strong character : pred.
+
+friends character character : pred.
+crush character character : pred.
+dating character character : pred.
+dislike character character : pred.
+hunting character character : pred.
+
+place : type.
+crypt : place.
+graveyard : place.
+buffy_house : place.
+magic_box : place.
+trio_lair : place.
+
+adjacent place place : bwd.
+adjacent crypt graveyard.
+adjacent graveyard crypt.
+adjacent graveyard buffy_house.
+adjacent buffy_house graveyard.
+adjacent buffy_house magic_box.
+adjacent magic_box buffy_house.
+adjacent magic_box graveyard.
+adjacent graveyard magic_box.
+adjacent magic_box trio_lair.
+adjacent trio_lair magic_box.
+
+at character place : pred.
+
+% states resulting from one character acting on another
+attacking character character : pred.
+hitting_on character character : pred.
+spellcast character character : pred.
+joking_with character character : pred.
+accusing character character : pred.
+acting_affectionate character character : pred.
+
+% other character states
+hurt_by character character : pred.
+
+context init_story =
+{ friends buffy willow, friends willow buffy,
+  friends buffy xander, friends xander buffy,
+  friends willow xander, friends xander willow,
+  dating willow tara, dating tara willow,
+  dating xander anya, dating anya xander,
+  friends giles buffy, friends buffy giles,
+  friends willow giles, friends giles willow,
+  dislike giles spike, dislike spike giles,
+  dislike xander spike, dislike spike xander,
+  evil spike, crush spike buffy, dislike buffy spike,
+  dislike warren buffy, evil warren,
+  witch willow, slayer buffy, 
+  strong buffy, strong spike, strong willow, strong warren,
+  weak xander, weak giles, weak anya, weak tara}.
+
+context init_locations =
+{ at buffy buffy_house, at willow buffy_house,
+   at tara buffy_house, at xander magic_box,
+   at anya magic_box, at giles magic_box,
+   at spike crypt, at warren trio_lair
+}
+
+
+no_pc : pred.
+pc character : pred.
+turn : pred.
+
+context init_game =
+{npc buffy, npc willow, npc xander, npc anya, npc tara,
+npc giles, npc spike, npc warren, 
+no_pc}.
+
+stage select_character = {
+  pick : npc C * no_pc -o pc C.  
+}
+#interactive select_character.
+qui * stage select_character -o stage pc_choices * turn.
+
+stage pc_choices = {
+  act/move
+      : turn * $pc C 
+      * at C L * adjacent L L'
+          -o at C L'.
+
+  act/attack/evil 
+      : turn * $pc C 
+      * $evil C 
+      * $at C L * $at C' L
+          -o attacking C C'.
+
+  act/attack/slayer
+      : turn * $pc C
+      * $slayer C * $at C L * $at C' L * $evil C'
+          -o attacking C C'.
+
+  act/attack/revenge/friend
+      : turn * $pc C
+      * $at C L * $at C' L
+      * $friends C Victim * hurt_by Victim C'
+      -o attacking C C'.
+
+  act/attack/revenge/lover
+      : turn * $pc C
+      * $at C L * $at C' L
+      * $dating C Victim * hurt_by Victim C'
+      -o attacking C C'.
+
+  act/hit_on
+      : turn * $pc C
+      * $at C L * $at C' L * $crush C C'
+        -o hitting_on C C'.
+
+  act/affection
+      : turn * $pc C
+      * $at C L * $at C' L * $dating C C'
+        -o acting_affectionate C C'.
+
+  act/spellcast/weak_to_strong
+      : turn * $pc C * $witch C
+      * $at C L * $at C' L 
+      * weak C' 
+        -o strong C' * spellcast C C'.
+
+  act/spellcast/strong_to_weak
+      : turn * $pc C * $witch C
+      * $at C L * $at C' L
+      * strong C'
+        -o weak C' * spellcast C C'.
+
+  act/accuse
+      : turn * $pc C
+      * $at C L * $at C' L
+      * $hurt_by C C'
+      -o accusing C C'.
+
+  act/joke_with
+      : turn * $pc C
+      * $at C L * $at C' L
+      -o joking_with C C'.
+
+  act/none : turn -o ().
+
+}
+#interactive pc_choices.
+
+npc_turn character : pred.
+qui * stage pc_choices
+  -o stage npc_reactions.
+
+%%%% NPC Reactions %%%%
+stage npc_reactions = {
+
+  react/attacking/flee
+    : $npc C
+    * attacking C' C * $weak C * at C L * adjacent L L' -o 
+        at C L' * hunting C' C.
+  react/attacking/hurt
+    : $npc C
+    * attacking C' C * $weak C 
+        -o hurt_by C C'.
+  react/attacking/fight/lose
+    : $npc C
+    * attacking C' C * $strong C -o hurt_by C C'.
+  react/attacking/fight/win
+    : $npc C
+    * attacking C' C * $strong C -o hurt_by C' C.
+
+  react/hit_on/date
+    : $npc C
+    * hitting_on C' C * $crush C C'
+        -o dating C C' * dating C' C.
+  react/hit_on/dislike
+    : $npc C
+    * hitting_on C' C * $dislike C C'
+        -o hurt_by C' C.
+  react/hit_on/reciprocate_crush
+    : $npc C
+    * hitting_on C' C
+        -o crush C C'.
+
+  react/spellcast/thanks
+      : $npc C * spellcast C' C * $strong C
+          -o friends C C' * friends C' C.
+  react/spellcast/wtf
+      : $npc C * spellcast C' C
+          -o accusing C C'.
+  react/spellcast/bad
+      : $npc C * spellcast C' C * $weak C
+          -o dislike C C' * accusing C C'.
+
+  react/accusing/counter
+      : $npc C * accusing C' C
+          -o accusing C C'.
+  react/accusing/apologize
+      : $npc C * accusing C' C
+          -o ().
+  react/accusing/breakup
+      : $npc C * accusing C' C * dating C C' * dating C' C
+         -o hurt_by C C' * hurt_by C' C.
+ 
+  react/joke_with/shoot_down
+      : $npc C * joking_with C' C * $dislike C C'
+            -o hurt_by C' C.
+  react/joke_with/laugh
+      : $npc C * joking_with C' C -o ().
+
+  react/affection/good
+    : $npc C * acting_affectionate C' C -o ().
+  react/affection/bad
+    : $npc C * acting_affectionate C' C * $hurt_by C C'
+        -o hurt_by C' C.
+
+  react/hurt_accuse
+    : $npc C * hurt_by C C' * hurt_by C C'
+        -o accusing C C'.
+
+  % reactions to things done by others
+  % someone hurt someone you love
+  % someone is attacking someone you love or are friends with
+  % someone is hitting on someone and you have a crush on or
+  %  are dating either party
+
+}
+qui * stage npc_reactions
+  -o stage gen_npc_turns.
+
+stage gen_npc_turns = {
+  npc C -o npc_turn C.
+}
+qui * stage gen_npc_turns -o stage npc_choices.
+
+stage npc_choices = {
+  act/move_toward_friend
+    : npc_turn C 
+    * at C L * $at C' L' * $friends C C' * adjacent L L'
+      -o at C L' * npc C.
+
+  act/move_toward_enemy
+    : npc_turn C
+    * at C L * $at C' L' * $hunting C C' * adjacent L L'
+      -o at C L' * npc C.
+
+  act/attack_hunting
+    : npc_turn C
+    * $at C L * $at C' L * hunting C C'
+      -o attacking C C' * npc C.
+
+  act/evil_attack_dislike
+    : npc_turn C
+    * $evil C * $at C L * $at C' L * $dislike C C'
+        -o attacking C C' * npc C.
+
+  act/evil_attack_slayer
+    : npc_turn C
+    * $evil C * $at C L * $at B L * $slayer B
+      -o attacking C B * npc C .
+
+  act/slayer_attack_evil
+    : npc_turn C
+    * $slayer C * $at C L * $at V L * $evil V
+      -o attacking C V * npc C.
+
+  act/attack/revenge/friend
+    : npc_turn C
+      * $at C L * $at C' L
+      * $friends C Victim * hurt_by Victim C'
+      -o attacking C C' * npc C.
+
+  act/hit_on_crush
+    : npc_turn C
+    * $at C L * $at C' L * $crush C C'
+      -o hitting_on C C' * npc C.
+
+  act/affection_date
+    : npc_turn C
+    * $at C L * $at C' L * $dating C C'
+      -o acting_affectionate C C' * npc C.
+
+  act/spellcast/weak_to_strong
+    : npc_turn C
+      * $witch C
+      * $at C L * $at C' L 
+      * weak C' 
+        -o strong C' * spellcast C C' * npc C.
+
+  act/spellcast/strong_to_weak
+    : npc_turn C
+      * $witch C
+      * $at C L * $at C' L
+      * strong C'
+        -o weak C' * spellcast C C' * npc C.
+
+  act/accuse
+    : npc_turn C
+      * $at C L * $at C' L
+      * $hurt_by C C'
+      -o accusing C C' * npc C.
+
+  act/joke_with
+      : npc_turn C
+      * $at C L * $at C' L
+      * $friends C C' 
+      -o joking_with C C' * npc C.
+
+  act/none : npc_turn C -o npc C.
+
+}
+qui * stage npc_choices -o stage pc_reactions.
+
+stage pc_reactions = {
+  %%%% Player Reactions %%%%
+  
+  react/attacking/fight
+      : $pc C * attacking C' C
+          -o attacking C C'.
+  react/attacking/flee
+      : $pc C * attacking C' C * at C L * adjacent L L'
+          -o at C L' * hunting C' C.
+
+  react/hitting_on/reciprocate
+      : $pc C * hitting_on C' C
+          -o dating C C' * dating C' C.
+  react/hitting_on/shoot_down
+      : $pc C * hitting_on C' C
+          -o hurt_by C' C.
+  
+  react/joke_with/shoot_down
+      : $pc C * joking_with C' C
+            -o dislike C C'.
+  react/joke_with/laugh
+      : $pc C * joking_with C' C
+            -o friends C' C * friends C C'.
+
+  react/spellcast/thanks
+      : $pc C * spellcast C' C * $strong C
+          -o friends C C' * friends C' C.
+  react/spellcast/wtf
+      : $pc C * spellcast C' C
+          -o accusing C C'.
+  react/spellcast/bad
+      : $pc C * spellcast C' C * $weak C
+          -o dislike C C' * accusing C C'.
+
+  % react/joking_with/good
+  % react/joking_with/bad
+
+  react/accusing/counter
+      : $pc C * accusing C' C
+          -o accusing C C'.
+  react/accusing/apologize
+      : $pc C * accusing C' C
+          -o ().
+  react/accusing/breakup
+      : $pc C * accusing C' C * dating C C' * dating C' C
+          -o hurt_by C C' * hurt_by C' C.
+
+  react/acting_affectionate/happy
+      : $pc C * acting_affectionate C' C
+          -o ().
+  react/acting_affectionate/shoot_down
+      : $pc C * acting_affectionate C' C
+          -o hurt_by C' C.
+}
+#interactive pc_reactions.
+qui * stage pc_reactions -o stage pc_choices * turn.
+
+
+
+#trace _ select_character {init_story, init_locations, init_game}.
+
+
+

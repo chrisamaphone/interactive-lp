@@ -1,0 +1,12 @@
+item : type.
+t : item.
+
+foo item : pred.
+bar item : pred.
+baz item item : pred.
+bla : pred.
+
+stage s = {
+  r1 : foo _ -o bar t.
+  r2 : baz X _ * bar X -o bla.
+}

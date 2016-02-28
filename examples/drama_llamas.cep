@@ -1,0 +1,153 @@
+%% prom week-inspired dating sim
+
+character : type.
+interest : type.
+
+% world state
+present character : pred.
+has_interest character interest : bwd.
+
+% social state
+affection character character : pred.
+attraction character character : pred.
+anger character character : pred.
+sad character : pred.
+bored character : pred.
+
+action : type.
+share_interest character character : action.
+go_on_date character character : action.
+flirt character character : action.
+comfort character character : action.
+bicker character character : action.
+insult character character : action.
+compliment character character : action.
+apologize character character : action.
+wait : action.
+
+resolution character : pred. % used to determine when the story should end.
+
+stage doStuff = {
+%% for each of attraction, affection, and anger, there are corresponding
+% states that imply a feedback loop (dating, friends, and enemies).
+% also there should be at least one action that depends on that state
+% and one that nullifies it.
+
+% AI can take "3 steps" before returning control 
+init : init_ai -o ai_turn * ai_turn * ai_turn.
+
+% AI
+% actions dealing with attraction
+do/fallInLove : 
+  $present C * $attraction C C' -o affection C C'.
+
+do/getCrush : 
+  $present C * $affection C C' * affection C C' * affection C C'
+  -o attraction C C'.
+
+do/date :
+  $present C * $present C' * $affection C C' * $attraction C C'
+    * $affection C' C * $attraction C' C
+    -o resolution C * resolution C' * success.
+
+do/flirt :
+  $present C * $present C' * $attraction C C' 
+    -o attraction C' C * success.
+
+do/flirt/conflict :
+  $present C * $present C' * $present C'' * $attraction C C' * $attraction C'' C
+  -o eros C' C * anger C'' C * anger C'' C' 
+    * sad C'' * success.
+
+% actions dealing with friendship
+
+do/shareInterest :
+  $present C * $present C' * has_interest C Interest * has_interest C' Interest
+  -o affection C C' * affection C' C * success.
+
+do/comfort :
+  $present C * $present C' * sad C * $affection C' C
+    -o affection C C' * resolution C * success.
+
+% introducing some spontaneity
+do/like/bored :
+  $present C * $present C' * bored C
+    -o affection C C'.
+do/anger/bored :
+  $present C * $present C' * bored C
+    -o anger C C'.
+do/crush/bored :
+  $present C * $present C' * bored C
+    -o attraction C C'.
+
+% actions dealing with enmity/anger
+
+do/reject :
+  $present C * $present C' * attraction C C' * $anger C' C
+    -o sad C.
+
+do/bicker :
+  $present C * $present C' * $attraction C C' * $attraction C' C
+    -o anger C C' * anger C' C * success.
+
+do/insult :
+  $present C * $present C' * $anger C C'
+  -o anger C' C * sad C' * success.
+
+do/compliment :
+    $present C * $present C' * $affection C C'
+      -o affection C' C * success.
+
+do/apologize :
+    $present C * $present C' *
+    anger C' C * $affection C C' * $affection C' C
+      -o success.
+
+% termination
+% do/end : resolution C * present C -o ().
+  
+}
+#interactive doStuff.
+
+% story instantiation
+
+chloe : character.
+zack : character.
+melissa : character.
+zoe : character.
+lil : character.
+charles : character.
+
+% interests
+math : interest.
+rocks : interest.
+trash : interest.
+anime : interest.
+
+has_interest zack math.
+has_interest zack trash.
+has_interest melissa trash.
+has_interest melissa anime.
+has_interest zoe math.
+has_interest zoe rocks.
+has_interest lil rocks.
+has_interest lil trash.
+has_interest charles anime.
+has_interest charles math.
+
+context init =
+{ present chloe,
+  present zack,
+  present melissa,
+  present zoe,
+  present lil,
+  present charles,
+  bored chloe,
+  bored zack,
+  bored melissa,
+  bored zoe,
+  bored lil,
+  bored charles
+}.
+
+#trace _ doStuff init.

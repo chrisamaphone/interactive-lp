@@ -1,0 +1,83 @@
+name : type.
+nz : name.
+ns name : name.
+
+location : type.
+lz : location.
+ls location : location.
+
+term : type.
+tlam name term : term.
+tapp term term : term.
+tvar name : term.
+
+holy-term : type.
+lam name location : holy-term.
+app location location : holy-term.
+var name : holy-term.
+hole : holy-term.
+
+at location holy-term : pred.
+choose_for location : pred.
+no_hole_chosen : pred.
+in_scope location name : pred.
+
+contains holy-term location : bwd.
+contains (lam _ L) L.
+contains (app L1 L2) L1.
+contains (app L1 L2) L2.
+
+max_name name : pred.
+max_location location : pred.
+
+context init =
+{max_name nz, max_location lz,
+  at lz hole, no_hole_chosen}.
+
+stage main = {
+
+choose_hole
+: no_hole_chosen * at Location hole -o choose_for Location.
+
+choose_for/lam
+: choose_for Location * max_name N * max_location L
+    -o at Location (lam (ns N) (ls L)) 
+        * at (ls L) hole * in_scope (ls L) (ns N)
+        * no_hole_chosen * max_location (ls L) * max_name (ns N).
+
+choose_for/app
+: choose_for Location * max_location L
+    -o max_location (ls (ls L))
+      * at Location (app (ls L) (ls (ls L))) 
+      * at (ls L) hole * at (ls (ls L)) hole
+      * no_hole_chosen.
+
+get_higher_scope/lam
+: $in_scope L X * $at L T * contains T L' -o in_scope L' X.
+
+choose_for/var
+: choose_for Location * in_scope Location X
+    -o at Location (var X)
+        * no_hole_chosen.
+
+} #interactive main.
+qui * stage main -o stage collapse_holes.
+
+term-at location term : pred.
+stage collapse_holes = {
+
+collapse/app :
+at Location (app L1 L2) * term-at L1 T1 * term-at L2 T2
+-o term-at Location (tapp T1 T2).
+
+collapse/lam : 
+at Location (lam X L) * term-at L T
+-o term-at Location (tlam X T).
+
+collapse/var :
+at Location (var X)
+-o term-at Location (tvar X).
+
+}
+
+#trace _ main init.

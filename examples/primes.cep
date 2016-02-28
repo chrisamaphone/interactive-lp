@@ -1,0 +1,34 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+plus nat nat nat : bwd.
+plus/z : plus z N N.
+plus/s : plus (s N) M (s P)
+        <- plus N M P.
+
+mult nat nat nat : bwd.
+mult/z : mult z N z.
+mult/s : mult (s N) M P
+          <- plus NtimesM M P
+          <- mult N M NtimesM.
+
+limit nat : pred.
+here nat : pred.
+
+stage gen = {
+  go : limit (s (s N)) -o here (s (s N)) * limit (s N).
+  stop : limit (s z) -o ().
+}
+
+% 12
+context init = {limit (s (s (s (s (s (s (s (s (s (s (s (s z))))))))))))}.
+
+qui * stage gen -o stage primes.
+
+% annihilate multiples
+stage primes = {
+  collide : $here N * here M * mult _ N M -o ().
+}
+
+#trace _ gen init.

@@ -1,0 +1,105 @@
+
+generation : type.
+z : generation.
+s generation : generation.
+
+gt generation generation : bwd.
+gt (s N) z.
+gt (s N) (s M)
+  <- gt N M.
+
+name : type.
+laura : name.
+mohammed : name.
+xi : name.
+ulrich : name.
+ana : name.
+pablo : name.
+lin : name.
+jo : name.
+alice : name.
+michael : name.
+salil : name.
+
+isname name : bwd.
+isname laura.
+isname mohammed.
+isname xi.
+isname ulrich.
+isname lin.
+isname jo.
+isname alice.
+isname michael.
+isname salil.
+isname ana.
+isname pablo.
+
+family : type.
+smith : family.
+ahn : family.
+muller : family.
+davy : family.
+zhu : family.
+suresh : family.
+
+overrides family family : bwd.
+overrides ahn smith.
+overrides smith muller.
+overrides davy smith.
+overrides zhu smith.
+overrides suresh smith.
+overrides ahn muller.
+overrides ahn davy.
+overrides zhu ahn.
+overrides suresh ahn.
+overrides davy muller.
+overrides zhu muller.
+overrides suresh muller.
+overrides davy zhu.
+overrides suresh davy.
+overrides zhu suresh.
+
+person name family generation : pred.
+union name name family generation : pred.
+depth generation : pred.
+maxgen generation : pred.
+
+stage main = {
+
+die : union N1 N2 S G * $maxgen Max * gt Max (s G) -o ().
+% die-alone : person N S G -o ().
+
+union : 
+  person N1 S1 G * person N2 S2 G * overrides S1 S2 
+     -o union N1 N2 S1 G.
+
+repro-newmax :
+  $union N1 N2 S G * isname N * maxgen G * depth D * gt D G
+    -o person N S (s G) * maxgen (s G).
+
+% can't repro if more than 2 generations old
+repro-old :
+  $union N1 N2 S G * isname N 
+      * $maxgen G' * gt (s (s  G)) G'
+      * depth D * gt D G'
+   -o person N S (s G).
+
+% breakup :
+%  union N1 N2 S G -o person N1 S G * person N2 S G.
+
+
+} 
+% #interactive main.
+
+context init =
+{ person laura davy z, 
+  person ulrich muller z,
+  person jo smith z,
+  person lin zhu z,
+  person xi ahn z,
+  person salil suresh z,
+  !depth (s (s z)),
+  maxgen z
+}.
+
+#trace _ main init.

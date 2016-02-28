@@ -1,0 +1,228 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+leq nat nat : bwd.
+leq/z : leq z N.
+leq/s : leq (s N) (s M)
+        <- leq N M.
+
+neq nat nat : bwd.
+neq z (s N).
+neq (s N) z.
+neq (s N) (s M)
+ <- neq N M.
+
+frame : type.
+whisper : frame.
+monolog : frame.
+dialog : frame.
+touch : frame.
+blank : frame.
+walk : frame.
+posse : frame.
+carry : frame.
+aid : frame.
+fall : frame.
+
+nholes frame nat : bwd.
+nholes whisper (s (s z)).
+nholes monolog (s z).
+nholes dialog (s (s z)).
+nholes touch (s (s z)).
+nholes blank z.
+nholes walk (s z).
+nholes posse (s (s (s (s z)))).
+nholes carry (s (s z)).
+nholes aid (s (s z)).
+nholes fall (s z).
+
+available frame : bwd.
+available whisper.
+available monolog.
+available dialog.
+available touch.
+available blank.
+available walk.
+available posse.
+available carry.
+available aid.
+available fall.
+
+ve : type.
+veN nat : ve.
+
+in_story ve : pred.
+next_in_story nat : pred.
+prev_VE ve : pred.
+
+ve_list : type.
+nil : ve_list.
+cons ve ve_list : ve_list.
+
+prev_VEs ve_list : pred.
+
+list_length ve_list nat : bwd.
+list_length nil z.
+list_length (cons _ L) (s N)
+<- list_length L N.
+
+tabulate nat ve_list : bwd.
+tabulate z nil.
+tabulate (s N) (cons (veN N) L)
+<- tabulate N L.
+
+not_member ve ve_list : bwd.
+nm/nil  : not_member VE nil.
+nm/cons : not_member (veN VEn) (cons (veN VEn') L)
+        <- neq VEn VEn'
+        <- not_member (veN VEn) L.
+
+panel nat frame ve_list : pred.
+next_panel nat : pred.
+
+context init =
+{ next_panel z }.
+
+transition : type.
+moment : transition.
+add : transition.
+subtract : transition.
+meanwhile : transition.
+rendezVous : transition.
+end : transition.
+
+selected transition : pred.
+roll : pred.
+
+stage roll_die = {
+
+do/1 : roll -o selected moment.
+do/2 : roll -o selected add.
+do/3 : roll -o selected subtract.
+do/4 : roll -o selected meanwhile.
+do/5 : roll -o selected rendezVous.
+% only end if we're up to at least 3 panels
+do/6 : roll * $next_panel (s (s (s (s N)))) -o selected end.
+
+}
+process_transition :
+qui * stage roll_die -o stage process_transition.
+
+selected_frame frame : pred.
+selected_ves ve_list : pred.
+fill_frame nat : pred.
+fill_VEs nat : pred.
+done : pred.
+
+stage process_transition = {
+
+create_moment_transition :
+selected moment * prev_VEs VEs * list_length VEs N
+ -o selected_ves VEs * fill_frame N.
+
+add_VE :
+selected add * prev_VEs VEs * list_length VEs N 
+  -o selected_ves VEs * fill_VEs (s z) * fill_frame (s N).
+
+subtract_VE : 
+selected subtract * prev_VEs (cons V VEs) * list_length VEs N
+  -o selected_ves VEs * fill_frame N.
+
+subtract_from_nothing : 
+selected subtract * prev_VEs nil -o 
+  fill_frame z * fill_VEs z * selected_ves nil.
+
+new_scene : 
+selected meanwhile * $next_in_story (s N) * leq N' N * prev_VEs _
+  -o fill_frame N * fill_VEs N * selected_ves nil.
+
+create_rendezVous :
+selected rendezVous * $in_story VE * prev_VEs VEs * not_member VE VEs
+      * leq (s z) (s N)
+  -o fill_frame (s N) * fill_VEs N * selected_ves (cons VE nil).
+
+introduce_new_VE :
+selected rendezVous * prev_VEs VEs * list_length VEs N * next_in_story Vn
+  -o selected_ves (cons (veN Vn) VEs) * fill_frame (s N)
+      * in_story (veN N) * next_in_story (s N).
+      
+end :
+selected end
+  -o selected_frame blank * selected_ves nil * done.
+
+% should end in a selected frame and/or VEs
+
+}
+fill_frame : 
+qui * stage process_transition * $fill_frame F -o stage fill_frame_or_ves.
+
+fill_VEs :
+qui * stage process_transition * $fill_VEs V -o stage fill_frame_or_ves.
+
+
+comic : type.
+cnil : comic.
+csnoc comic frame ve_list : comic.
+
+strip comic : pred.
+ctr nat : pred.
+
+qui * stage process_transition * done 
+  -o stage assemble_comic * strip cnil * ctr z.
+
+stage assemble_comic = {
+
+ctr N * strip C * panel N F VEs -o strip (csnoc C F VEs) * ctr (s N).
+
+
+}
+
+stage fill_frame_or_ves = {
+
+pick_frame :
+fill_frame N * nholes F N' * leq N' N
+-o selected_frame F.
+
+finish_picking_VEs :
+fill_VEs z -o ().
+
+pick_existing_VE :
+fill_VEs (s N) * $in_story VE * selected_ves VEs
+  * not_member VE VEs
+  -o selected_ves (cons VE VEs) * fill_VEs N.
+
+pick_new_VE :
+fill_VEs (s N) * next_in_story N * selected_ves VEs
+  -o selected_ves (cons (veN N) VEs) 
+    * next_in_story (s N).
+
+} 
+set_panel :
+qui * stage fill_frame_or_ves -o stage set_panel.
+
+gen_in_story ve_list : pred.
+
+stage set_panel = {
+
+set_panel :
+next_panel N * selected_frame F * selected_ves V
+  -o panel N F V * next_panel (s N)
+      * prev_VEs V.
+
+% set very first panel
+set_first_panel :
+next_panel z * available F * nholes F N * tabulate N L 
+  -o panel z F L * next_panel (s z) * gen_in_story L
+      * prev_VEs L * next_in_story N.
+
+gen/nil  : gen_in_story nil -o ().
+gen/cons : gen_in_story (cons V L) -o in_story V * gen_in_story L.
+
+finish : done -o ().
+
+}  % #interactive set_panel.
+roll_die :
+qui * stage set_panel -o stage roll_die * roll.
+
+#trace _ set_panel init.

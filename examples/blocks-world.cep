@@ -1,0 +1,37 @@
+block : type.
+
+on block block : pred.
+on_table block : pred.
+clear block : pred.
+arm_holding block : pred.
+arm_free : pred.
+
+stage blocks = {
+pickup_from_block
+  : on X Y * clear X * arm_free -o clear Y * arm_holding X.
+
+pickup_from_table
+  : on_table X * clear X * arm_free -o arm_holding X.
+
+put_on_block
+  : arm_holding X * clear Y -o on X Y * clear X * arm_free.
+
+put_on_table
+  : arm_holding X -o on_table X * clear X * arm_free.
+
+% win_condition
+%  : on_table c * on b c * on a b * clear a * arm_free
+%    -o ().
+}
+#interactive blocks.
+
+a : block.
+b : block.
+c : block.
+
+context init =
+{ on_table a, on_table b, on c a, clear c, clear b, arm_free }
+
+
+#trace _ blocks init.
+

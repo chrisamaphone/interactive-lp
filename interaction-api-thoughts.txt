@@ -1,0 +1,13 @@
+Currently we prompt the user with a list of transitions and get back an
+index into that transition list.
+
+We could expose this by making exec a functor over a signature including
+
+prompt : transition list * context -> transition option
+
+and then populate that w/things like a repl, a context renderer +
+keystrokes that send none unless there's one in the buffer...
+
+if we get none, quiesce the stage
+and if we get some, run the transition and then quiesce? or keep going til
+  no more transitions exist?

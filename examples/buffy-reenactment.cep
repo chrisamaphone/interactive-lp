@@ -1,0 +1,352 @@
+% "Re-enactment" version of Buffy the Vampire Slayer Story World.
+% Used to create the causality graph for the episode "Once More, With
+% Feeling."
+
+character : type.
+buffy : character.
+willow : character.
+xander : character.
+anya : character.
+tara : character.
+giles : character.
+dawn : character.
+spike : character.
+villain : character.
+
+npc character : pred.
+
+evil character : pred.
+witch character : pred.
+slayer character : pred.
+watcher character : pred.
+
+weak character : pred.
+strong character : pred.
+
+friends character character : pred.
+crush character character : pred.
+dating character character : pred.
+dislike character character : pred.
+hunting character character : pred.
+hurt_by character character : pred.
+depressed character : pred.
+kidnapped character character : pred.
+
+place : type.
+crypt : place.
+graveyard : place.
+buffy_house : place.
+magic_box : place.
+bronze : place.
+high_school : place.
+
+adjacent place place : bwd.
+adjacent crypt graveyard.
+adjacent graveyard crypt.
+adjacent crypt magic_box.
+adjacent magic_box crypt.
+adjacent graveyard buffy_house.
+adjacent buffy_house graveyard.
+adjacent buffy_house magic_box.
+adjacent magic_box buffy_house.
+adjacent magic_box graveyard.
+adjacent graveyard magic_box.
+adjacent magic_box bronze.
+adjacent bronze magic_box.
+adjacent buffy_house bronze.
+adjacent bronze buffy_house.
+adjacent buffy_house high_school.
+adjacent high_school buffy_house.
+adjacent high_school magic_box.
+
+at character place : pred.
+
+% states resulting from one character acting on another
+attacking character character : pred.
+hitting_on character character : pred.
+spellcast character character : pred.
+joking_with character character : pred.
+accusing character character : pred.
+pushing_away character character : pred.
+acting_affectionate character character : pred.
+bickering character character : pred.
+
+
+no_pc : pred.
+pc character : pred.
+turn : pred.
+end : pred. % end of story.
+go : pred. % not end of story.
+
+context init_game =
+{npc buffy, npc willow, npc xander, npc anya, npc tara,
+npc giles, npc spike, npc villain, npc dawn }.
+
+%%%% NPC Reactions %%%%
+stage npc_reactions = {
+
+  react/attacking/flee
+    : $npc C
+    * attacking C' C * at C L * adjacent L L' -o 
+        at C L' * hunting C' C.
+  react/attacking/hurt
+    : $npc C
+    * attacking C' C * $weak C 
+        -o hurt_by C C'.
+  react/attacking/fight/lose
+    : $npc C
+    * attacking C' C * $strong C -o hurt_by C C'.
+  react/attacking/fight/win
+    : $npc C
+    * attacking C' C * $strong C -o hurt_by C' C.
+  react/attacking/release_hostage
+    : $npc C
+    * attacking C' C * $strong C' * kidnapped C Hostage
+    * at C L -o at Hostage L.
+
+  react/hit_on/date
+    : $npc C
+    * hitting_on C' C * $crush C C'
+        -o dating C C' * dating C' C.
+  react/hit_on/dislike
+    : $npc C
+    * hitting_on C' C * $dislike C C'
+        -o hurt_by C' C.
+  react/hit_on/reciprocate_crush
+    : $npc C
+    * hitting_on C' C
+        -o crush C C'.
+
+  react/accusing/counter
+      : $npc C * accusing C' C
+          -o accusing C C'.
+  react/accusing/apologize
+      : $npc C * accusing C' C
+          -o ().
+  react/accusing/leave
+      : $npc C * accusing C' C * at C L * adjacent L L'
+          -o at C L'.
+  react/accusing/breakup
+      : $npc C * accusing C' C * dating C C' * dating C' C
+         -o hurt_by C C' * hurt_by C' C.
+
+  react/push_away/object
+      : $npc C * pushing_away C' C -o accusing C C'.
+  react/push_away/hurt
+      : $npc C * pushing_away C' C -o hurt_by C' C.
+ 
+  react/joke_with/depressed
+      : $npc C * joking_with C' C * $depressed C
+        -o hurt_by C' C.
+  react/joke_with/shoot_down
+      : $npc C * joking_with C' C * $dislike C C'
+            -o hurt_by C' C.
+  react/joke_with/laugh
+      : $npc C * joking_with C' C -o ().
+
+  react/affection/good
+    : $npc C * acting_affectionate C' C -o ().
+  react/affection/bad
+    : $npc C * acting_affectionate C' C * $hurt_by C C'
+        -o hurt_by C' C.
+
+  react/bicker/quell
+    : $npc C * bickering C C' -o ().
+  react/bicker/accuse
+    : $npc C * bickering C C' -o accusing C C'.
+
+}
+choice : pred. stop : pred. continue : pred.
+npc_react_to_gen :
+qui * stage npc_reactions
+  -o stage stop_or_continue * choice.
+#interactive npc_reactions. % n.b. not normally.
+
+stage stop_or_continue = {
+  cstop : choice -o stop.
+  ccont : choice -o continue.
+} #interactive stop_or_continue.
+qui * stage stop_or_continue * stop -o stage done.
+qui * stage stop_or_continue * continue -o stage gen_npc_turns.
+
+stage done = {}
+
+npc_turn character : pred.
+stage gen_npc_turns = {
+  gen_turn : npc C -o npc_turn C.
+}
+npc_gen_to_act :
+qui * stage gen_npc_turns -o stage npc_choices.
+
+stage npc_choices = {
+  act/move_toward_friend
+    : npc_turn C 
+    * at C L * $at C' L' * $friends C C' * adjacent L L'
+      -o at C L' * npc C.
+
+  act/move_toward_crush
+    : npc_turn C
+    * at C L * $at C' L' * $crush C C' * adjacent L L'
+      -o at C L' * npc C.
+
+  act/move_toward_date
+    : npc_turn C
+    * at C L * $at C' L' * $dating C C' * adjacent L L'
+      -o at C L' * npc C.
+
+  act/move_toward_enemy
+    : npc_turn C
+    * at C L * $at C' L' * $hunting C C' * adjacent L L'
+      -o at C L' * npc C.
+
+  act/move_toward_hostage
+    : npc_turn C
+    * at C L * adjacent L L' * $kidnapped Kidnapper C' * $friends C C'
+    * $strong C * $at Kidnapper L'
+    -o at C L' * npc C.
+
+  act/move_away_from_dislike
+    : npc_turn C
+    * at C L * $at C' L * $dislike C C' * adjacent L L'
+    -o at C L' * npc C.
+
+  act/attack_hunting
+    : npc_turn C
+    * $at C L * $at C' L * hunting C C'
+      -o attacking C C' * npc C.
+
+  act/kidnap/evil
+      : npc_turn C
+      * $evil C
+      * at C L * at C' L * $weak C'
+      * adjacent L L'
+        -o at C L' * kidnapped C C' * npc C.
+
+  act/evil_attack_dislike
+    : npc_turn C
+    * $evil C * $at C L * $at C' L * $dislike C C'
+        -o attacking C C' * npc C.
+
+  act/evil_attack_slayer
+    : npc_turn C
+    * $evil C * $at C L * $at B L * $slayer B
+      -o attacking C B * npc C .
+
+  act/slayer_attack_evil
+    : npc_turn C
+    * $slayer C * $at C L * $at V L * $evil V
+      -o attacking C V * npc C.
+
+  act/attack/revenge/friend
+    : npc_turn C
+      * $at C L * $at C' L
+      * $friends C Victim * hurt_by Victim C'
+      * $evil C'
+      -o attacking C C' * npc C.
+
+  act/attack/for_hostage
+    : npc_turn C
+      * $at C L * $at C' L * $kidnapped C' Hostage
+      * $friends C Hostage * $strong C
+      -o attacking C C' * npc C.
+
+  act/attack/revenge/lover
+    : npc_turn C
+      * $at C L * $at C' L
+      * $dating C Victim * hurt_by Victim C'
+      * $evil C'
+      -o attacking C C' * npc C.
+
+  act/hit_on_crush
+    : npc_turn C
+    * $at C L * $at C' L * $crush C C'
+      -o hitting_on C C' * npc C.
+
+  act/affection_date
+    : npc_turn C
+    * $at C L * $at C' L * $dating C C'
+      -o acting_affectionate C C' * npc C.
+
+  act/bicker
+      : npc_turn C
+      * $at C L * $at C' L * $dating C C'
+      -o bickering C C' * npc C.
+
+  act/spell/forget
+    : npc_turn C
+      * $witch C * $strong C
+      * $at C L * $at C' L
+      * hurt_by C' C
+        -o spellcast C C' * npc C.
+
+  act/discover_spell
+    : npc_turn C
+      * $spellcast C' C
+      -o hurt_by C C' * depressed C * npc C.
+
+  act/accuse
+    : npc_turn C
+      * $at C L * $at C' L
+      * $hurt_by C C'
+      -o accusing C C' * npc C.
+
+  act/watcher/push_away
+    : npc_turn C * $watcher C
+    * $at C L * $at C' L * $slayer C'
+    * $strong C' -o pushing_away C C' * npc C.
+
+  act/joke_with
+      : npc_turn C
+      * $at C L * $at C' L
+      * $friends C C' 
+      -o joking_with C C' * npc C.
+
+  act/none : npc_turn C -o npc C.
+
+}
+act_to_react :
+qui * stage npc_choices -o stage npc_reactions.
+#interactive npc_choices. 
+
+% Once more, with feeling
+context init_season =
+{ friends buffy willow, friends willow buffy,
+  friends buffy xander, friends xander buffy,
+  friends willow xander, friends xander willow,
+  friends dawn buffy, friends buffy dawn,
+  friends dawn xander, friends xander dawn,
+  friends dawn willow, friends willow dawn,
+  friends dawn tara, friends tara dawn,
+  friends giles buffy, friends buffy giles,
+  friends giles anya, friends anya giles,
+  friends giles xander, friends xander giles,
+  friends willow giles, friends giles willow,
+
+  dating willow tara, dating tara willow,
+  dating xander anya, dating anya xander,
+
+  dislike giles spike, dislike spike giles,
+  dislike xander spike, dislike spike xander,
+  dislike villain buffy, dislike buffy spike,
+  
+  evil villain, evil spike, 
+  witch willow, slayer buffy, watcher giles, witch tara,
+  
+  crush spike buffy,
+
+  strong buffy, strong willow, strong villain,
+  weak xander, weak giles, weak anya, weak tara, weak dawn, weak spike}.
+
+context init_episode =
+{ depressed buffy, crush buffy spike,
+  hunting villain dawn, spellcast willow tara,
+  at dawn high_school, at buffy graveyard, 
+  at willow magic_box, at tara buffy_house, 
+  at xander magic_box, at anya magic_box, at giles magic_box,
+  at spike crypt, at villain bronze 
+}.
+
+#trace _ npc_reactions {init_season, init_episode, init_game}.
+
+
+

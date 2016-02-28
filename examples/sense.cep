@@ -1,0 +1,40 @@
+% testing sensing predicates
+
+str : type.
+input str : pred.
+
+% XXX todo make this parse and get passed to the sensing pred part of prog
+% #builtin READLINE input.
+% #sensing INTERACTIVE_FICTION (creates input, output, whatever..)
+% #sensing INTERACTIVE_FICTION renaming { input -> my_input }
+% #sensing INTERACTIVE_FICTION hiding input
+% #sensing INTERACTIVE_FICTION using { input, output }
+
+% another example of builtin; nats are not used though.
+nat : type.   % #builtin NAT nat
+z : nat.      % #builtin NAT_ZERO z 
+s nat : nat.  % #builtin NAT_SUCC s
+
+% (s (s (s (s z)))) -----> 4 == (add 1 X)
+
+% #builtin NAT nat z s.
+% plus X Y Z: #builtin PLUS_PRED plus 
+% vs add X Y: #builtin PLUS_OP add 
+
+stage accept = {
+  foo : tok * input X -o process X.
+}
+- : qui * stage accept -o stage process.
+
+stage process = {
+  process/hello : process hello -o hi.
+  process/bye : process goodbye -o bye.
+  process/default : process X -o tryagain.
+}
+
+- : qui * stage process * tryagain -o stage accept * tok.
+- : qui * stage process * hi -o done.
+- : qui * stage process * bye -o done.
+
+context init = {tok}.
+#trace _ accept init.

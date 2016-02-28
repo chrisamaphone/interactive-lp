@@ -1,0 +1,110 @@
+%% Example social practice: free-for-all group discussion.
+% By default all events are *broadcast* instead of targeted at one specific
+% other actor.
+
+% 1st attempt: model graph nodes with stages.
+
+% predicates
+topic : type.
+nat : type. z : nat. s nat : nat.
+gt nat nat : bwd.
+gt (s N) z.
+gt (s N) (s M)
+<- gt N M.
+
+relevance topic nat : pred.
+related topic topic : bwd.
+
+speaker : type.
+moderator speaker : bwd.
+expert speaker topic : bwd.
+
+% nodes (program points)
+n1 : pred.
+meeting : pred.
+
+stage start = {
+  set_topic : 
+  moderator C * $n1 * relevance Topic N
+  -o relevance Topic (s N).
+
+  move_on :
+  moderator C * n1 -o meeting.
+} #interactive start.
+
+qui * stage start -o stage discuss.
+
+% a node for the call-and-response synchronization of asking a question:
+ask topic : pred.
+stage discuss = {
+  bring_up_related
+  : $meeting
+  * relevance Topic (s N)
+  * related Topic Topic'
+  * relevance Topic' z
+  * expert C Topic'
+  -o relevance Topic' (s z)
+    * relevance Topic N.
+
+  comment_on_topic
+  : $meeting
+  * relevance Topic (s N)
+  * expert C Topic
+  -o relevance Topic (s (s N)).
+
+  ask_about
+  : meeting
+  * $relevance Topic (s N)
+  -o ask Topic.
+
+  answer_question
+  : ask Topic
+  * expert C Topic
+  -o meeting.
+
+  conclude
+  : meeting -o ().
+  
+} #interactive discuss.
+
+%%% domain instantiation
+narrative : topic.
+programming : topic.
+psychology : topic.
+ai : topic.
+believable_agents : topic.
+
+related believable_agents psychology.
+related believable_agents ai.
+related ai programming.
+related ai narrative.
+related psychology believable_agents.
+related psychology narrative.
+related programming ai.
+related narrative ai.
+related narrative psychology.
+
+alice : speaker.
+rohan : speaker.
+ines : speaker.
+shonda : speaker.
+
+moderator ines.
+
+expert alice ai.
+expert alice programming.
+expert rohan psychology.
+expert ines believable_agents.
+expert ines programming.
+expert shonda narrative.
+expert shonda believable_agents.
+
+context init =
+{ relevance narrative z,
+  relevance programming z,
+  relevance psychology z,
+  relevance believable_agents z,
+  n1
+}.
+
+#trace _ start init.

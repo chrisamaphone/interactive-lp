@@ -1,0 +1,117 @@
+% Vastly simplified buff/attack game.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+team : type.
+blue : team.
+yellow : team.
+
+opp team team : bwd.
+opp blue yellow.
+opp yellow blue.
+
+player : type.
+
+on_team player team : pred.
+health player nat : pred.
+attack player nat : pred.
+dead player : pred.
+
+turn player : pred.
+team_turn team : pred.
+round : pred.
+
+gen_attack player : pred.
+gen_health player : pred.
+gen_turn player : pred.
+seed player : pred.
+stage setup = {
+  gen : seed X -o gen_attack X * gen_health X.
+
+  gen_attack/i : gen_attack X -o attack X (s z).
+  gen_health/i : gen_health X -o health X (s (s (s z))).
+}
+go : pred. stop : pred.
+do/checkrounds : qui * stage setup -o stage gen_gen_turns * stop.
+
+restore_team player team : pred.
+stage gen_gen_turns = {
+  do/gen_turn : 
+  $team_turn T * on_team P T 
+    -o gen_turn P * restore_team P T.
+}
+switch_team_turn
+: qui * stage gen_gen_turns * team_turn T * opp T T' 
+  -o team_turn T' * stage checkrounds * stop.
+
+
+stage checkrounds = {
+  another_round : round * stop -o go.
+}
+alive_count team nat : pred.
+do/genturns: qui * stage checkrounds * go -o stage genturns.
+do/done: qui * stage checkrounds * stop 
+  -o stage done * alive_count blue z * alive_count yellow z.
+
+stage done = {
+  inc : alive_count T N * on_team P T -o alive_count T (s N).
+  inc' : alive_count T N * restore_team P T -o alive_count T (s N).
+}
+
+stage genturns = {
+  do/gen_turn     : gen_turn X -o turn X.
+  do/restore_team : restore_team X C -o on_team X C.
+}
+do/play: qui * stage genturns -o stage play.
+
+% subtract_health player nat nat : pred.
+subtract nat nat nat : bwd.
+subtract/z- : subtract z N z.
+subtract/-z : subtract N z N.
+subtract/ss : subtract (s N) (s M) P
+            <- subtract N M P.
+
+stage play = {
+  attack 
+  : turn P * $on_team P T * opp T T' * $on_team P' T'
+    * $attack P A * health P' H
+    * subtract H A H'
+    -o health P' H'.
+
+  buff
+  : turn P * attack P A -o attack P (s A).
+
+  buff_other
+  : turn P * $on_team P T * $on_team Other T
+     * attack Other A
+     -o attack Other (s A).
+
+  die
+  : health P z * on_team P _ -o ().
+}
+% #interactive play.
+do/gen_gen_turns : qui * stage play -o stage gen_gen_turns.
+
+
+karl : player.
+gwenn : player.
+frank : player.
+roger : player.
+andre : player.
+chris : player.
+
+context init =
+{
+  seed frank, on_team frank blue,
+  seed karl, on_team karl yellow,
+  seed gwenn, on_team gwenn blue,
+  seed roger, on_team roger yellow,
+  seed andre, on_team andre blue,
+  seed chris, on_team chris yellow,
+  team_turn yellow,
+  round, round, round, round, round, round
+}
+
+#trace _ setup init.
