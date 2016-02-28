@@ -1,0 +1,30 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+lives nat : pred.
+money : pred.
+influence : pred.
+student : pred.
+graduated_student : pred.
+discovery : pred.
+tenure_clock nat : pred.
+
+stage assistant_professor = {
+get_student : money * $influence -o student.
+advise_student : tenure_clock (s T) * $student -o discovery * tenure_clock T.
+give_talk : tenure_clock (s T) * $discovery -o influence * tenure_clock T.
+graduate_student : tenure_clock (s T) * student * $discovery 
+  -o graduated_student * tenure_clock T.
+collaborate : lives (s N) * tenure_clock (s T) 
+  -o money * influence * discovery * lives N * tenure_clock T.
+service : tenure_clock (s T) -o influence * tenure_clock T.
+vacation : lives N * tenure_clock (s T) -o lives (s N) * tenure_clock T.
+} #interactive assistant_professor.
+
+context starting_package =
+{ lives (s (s (s z))), tenure_clock (s (s (s (s (s (s (s z))))))),
+  money, money, influence
+}.
+
+#trace _ assistant_professor starting_package.
