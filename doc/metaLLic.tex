@@ -107,21 +107,23 @@ forall n,n':node.
     (edge n n' * edge n' n) + 1
 \end{verbatim}
 
-\subsection*{Binary Counter}
-i.e. linked list; dps version of ordered fwd-chaining binary increment.
+\subsection*{Linked Lists}
 use case for recursion
+
+\begin{verbatim}
+mu list(d1,d2) =
+  d1=d2 +
+  (exists v,d'. at d1 v d' * list(d',d2))
+CTX|{at _ _ _} |= exists d1, d2. list(d1,d2)
+\end{verbatim}
+Q: equality -- \verb|d1=d2|?
+
+\subsection*{Binary Counter}
+dps version of ordered fwd-chaining binary increment.
 \begin{verbatim}
 CTX|{inc} |= inc + 1
-mu list = \d.
-    d = eos + (exists b, d'. at d b d' * list(d))
-forall d:dest. CTX|{at _ _ _} |= list d
+CTX|{at _ _ _} |= exists d1,d2. list(d1,d2)
 \end{verbatim}
-OR
-\begin{verbatim}
-CTX|{at _ _ _, start _} |=
-  exists d. start d * list d
-\end{verbatim}
-Q: equality -- d = eos?
 
 program:
 \begin{verbatim}
@@ -133,7 +135,6 @@ dest : type.
 eos : dest.
 
 inc : dest -> type.
-start : dest -> type.
 
 at : dest -> bit -> dest -> type.
 

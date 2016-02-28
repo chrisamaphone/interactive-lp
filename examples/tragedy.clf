@@ -138,7 +138,7 @@ do/insult/witnessed
 
 do/murder 
 : actor C * actor C' *
-  anger C C' * anger C C' * anger C C' * @anger C C' *
+  anger C C' * anger C C' * anger C C' * anger C C' *
   at C L * at C' L  * has C weapon
                 -o {@at C L * !dead C' * !murdered C C' *
                       @has C weapon}.
