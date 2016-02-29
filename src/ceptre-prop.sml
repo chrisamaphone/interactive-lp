@@ -54,12 +54,6 @@ structure CeptreProp = struct
 
   (* Stringifiers *)
 
-<<<<<<< HEAD
-  fun state_to_string (phase_id, state) =
-  let
-    fun atom_to_string (Lin x) = Int.toString x
-      | atom_to_string (Pers x) = "!"^(Int.toString x)
-=======
   fun sensorToString (ReadString x) = "ReadString "^(Int.toString x)
     | sensorToString NoCs = "NoCs"
     | sensorToString Read1 = "Read1"
@@ -71,7 +65,6 @@ structure CeptreProp = struct
 
   fun state_to_string (phase_id, state) =
   let
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
     val atom_strings = map atom_to_string state
     val state_string = String.concatWith ", " atom_strings
   in
@@ -85,11 +78,6 @@ structure CeptreProp = struct
 
   structure IS = struct
     fun member state atom = List.exists (fn x => x=atom) state
-<<<<<<< HEAD
-    fun deleteOne nil atom = raise Impossible
-      | deleteOne (x::xs) atom = if x = atom then xs else
-          x::(deleteOne xs atom)
-=======
 
     fun tryDeleteOne nil atom = NONE
       | tryDeleteOne (x::xs) atom =
@@ -107,17 +95,15 @@ structure CeptreProp = struct
       | deleteOne (x::xs) atom = if x = atom then xs else
           x::(deleteOne xs atom)
 
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
     fun addList state atoms = state@atoms
   end
 
   fun existsAll atoms state =
     foldl (fn (a, b) => b andalso IS.member state a) true atoms
 
-<<<<<<< HEAD
   fun applicable_rules state rules =
     List.filter (fn {name,lhs,rhs} => existsAll lhs state) rules
-=======
+
   structure PullSensors =
   struct
     val c = Lin 3
@@ -169,7 +155,6 @@ structure CeptreProp = struct
 
   fun applicable_rules state rules =
     List.filter (fn {name,lhs,rhs} => sat lhs state) rules
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
 
   fun applicable_phase_rules state current_phase phase_rules =
     List.filter
@@ -178,7 +163,6 @@ structure CeptreProp = struct
             andalso (existsAll lhs state))
       phase_rules
 
-<<<<<<< HEAD
   (* quiescent : phase -> state -> bool *)
   (* not currently used?
   fun quiescent {name, body} state =
@@ -188,7 +172,6 @@ structure CeptreProp = struct
   (** selecting rules **)
   fun removeAtoms state atoms =
     foldl (fn (at, st) => IS.deleteOne st at) state atoms
-=======
 
   (** selecting rules **)
 
@@ -203,8 +186,6 @@ structure CeptreProp = struct
     foldl (fn (at, st) => IS.deleteOne st at) state atoms
     *)
 
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
-
   (* XXX make this actually random *)
   val rand = Random.rand (293847, 923423)
 
@@ -217,8 +198,6 @@ structure CeptreProp = struct
 
   datatype 'a answer = DONE of 'a | NEXT of 'a
 
-<<<<<<< HEAD
-=======
   structure PushSensors =
   struct
     datatype sensor = CoinFlip
@@ -241,7 +220,6 @@ structure CeptreProp = struct
 
   end
 
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
   (* step : program -> phase -> atom list -> (ident * atom list) answer *)
   fun step (prog:program) (phase as {name=phase_name, body=rules}) state =
     (* XXX check for quiescence - if so, add qui, check global rules *)
@@ -254,11 +232,7 @@ structure CeptreProp = struct
               in
               (case applicable_phase_rules state phase_name links of
                     nil => DONE (phase, state) (* globally quiesced *)
-<<<<<<< HEAD
-                  | ls => 
-=======
                   | ls => (* applicable phase links *)
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
                       let
                         val {name,pre_phase,lhs,post_phase,rhs}
                         : phase_rule
@@ -276,11 +250,9 @@ structure CeptreProp = struct
             | rs => 
                 let
                   val {name, lhs, rhs} = select_random rs
-<<<<<<< HEAD
                   val state' = removeAtoms state lhs
                   val state'' = IS.addList state' rhs
                 in NEXT (phase, state'') 
-=======
                   val state = removeAtoms state lhs
                   val state = IS.addList state rhs
                   (* check for sensing preds *)
@@ -288,7 +260,6 @@ structure CeptreProp = struct
                   val state = PushSensors.sense state PushSensors.all 
                   *)
                 in NEXT (phase, state) 
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
                 end )
 
   (* step_star : program -> phase -> atom list -> (ident * (atom list)) *)
@@ -334,8 +305,6 @@ structure CeptreProp = struct
      init_phase="phase1",
      init_state=init1}
     
-<<<<<<< HEAD
-=======
   (* Testing pull sensors *)
   val rules3 =
     {name="r1", lhs=[a, Sense (ReadString (~1))], rhs=[]}::rules1
@@ -415,5 +384,4 @@ structure CeptreProp = struct
      init_phase = "read",
      init_state = [tok]
     }
->>>>>>> 825d2ad3e065beddbee547c01dd57cb9966d733a
 end
