@@ -1,0 +1,90 @@
+%% Adapting example 5 from the Tracery tutorial,
+%% htcategory://www.crystalcodepalace.com/traceryTut.html
+
+w : type. % catch-all atom type
+category : type.
+of w category : bwd.
+
+%% grammar categories
+name : category.
+animal : category.
+mood : category.
+story : category.
+origin : category.
+
+% names: "Arjun","Yuuma","Darcy","Mia","Chiaki","Izzi","Azra","Lina"
+arjun : w.  of arjun name.
+yuuma : w.  of yuuma name.
+darcy : w.  of darcy name.
+mia : w.    of mia name.
+chiaki : w. of chiaki name.
+izzi : w.   of izzi name.
+azra : w.   of azra name.
+
+% animals:
+% ["unicorn","raven","sparrow","scorpion","coyote","eagle","owl","lizard","zebra","duck","kitten"]
+unicorn : w.  of unicorn animal.
+raven : w.    of raven animal.
+sparrow : w.  of sparrow animal.
+scorpion : w. of scorpion animal.
+coyote : w.   of coyote animal.
+eagle : w.    of eagle animal.
+owl : w.      of owl animal.
+lizard : w.   of lizard animal.
+zebra : w.    of zebra animal.
+duck : w.     of duck animal.
+kitten : w.   of kitten animal.
+
+% moods:
+% ["vexed","indignant","impassioned","wistful","astute","courteous"]
+vexed : w.        of vexed mood.
+indignant : w.    of indignant mood.
+impassioned : w.  of impassioned mood.
+wistful : w.      of wistful mood.
+astute : w.       of astute mood.
+courteous : w.    of courteous mood.
+
+%% ordered positions within strings
+destination : type.
+z : destination.
+s destination : destination.
+
+role : type. %% grammar-specific variables
+hero : role.
+heroPet : role.
+
+value role : category.
+
+%% preds
+gen category destination : pred.
+at destination w : pred.
+
+assign category role : pred.
+assigned w role : pred.
+
+stage main = {
+
+assign Category Role * of Element Category -o assigned Element Role.
+
+gen (value Role) D * $assigned Element Role -o at D Element.
+gen Category D * of Element Category -o at D Element.
+
+%% grammar-specific rules:
+
+%%, "origin": ["#[hero:#name#][heroPet:#animal#]story#"]
+gen origin D -o assign name hero * assign animal heroPet * gen story D.
+
+%% story: ["#hero# traveled with her pet #heroPet#.  #hero# was never
+%%          #mood#, for the #heroPet# was always too #mood#."]
+gen story D -o gen (value hero) (s D) * gen (value heroPet) (s (s D))
+                * gen (value hero) (s (s (s D)))
+                * gen mood (s (s (s (s D))))
+                * gen (value heroPet) (s (s (s (s (s D)))))
+                * gen mood (s (s (s (s (s (s D)))))).
+
+}
+
+context init = {gen origin z}.
+
+#trace _ main init.
+
