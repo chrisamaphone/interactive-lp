@@ -1,0 +1,48 @@
+character : type.
+key character : bwd.
+a : character.  key a.
+b : character.  key b.
+c : character.  key c.
+d : character.  key d.
+e : character.  key e.
+f : character.  key f.
+g : character.  key g.
+h : character.  key h.
+i : character.  key i.
+j : character.  key j.
+k : character.  key k.
+l : character.  key l.
+m : character.  key m.
+n : character.  key n.
+o : character.  key o.
+p : character.  key p.
+q : character.  key q.
+r : character.  key r.
+s : character.  key s.
+t : character.  key t.
+u : character.  key u.
+v : character.  key v.
+w : character.  key w.
+x : character.  key x.
+y : character.  key y.
+z : character.  key z.
+
+string : type.
+nil : string.
+snoc string character : string.
+
+current string : pred.
+
+context init =
+{current nil}.
+
+stage enter_input = {
+
+add : current S * key C -o current (snoc S C).
+
+enter : current S -o ().
+
+} #interactive enter_input.
+
+#trace _ enter_input init.
+
