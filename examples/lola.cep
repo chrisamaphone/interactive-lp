@@ -1,0 +1,365 @@
+%% A try at encoding Run, Lola, Run (Lola Rennt) with stages.
+%% Each scene with multiple diverging parts is a stage.
+
+thing : type.
+character : type.
+place : type.
+
+lola : character.
+manni : character.
+papa : character.
+mistress : character.
+mister : character.
+ronnie : character.
+police : character.
+homeless_man : character.
+dog : character.
+baby_stroller : character.
+cyclist : character.
+mr_meyer : character.
+ambulance : character.
+blind_woman : character.
+
+moped : thing.
+money : thing.
+bike : thing.
+gun : thing.
+
+subway : place.
+lola_apartment : place.
+berlin_streets : place.
+bank : place.
+casino : place.
+supermarket : place.
+
+story_state : type.
+bool : type. true : bool. false : bool.
+intensity : type.
+low : intensity.
+med : intensity.
+high : intensity.
+
+location character place : story_state.
+thing_location thing place : story_state.
+has character thing : story_state.
+dating character character : story_state.
+stolen thing : story_state.
+pregnant character character : story_state.
+speed character intensity : story_state.
+time_left : story_state.
+dead character : story_state.
+
+holds story_state : pred.
+believes character story_state bool : pred.
+desires character story_state : pred.
+
+context init =
+{ desires manni (has ronnie money),
+  holds (has manni gun),
+  holds (has manni money),
+  holds (location police subway),
+  holds (location homeless_man subway),
+  holds (dating manni lola),
+  holds (dating lola manni),
+  holds (stolen moped),
+  believes lola (stolen moped) false,
+  believes manni (stolen moped) false,
+  believes papa (pregnant mistress papa) false,
+  believes lola (has papa money) true,
+  holds (location papa bank),
+  believes lola (location papa bank) true
+}.
+
+%% Backstory
+stage backstory = {
+
+manni_ask_lola_take_money_on_moped :
+  $holds (dating manni lola) * 
+  $desires manni (has ronnie money) *
+  believes manni (stolen moped) false
+-o
+  desires lola (has ronnie money).
+
+lola_attempt_moped_rescue :
+  $desires lola (has ronnie money) *
+  believes lola (stolen moped) false *
+  $holds (stolen moped)
+-o
+  believes lola (stolen moped) true *
+  believes manni (stolen moped) true.
+
+manni_take_subway :
+  $desires manni (has ronnie money) *
+  believes manni (stolen moped) true *
+  $holds (has manni money)
+-o
+  holds (location manni subway).
+
+police_scare_manni_away :
+  holds (location manni subway) * 
+  $holds (location police subway) * 
+  holds (has manni money)
+-o
+  holds (thing_location money subway) *
+  believes manni (thing_location money subway) true.
+
+homeless_guy_steals_money :
+  holds (thing_location money subway) *
+  holds (location homeless_man subway)
+-o
+  holds (has homeless_man money) *
+  holds (location homeless_man berlin_streets) *
+  believes manni (has homeless_man money) false.
+
+manni_goes_back_for_money :
+  believes manni (thing_location money subway) true *
+  believes manni (has homeless_man money) false
+-o
+  believes manni (thing_location money subway) false *
+  believes manni (has homeless_man money) true.
+
+manni_gets_call_from_boss :
+  $believes manni (has homeless_man money) true *
+  desires manni (has ronnie money) 
+-o
+  desires manni (has manni money).
+
+lola_sees_manni_about_to_rob_supermarket :
+  desires manni (has manni money) *
+  $holds (dating lola manni)
+-o
+  believes lola (has manni money) false *
+  believes manni (has lola money) false *
+  desires lola (has lola money) *
+  holds (location lola lola_apartment).
+
+}
+
+%% The runs. Here's where the nondeterminism is!
+lola_starts_running :
+  qui * 
+  stage backstory *
+  $desires lola (has lola money) *
+  $believes lola (has papa money) true *
+  $believes lola (location papa bank) true
+-o 
+  stage lola_run * 
+  holds (location lola lola_apartment) *
+  holds (location dog lola_apartment) *
+  holds (location baby_stroller berlin_streets) *
+  holds (location manni lola_apartment) *
+  holds (location blind_woman supermarket).
+
+stage lola_run = {
+
+%% Manni goes to the supermarket
+manni_go_to_supermarket :
+  holds (location manni lola_apartment)
+-o
+  holds (location manni supermarket).
+  
+%% The Dog
+see_dog_sprint_faster :
+  holds (location lola lola_apartment) *
+  holds (location dog lola_apartment)
+-o
+  holds (location lola berlin_streets) *
+  holds (speed lola high).
+
+trip_over_dog :
+  holds (location lola lola_apartment) *
+  holds (location dog lola_apartment)
+-o
+  holds (location lola berlin_streets) *
+  holds (speed lola low).
+
+jump_over_dog :
+  holds (location lola lola_apartment) *
+  holds (location dog lola_apartment)
+-o
+  holds (location lola berlin_streets) *
+  holds (speed lola med).
+
+
+%% The Baby Carriage
+encounter_baby_carriage :
+  holds (location baby_stroller berlin_streets) *
+  $holds (location lola berlin_streets) 
+-o
+  holds (location cyclist berlin_streets).
+
+%% The Cyclist
+refuse_bike_peddler :
+  holds (location cyclist berlin_streets) *
+  $holds (location lola berlin_streets)
+-o
+  holds (has cyclist bike) *
+  holds (location mr_meyer berlin_streets).
+
+ignore_bike_peddler :
+  holds (location cyclist berlin_streets) *
+  $holds (location homeless_man berlin_streets) *
+  $holds (location lola berlin_streets)
+-o
+  holds (has homeless_man bike) *
+  holds (location mr_meyer berlin_streets).
+
+
+%% The potential car crash between Ronnie and Mr. Meyer
+cause_car_crash :
+  holds (location mr_meyer berlin_streets) *
+  holds (location lola berlin_streets)
+-o
+  holds (location lola bank).
+
+avoid_car_crash :
+  holds (location mr_meyer berlin_streets) *
+  holds (location lola berlin_streets)
+-o
+  holds (location lola bank) *
+  holds (location papa berlin_streets).
+
+%% Lola's encounter with her father (or not)
+mistress_tells_papa_she_is_pregnant :
+  $holds (location papa bank)  * 
+  believes papa (pregnant mistress papa) false 
+-o
+  believes papa (pregnant mistress papa) true.
+
+mistress_tells_papa_baby_is_not_his :
+  $holds (location papa bank) *
+  believes papa (pregnant mistress papa) true *
+  $holds (speed lola low)
+-o
+  believes papa (pregnant mistress mister) true.
+
+lola_encounters_father :
+  believes lola (has papa money) true *
+  $desires lola (has lola money) *
+  holds (location lola bank) *
+  $holds (location papa bank)
+-o
+  holds (location lola berlin_streets) *
+  believes lola time_left false.
+
+lola_misses_father :
+  $holds (location papa berlin_streets) *
+  holds (location lola bank)
+-o
+  holds (location lola berlin_streets) *
+  believes lola (has papa money) false *
+  believes lola time_left true.
+
+%% If there's still time left, she goes to the casino and wins money.
+
+visit_casino :
+  $holds (location lola berlin_streets) *
+  $desires lola (has lola money) *
+  believes lola time_left true
+-o
+  holds (has lola money) *
+  believes lola time_left false.
+
+%% When Lola believes there's no time left, she goes to the supermarket to
+%% find Manni.
+
+%% Meanwhile, Manni tries to get money in another way...
+manni_asks_blind_woman_for_calling_card :
+  holds (location blind_woman supermarket) *
+  holds (location manni supermarket)
+-o
+  holds (location manni supermarket).
+
+homeless_man_rides_to_supermarket :
+  $holds (has homeless_man bike) *
+  $holds (has homeless_man money) *
+  holds (location homeless_man berlin_streets)
+-o
+  holds (location homeless_man supermarket).
+
+manni_notices_and_chases_homeless_man :
+  holds (location manni supermarket) *
+  holds (location homeless_man supermarket) 
+-o
+  holds (location homeless_man berlin_streets) *
+  holds (location manni berlin_streets).
+
+manni_trades_gun_for_money :
+  holds (location manni berlin_streets) *
+  holds (location homeless_man berlin_streets) *
+  believes manni (has homeless_man money) true *
+  holds (has homeless_man money) *
+  holds (has manni gun)
+-o
+  holds (has homeless_man gun) *
+  holds (has manni money) *
+  believes manni (has homeless_man money) false *
+  believes manni (has homeless_man gun) true *
+  holds (location manni supermarket).
+
+
+%% The Ambulance
+encounter_ambulance :
+  believes lola time_left false
+-o
+  holds (location ambulance berlin_streets).
+
+lola_shouts_at_ambulance :
+  holds (location ambulance berlin_streets) *
+  holds (location lola berlin_streets) *
+  $holds (location manni supermarket)
+-o
+  holds (location lola supermarket) *
+  holds (location ambulance supermarket) *
+  believes manni (location lola supermarket) true.
+
+lola_runs_alongside_ambulance :
+  holds (location ambulance berlin_streets) *
+  holds (location lola berlin_streets) *
+  $holds (location manni supermarket)
+-o
+  holds (location lola supermarket) *
+  believes manni (location lola supermarket) false.
+
+lola_hitch_ride_on_ambulance :
+  holds (location ambulance berlin_streets) *
+  holds (location lola berlin_streets)
+-o
+  holds (location lola supermarket).
+
+%% Endings:
+%% - Manni doesn't hear Lola so she joins him to rob the store;
+%%    then police shoot Lola.
+%% - Manni hears Lola and is hit by the ambulance
+%% - Manni rejoins Lola after getting the money
+
+rob_store_together :
+  holds (location lola supermarket) *
+  $holds (location manni supermarket) *
+  $believes manni (has homeless_man money) true *
+  $holds (has manni gun) *
+  believes manni (location lola supermarket) false
+-o
+  holds (has manni money) *
+  holds (dead lola).
+
+manni_hit_by_ambulance :
+  holds (location lola supermarket) *
+  holds (location manni supermarket) *
+  believes manni (location lola supermarket) true *
+  holds (location ambulance supermarket)
+-o
+  holds (dead manni).
+
+show_money :
+  $holds (location X supermarket) *
+  $holds (location Y supermarket) *
+  $holds (has X money) *
+  believes Y (has X money) false 
+-o
+  believes X (has Y money) true.
+
+} % #interactive lola_run.
+
+
+#trace _ backstory init.

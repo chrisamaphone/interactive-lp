@@ -27,7 +27,7 @@ build_development : turn * ore * wool * grain
   -o development_card * success.
 
 }
-#interactive building.
+% #interactive building.
 
 qui * stage building * success -o stage draw_dev_card.
 qui * stage building * turn -o ().
