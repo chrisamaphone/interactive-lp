@@ -101,6 +101,9 @@ structure CeptreProp = struct
   fun existsAll atoms state =
     foldl (fn (a, b) => b andalso IS.member state a) true atoms
 
+  fun applicable_rules state rules =
+    List.filter (fn {name,lhs,rhs} => existsAll lhs state) rules
+
   structure PullSensors =
   struct
     val c = Lin 3
@@ -160,6 +163,15 @@ structure CeptreProp = struct
             andalso (existsAll lhs state))
       phase_rules
 
+  (* quiescent : phase -> state -> bool *)
+  (* not currently used?
+  fun quiescent {name, body} state =
+    List.null (applicable_rules state body)
+    *)
+
+  (** selecting rules **)
+  fun removeAtoms state atoms =
+    foldl (fn (at, st) => IS.deleteOne st at) state atoms
 
   (** selecting rules **)
 
@@ -173,7 +185,6 @@ structure CeptreProp = struct
     (*
     foldl (fn (at, st) => IS.deleteOne st at) state atoms
     *)
-
 
   (* XXX make this actually random *)
   val rand = Random.rand (293847, 923423)
@@ -239,6 +250,9 @@ structure CeptreProp = struct
             | rs => 
                 let
                   val {name, lhs, rhs} = select_random rs
+                  val state' = removeAtoms state lhs
+                  val state'' = IS.addList state' rhs
+                in NEXT (phase, state'') 
                   val state = removeAtoms state lhs
                   val state = IS.addList state rhs
                   (* check for sensing preds *)

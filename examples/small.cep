@@ -37,20 +37,17 @@ g : element.
 
 at location element location : pred.
 
+lt element element : bwd.
+lt r b.
+lt b g.
+
+leq element element : bwd.
+leq X X.
+leq X Y <- lt X Y.
 % This is a comment
 succ element element : bwd.
 succ/rb : succ r b.
 succ/bg : succ b g.
-
-lt element element : bwd.
-lt/eq : lt X Y <- succ X Y.
-lt/trans : lt X Z
-          <- succ X Y
-          <- lt Y Z.
-
-leq element element : bwd.
-leq/eq : leq X X.
-leq/lt : leq X Y <- lt X Y.
 
 stage sort = {
   swap : at L1 E1 L2 * at L2 E2 L * lt E2 E1
@@ -58,6 +55,9 @@ stage sort = {
 }
 
 - : qui * stage sort -o stage getmin.
+% possible alternative syntax:
+% %qui stage sort -o stage getmin.
+
 
 min element : pred.
 stage getmin = {

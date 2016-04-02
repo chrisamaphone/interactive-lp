@@ -1,0 +1,175 @@
+\documentclass[fullpage, 11pt]{article}
+
+\usepackage{cmnotes}
+
+\usepackage{amsmath, amssymb}
+\usepackage{verbatim}
+\usepackage{url}
+\usepackage{proof}
+
+% XXX make a macro set
+\newcommand{\one}{\mathrm{1}}
+\newcommand{\lolli}{\multimap}
+\newcommand{\tensor}{\otimes}
+\newcommand{\bang}{!}
+\newcommand{\mon}[1]{\{#1\}}
+\newcommand{\stepsto}{\rightsquigarrow}
+\newcommand{\with}{\&}
+%"proofs in the standard sequent calculus"
+\newcommand{\proves}{\longrightarrow}
+%"proves in the focusing system"
+\newcommand{\fproves}{\Longrightarrow}
+\newcommand{\atm}[1]{\mathsf{#1}}
+\newcommand{\up}{\uparrow}
+\newcommand{\down}{\downarrow}
+\newcommand{\stable}[1]{#1\mathsf{\ stable}}
+\newcommand{\aff}{@}
+
+% epsilons
+\newcommand{\eps}{\epsilon}
+\newcommand{\bnd}{\mathit{bnd}}
+\newcommand{\nileps}{\langle\rangle}
+% \newcommand{\gets}{\leftarrow}
+% \newcommand{\gets}{=}
+
+% phases
+\newcommand{\type}{\mathsf{type}}
+\newcommand{\phase}{\mathsf{phase}}
+\newcommand{\qui}{\mathsf{qui}}
+\renewcommand{\brack}[2]{[#1]^{#2}}
+
+% meta
+\newcommand{\notmod}{\nvDash} % XXX?
+
+\title{MetaLLic: A Specification Language for Linear Logic Programs}
+\author{Chris Martens}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\abstract
+
+
+\section{Examples}
+
+\subsection*{FPTP Voting}
+
+\begin{verbatim}
+forall c:cand.
+  CTX|{hopeful c _, defeated c, elected c} |=
+  ((exists n.hopeful c n) + !defeated c + !elected c) 
+\end{verbatim}
+
+\subsection*{Social Simulation}
+
+\begin{verbatim}
+forall c:character.
+  CTX|{at _, dead c} |=
+    ((exists l. at c l) + !dead c)
+  CTX|{anger c c, aff c c, att c c} |=
+    1
+  forall o:object.
+    CTX|{has c o} |= has c o + 1
+\end{verbatim}
+
+
+\subsection*{Blocks World}
+
+\begin{verbatim}
+forall b:block.
+  CTX|{on b _, on_table b, arm_holding b} |=
+    (exists b'. on b b') + on_table b + arm_holding b
+  CTX|{on _ b, clear b, arm_holding b} |=
+    (exists b'. on b' b) + clear b + arm_holding b
+
+CTX|{arm_holding _, arm_free} |=
+  (exists b. arm_holding b) + arm_free
+\end{verbatim}
+
+\subsection*{Graphs}
+No self-edges; no multi-edges; otherwise arbitrary directed graph:
+
+\begin{verbatim}
+forall n:node.
+  CTX|{edge n _} |=
+    (exists n'. edge n n') + 1
+  CTX|{edge _ n} |=
+    (exists n'. edge n' n) + 1
+  CTX|{edge n n} |= 1
+\end{verbatim}
+
+Undirected graphs:
+\begin{verbatim}
+forall n,n':node.
+  CTX|{edge n n', edge n' n} |=
+    (edge n n' * edge n' n) + 1
+\end{verbatim}
+
+\subsection*{Linked Lists}
+use case for recursion
+
+\begin{verbatim}
+mu list(d1,d2) =
+  d1=d2 +
+  (exists v,d'. at d1 v d' * list(d',d2))
+CTX|{at _ _ _} |= exists d1, d2. list(d1,d2)
+\end{verbatim}
+Q: equality -- \verb|d1=d2|?
+
+\subsection*{Binary Counter}
+dps version of ordered fwd-chaining binary increment.
+\begin{verbatim}
+CTX|{inc} |= inc + 1
+CTX|{at _ _ _} |= exists d1,d2. list(d1,d2)
+\end{verbatim}
+
+program:
+\begin{verbatim}
+bit : type.
+b0 : bit.
+b1 : bit.
+
+dest : type.
+eos : dest.
+
+inc : dest -> type.
+
+at : dest -> bit -> dest -> type.
+
+inc0 : inc D * at D b0 D' -o {at D b1 D'}.
+inc1 : inc D * at D b1 D' -o {at D b0 D' * inc D'}.
+ince : inc eos -o {1}.
+\end{verbatim}
+
+\section{Rule Checking}
+
+To check that a rule preserves the invariant:
+
+\begin{enumerate}
+\item Assume an arbitrary context admitting the premise obeys the property.
+\item Invert on the metaLLic rules that make the property obtain. 
+\item Use the inversion facts to derive that the conclusion obeys the
+property.
+\end{enumerate}
+
+Example: blocks world pick up from block.
+
+\begin{verbatim}
+pickupb : on X Y * clear X * arm_free -o
+          {arm_holding X * clear Y}.
+\end{verbatim}
+
+Premise context:
+$\Delta, \mathsf{on\ }X\ Y, \mathsf{clear\ }X, \mathsf{armfree}$
+
+Know that the invariant holds for all blocks, namely X and Y:
+
+
+
+
+\bibliographystyle{plain}
+\bibliography{thesis}
+
+\end{document}

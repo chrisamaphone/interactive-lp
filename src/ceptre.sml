@@ -198,6 +198,9 @@ structure Ceptre = struct
 
   exception IllFormed
 
+  (* a phase is a name & a list of rules *)
+  type phase = ident * (rule_internal list)
+
   fun etermToTerm table term =
     case term of
          EFn (f, args) => Fn (f, map (etermToTerm table) args)
@@ -400,6 +403,10 @@ structure Ceptre = struct
                  rhs=[ELin ("b", [EVar "X"]), ELin ("c", [EVar "Y"])]}
 
   val linpred = Pred (Prop, [])
+
+  (* program is a set of phases, a set of phase rules, and an identifier for an
+  * initial phase *)
+  (* type program = (phase list) * (phase_rule list) * ident *)
 
   val sg1 =
     [("a", linpred),
