@@ -1,5 +1,5 @@
-%% A try at encoding Run, Lola, Run (Lola Rennt) with stages.
-%% Each scene with multiple diverging parts is a stage.
+%% An encoding of Run, Lola, Run (Lola Rennt) with separate stages for
+%% backstory and main action.
 
 thing : type.
 character : type.
