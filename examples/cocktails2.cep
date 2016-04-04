@@ -1,0 +1,468 @@
+ingredient : type.
+property : type.
+drink : type.
+
+has_ingredient drink ingredient : bwd.
+has_property ingredient property : bwd.
+
+base : property.
+sour : property.
+funky : property.
+bitter : property.
+monastic : property.
+herbal : property.
+sweet : property.
+medicinal : property.
+citrusy : property.
+alcoholic : property.
+juicy : property.
+spicy : property.
+woody : property.
+floral : property.
+
+gin : ingredient.
+has_property gin base.
+has_property gin herbal.
+has_property gin alcoholic.
+
+lime : ingredient.
+has_property lime sour.
+has_property lime bitter.
+has_property lime citrusy.
+has_property lime juicy.
+
+maraschino : ingredient.
+has_property maraschino sweet.
+has_property maraschino funky.
+
+chartreuse : ingredient.
+has_property chartreuse herbal.
+has_property chartreuse monastic.
+has_property chartreuse alcoholic.
+
+lemon : ingredient.
+has_property lemon sour.
+has_property lemon citrusy.
+has_property lemon juicy.
+
+grapefruit : ingredient.
+has_property lemon sour.
+has_property grapefruit citrusy.
+has_property grapefruit juicy.
+has_property grapefruit bitter.
+
+cynar : ingredient.
+has_property cynar bitter.
+has_property cynar funky.
+
+benedictine : ingredient.
+has_property benedictine herbal.
+has_property benedictine monastic.
+has_property benedictine sweet.
+
+cointreau : ingredient.
+has_property cointreau sweet.
+has_property cointreau citrusy.
+
+bourbon : ingredient.
+
+rye : ingredient.
+
+rum : ingredient.
+
+absinthe : ingredient.
+
+simple_syrup : ingredient.
+
+angostura : ingredient.
+
+sweet_vermouth : ingredient.
+
+dry_vermouth : ingredient.
+
+campari : ingredient.
+
+st_germaine : ingredient.
+
+creme_de_violette : ingredient.
+
+grand_poppy : ingredient.
+
+hum : ingredient.
+
+
+%% Drinks
+
+last_word : drink.
+has_ingredient last_word gin.
+has_ingredient last_word lime.
+has_ingredient last_word maraschino.
+has_ingredient last_word chartreuse.
+
+pegu : drink.
+negroni : drink.
+martini : drink. % XXX todo need dry vermouth
+manhattan : drink.
+aviation : drink.
+
+%% The program
+
+vary drink : pred.
+substitute ingredient : pred.
+need property : pred.
+chosen ingredient : pred.
+
+stage demix = {
+
+%% Drinks
+
+decompose_last_word :
+  vary last_word 
+-o 
+  substitute gin * 
+  substitute lime *
+  substitute maraschino *
+  substitute chartreuse.
+
+decompose_pegu :
+  vary pegu
+-o
+  substitute gin *
+  substitute lime *
+  substitute cointreau *
+  substitute angostura.
+
+decompose_negroni :
+  vary negroni
+-o
+  substitute gin *
+  substitute sweet_vermouth *
+  substitute campari.
+
+decompose_manhattan :
+  vary manhattan
+-o
+  substitute bourbon *
+  substitute sweet_vermouth *
+  substitute angostura.
+
+decompose_aviation :
+  vary aviation
+-o
+  substitute gin *
+  substitute maraschino *
+  substitute creme_de_violette *
+  substitute lemon.
+
+%% Ingredient decompositions
+
+decompose_campari :
+  substitute campari
+-o
+  need bitter *
+  need medicinal.
+
+decompose_st_germaine :
+  substitute st_germaine
+-o
+  need sweet *
+  need floral.
+
+decompose_creme_de_violette :
+  substitute creme_de_violette
+-o
+  need sweet *
+  need floral.
+
+decompose_hum :
+  substitute hum
+-o
+  need floral *
+  need herbal *
+  need bitter.
+
+% XXX decompose_dry_vermouth :
+
+decompose_grand_poppy :
+  substitute grand_poppy
+-o
+  need sweet *
+  need floral *
+  need spicy.
+
+decompose_gin :
+  substitute gin
+-o
+  need base *
+  need alcoholic *
+  need herbal.
+
+decompose_lime :
+  substitute lime
+-o
+  need sour *
+  need bitter *
+  need citrusy *
+  need juicy.
+
+decompose_maraschino :
+  substitute maraschino
+-o
+  need sweet *
+  need funky.
+
+decompose_chartreuse :
+  substitute chartreuse
+-o
+  need herbal *
+  need alcoholic *
+  need monastic.
+
+decompose_lemon :
+  substitute lemon
+-o
+  need sour *
+  need citrusy *
+  need juicy.
+
+decompose_grapefruit :
+  substitute grapefruit
+-o
+  need sour *
+  need bitter *
+  need citrusy *
+  need juicy.
+
+decompose_cynar :
+  substitute cynar
+-o
+  need bitter *
+  need funky.
+
+decompose_benedictine :
+  substitute benedictine
+-o
+  need monastic *
+  need herbal *
+  need sweet.
+
+decompose_cointreau :
+  substitute cointreau
+-o
+  need sweet *
+  need citrusy.
+
+decompose_bourbon :
+  substitute bourbon
+-o
+  need base *
+  need alcoholic *
+  need sweet * need woody.
+
+decompose_rye :
+  substitute rye
+-o
+  need base *
+  need alcoholic *
+  need spicy *
+  need woody.
+
+decompose_rum :
+  substitute rum
+-o
+  need base *
+  need alcoholic *
+  need sweet.
+
+decompose_absinthe :
+  substitute absinthe
+-o
+  need alcoholic *
+  need herbal *
+  need medicinal.
+
+decompose_simple :
+  substitute simple_syrup
+-o
+  need sweet.
+
+decompose_angostura :
+  substitute angostura
+-o
+  need spicy *
+  need bitter.
+
+decompose_sweet_vermouth :
+  substitute sweet_vermouth
+-o
+  need sweet *
+  need spicy.
+
+
+% collapse_need :
+%  need X *
+%  need X
+% -o
+%  need X.
+
+% chosen X -o substitute X.
+
+}
+
+qui * stage demix -o stage remix.
+
+stage remix = {
+
+choose_bourbon :
+  need base *
+  need alcoholic *
+  need sweet *
+  need woody
+-o
+  chosen bourbon.
+
+choose_rye :
+  need base *
+  need alcoholic *
+  need spicy *
+  need woody
+-o
+  chosen rye.
+
+choose_rum :
+  need base *
+  need alcoholic *
+  need sweet
+-o
+  chosen rum.
+
+choose_simple :
+  need sweet
+-o
+  chosen simple_syrup.
+
+choose_absinthe :
+  need alcoholic *
+  need herbal *
+  need medicinal
+-o
+  chosen absinthe.
+
+choose_angostura :
+  need spicy *
+  need bitter
+-o
+  chosen angostura.
+
+choose_sweet_vermouth :
+  need sweet *
+  need spicy
+-o
+  chosen sweet_vermouth.
+
+choose_gin :
+  need base *
+  need alcoholic *
+  need herbal
+-o
+  chosen gin.
+
+choose_lime :
+  need sour *
+  need bitter *
+  need citrusy *
+  need juicy
+-o
+  chosen lime.
+
+choose_maraschino :
+  need sweet *
+  need funky
+-o
+  chosen maraschino.
+
+choose_chartreuse :
+  need herbal *
+  need alcoholic *
+  need monastic
+-o
+  chosen chartreuse.
+
+choose_lemon :
+  need sour *
+  need citrusy *
+  need juicy
+-o
+  chosen lemon.
+
+choose_grapefruit :
+  need sour *
+  need bitter *
+  need citrusy *
+  need juicy
+-o
+  chosen grapefruit.
+
+choose_cynar :
+  need bitter *
+  need funky
+-o
+  chosen cynar.
+
+choose_benedictine :
+  need monastic *
+  need herbal *
+  need sweet
+-o
+  chosen benedictine.
+
+choose_cointreau :
+  need sweet *
+  need citrusy
+-o
+  chosen cointreau.
+
+choose_campari :
+  need bitter *
+  need medicinal
+-o
+  chosen campari.
+
+choose_st_germaine :
+  need sweet *
+  need floral
+-o
+  chosen st_germaine.
+
+choose_creme_de_violette :
+  need sweet *
+  need floral
+-o
+  chosen creme_de_violette.
+
+choose_grand_poppy :
+  need sweet *
+  need floral *
+  need spicy
+-o
+  chosen grand_poppy.
+
+choose_hum :
+  need floral *
+  need herbal *
+  need bitter
+-o
+  chosen hum.
+
+% collapse_ingredient :
+%  chosen X * chosen X
+% -o
+%  chosen X.
+
+} % #interactive remix.
+
+% qui * stage remix * $need P -o stage demix.
+
+context init = {vary negroni}.
+
+#trace _ demix init.
