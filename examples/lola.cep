@@ -36,7 +36,6 @@ story_state : type.
 bool : type. true : bool. false : bool.
 intensity : type.
 low : intensity.
-med : intensity.
 high : intensity.
 
 location character place : story_state.
@@ -62,30 +61,32 @@ context init =
   holds (dating manni lola),
   holds (dating lola manni),
   holds (stolen moped),
+  believes lola (dating papa mistress) false,
   believes lola (stolen moped) false,
   believes manni (stolen moped) false,
   believes papa (pregnant mistress papa) false,
   believes lola (has papa money) true,
   holds (location papa bank),
-  believes lola (location papa bank) true
+  believes lola (location papa bank) true,
+  believes homeless_man (has manni gun) false
 }.
 
 %% Backstory
 stage backstory = {
 
 manni_ask_lola_take_money_on_moped :
-  $holds (dating manni lola) * 
+ % $holds (dating manni lola) * 
   $desires manni (has ronnie money) *
   believes manni (stolen moped) false
 -o
   desires lola (has ronnie money).
 
 lola_attempt_moped_rescue :
-  $desires lola (has ronnie money) *
+  desires lola (has ronnie money) *
   believes lola (stolen moped) false *
   $holds (stolen moped)
 -o
-  believes lola (stolen moped) true *
+  % believes lola (stolen moped) true *
   believes manni (stolen moped) true.
 
 manni_take_subway :
@@ -103,7 +104,7 @@ police_scare_manni_away :
   holds (thing_location money subway) *
   believes manni (thing_location money subway) true.
 
-homeless_guy_steals_money :
+homeless_man_steals_money :
   holds (thing_location money subway) *
   holds (location homeless_man subway)
 -o
@@ -115,7 +116,7 @@ manni_goes_back_for_money :
   believes manni (thing_location money subway) true *
   believes manni (has homeless_man money) false
 -o
-  believes manni (thing_location money subway) false *
+  % believes manni (thing_location money subway) false *
   believes manni (has homeless_man money) true.
 
 manni_gets_call_from_boss :
@@ -125,8 +126,8 @@ manni_gets_call_from_boss :
   desires manni (has manni money).
 
 lola_sees_manni_about_to_rob_supermarket :
-  desires manni (has manni money) *
-  $holds (dating lola manni)
+  desires manni (has manni money)
+  % * $holds (dating lola manni)
 -o
   believes lola (has manni money) false *
   believes manni (has lola money) false *
@@ -144,7 +145,6 @@ lola_starts_running :
   $believes lola (location papa bank) true
 -o 
   stage lola_run * 
-  holds (location lola lola_apartment) *
   holds (location dog lola_apartment) *
   holds (location baby_stroller berlin_streets) *
   holds (location manni lola_apartment) *
@@ -178,7 +178,7 @@ jump_over_dog :
   holds (location dog lola_apartment)
 -o
   holds (location lola berlin_streets) *
-  holds (speed lola med).
+  holds (speed lola high).
 
 
 %% The Baby Carriage
@@ -214,7 +214,8 @@ cause_car_crash :
 
 avoid_car_crash :
   holds (location mr_meyer berlin_streets) *
-  holds (location lola berlin_streets)
+  holds (location lola berlin_streets) *
+  holds (location papa bank)
 -o
   holds (location lola bank) *
   holds (location papa berlin_streets).
@@ -233,13 +234,31 @@ mistress_tells_papa_baby_is_not_his :
 -o
   believes papa (pregnant mistress mister) true.
 
-lola_encounters_father :
-  believes lola (has papa money) true *
-  $desires lola (has lola money) *
-  holds (location lola bank) *
-  $holds (location papa bank)
+lola_overhears :
+  $holds (speed lola low) *
+  $holds (location lola bank) *
+  $holds (location papa bank) *
+  believes lola (dating papa mistress) false 
 -o
-  holds (location lola berlin_streets) *
+  believes lola (dating papa mistress) true *
+  believes lola time_left true.
+
+lola_robs_bank :
+  $believes lola (dating papa mistress) true *
+  believes lola time_left true
+-o
+  believes lola time_left false *
+  holds (has lola money).
+
+lola_asks_papa_for_money :
+  $holds (speed lola high) *
+  $holds (location lola bank) *
+  $holds (location papa bank) *
+  $desires lola (has lola money) *
+  believes lola (dating papa mistress) false *
+  $believes papa (pregnant mistress papa) true
+-o
+  believes lola (dating papa mistress) true *
   believes lola time_left false.
 
 lola_misses_father :
@@ -266,21 +285,25 @@ visit_casino :
 %% Meanwhile, Manni tries to get money in another way...
 manni_asks_blind_woman_for_calling_card :
   holds (location blind_woman supermarket) *
-  holds (location manni supermarket)
+  holds (location manni supermarket) *
+  $believes manni (has homeless_man money) true
 -o
   holds (location manni supermarket).
 
 homeless_man_rides_to_supermarket :
   $holds (has homeless_man bike) *
   $holds (has homeless_man money) *
-  holds (location homeless_man berlin_streets)
+  holds (location homeless_man berlin_streets) *
+  $believes homeless_man (has manni gun) false
 -o
   holds (location homeless_man supermarket).
 
 manni_notices_and_chases_homeless_man :
   holds (location manni supermarket) *
-  holds (location homeless_man supermarket) 
+  holds (location homeless_man supermarket) *
+  believes homeless_man (has manni gun) false
 -o
+  believes homeless_man (has manni gun) true *
   holds (location homeless_man berlin_streets) *
   holds (location manni berlin_streets).
 
@@ -288,20 +311,24 @@ manni_trades_gun_for_money :
   holds (location manni berlin_streets) *
   holds (location homeless_man berlin_streets) *
   believes manni (has homeless_man money) true *
+  believes homeless_man (has manni gun) true *
   holds (has homeless_man money) *
   holds (has manni gun)
 -o
   holds (has homeless_man gun) *
   holds (has manni money) *
   believes manni (has homeless_man money) false *
+  believes homeless_man (has manni gun) false *
   believes manni (has homeless_man gun) true *
   holds (location manni supermarket).
 
 
 %% The Ambulance
 encounter_ambulance :
-  believes lola time_left false
+  believes lola time_left false *
+  holds (location lola _)
 -o
+  holds (location lola berlin_streets) *
   holds (location ambulance berlin_streets).
 
 lola_shouts_at_ambulance :

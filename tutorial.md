@@ -3,7 +3,7 @@
 ## Overview
 
 Ceptre is a *linear logic programming language* created by [Chris
-Martens](http://www.cs.cmu.edu/~cmartens). It can be used to specify evolving
+Martens](https://sites.google.com/ncsu.edu/cmartens). It can be used to specify evolving
 systems with lots of independent parts in a concise way.
 
 Linear logic programming at a glance means writing rules of the form
@@ -44,8 +44,7 @@ Make sure you can run `./ceptre examples/small.cep` from the
 *Optionally*, install [GraphViz/Dot](http://www.graphviz.org/) as well.
 This will enable you to see visual representations of program output.
 
-If you need help with any of these steps, please contact
-[@chrisamaphone](http://www.twitter.com/chrisamaphone) on Twitter.
+If you need help with any of these steps, please contact Dr. Martens.
 
 
 ## Example

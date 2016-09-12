@@ -83,7 +83,7 @@ stage setup = {
   : init_settlement P * available_land X 
     -o has_settlement P X.
 }
-#interactive setup.
+% #interactive setup.
 
 die : pred.
 setup_to_rolling : qui * stage setup -o stage roll * die.
@@ -124,7 +124,7 @@ stage trade = {
             -o holds P R' * holds P' R.
   donetrading : turn P -o done P.
 }
-#interactive trade.
+% #interactive trade.
 trade_to_build : qui * stage trade * done P -o stage build * turn P.
 
 stage build = {
@@ -142,7 +142,7 @@ stage build = {
 
   finished : turn P -o done P.
 }
-#interactive build.
+% #interactive build.
 build_to_roll : 
   qui * stage build * done P * next P P'
    -o stage roll * turn P' * die.
