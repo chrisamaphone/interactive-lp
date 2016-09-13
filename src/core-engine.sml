@@ -46,7 +46,7 @@ sig
 
    (* Run a given transition *)
    val apply_transition: fastctx -> transition 
-          -> fastctx * (ctx_var * Ceptre.atom) list
+          -> fastctx * Ceptre.term list * (ctx_var * Ceptre.atom) list
 
    (* Insert a ground atom into the context *)
    val insert: fastctx -> Ceptre.atom -> fastctx * ctx_var
@@ -214,7 +214,7 @@ type 'a prog =
   {senses:  ('a * Ceptre.term list -> Ceptre.term list list) M.dict,
    bwds: (int * Ceptre.bwd_rule) list M.dict,
    lmap: fast_ruleset M.dict,
-   rmap: C.atom list I.dict, 
+   rmap: (int * C.atom list) I.dict, 
    builtin: C.builtin M.dict}
 
 type ctx = 
@@ -260,8 +260,8 @@ let
 
    fun compile_rhses ({name, body, nondet}, map) = 
       List.foldl 
-          (fn ((uid, {rhs, ...}: Ceptre.rule_internal), rmap) => 
-              I.insert rmap uid rhs)
+          (fn ((uid, {rhs, extvars, ...}: Ceptre.rule_internal), rmap) => 
+              I.insert rmap uid (extvars * rhs))
           map body
 
    fun insert_bwd_rule ((id, rule: Ceptre.bwd_rule), m) =
@@ -605,6 +605,16 @@ fun add_to_ctx gsubst bi ((mode, a, ps), ({next, concrete}, xs)) =
     (next, atom) :: xs)
   end
 
+val gensym = ref 0
+fun gen_terms n =
+  if n <= 0 then [] else
+  let
+    val x = !gensym
+    val var = Ceptre.ExtVar x
+    val () = gensym := x+1
+  in var::(gen_terms (n-1))
+  end
+
 fun apply_transition (FC {prog, ctx = {concrete, next}}) {r, tms, Vs} =
 let
 
@@ -614,17 +624,20 @@ let
 
    (* Find right hand side pattern hand side *)
    val (name, uid) = r
-   val rhs = 
+   val (extvars, rhs) = 
       case I.find (#rmap prog) uid of 
-         NONE => raise Fail ("Error lookuing up rhs of rule "^name)
+         NONE => raise Fail ("Error looking up rhs of rule "^name)
        | SOME rhs => rhs
+
+    (* Get new-bound term vars *)
+    val new_terms = gen_terms extvars
   
    (* Update context, get new identifiers *)
    val (ctx, xs) = 
       List.foldr (add_to_ctx tms (#builtin prog)) 
          ({concrete = concrete, next = next}, []) rhs
 in
-   (FC {prog = prog, ctx = ctx}, xs)
+   (FC {prog = prog, ctx = ctx}, new_terms, xs)
 end
 
 fun insert (FC {prog, ctx = {concrete, next}}) (mode, a, tms) =

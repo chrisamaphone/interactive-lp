@@ -8,6 +8,7 @@ structure Ceptre = struct
   datatype term 
    = Fn of ident * term list 
    | Var of var
+   | ExtVar of var
    | SLit of string
    | ILit of IntInf.int
   type pred = ident
@@ -21,9 +22,9 @@ structure Ceptre = struct
    | One
    | Atom of atom
   type rule_internal_new = 
-    {name : ident, pivars : int, lhs : prem, rhs : atom list}
+    {name : ident, pivars : int, extvars : int, lhs : prem, rhs : atom list}
   type rule_internal = 
-    {name : ident, pivars : int, lhs : atom list, rhs : atom list}
+    {name : ident, pivars : int, extvars : int, lhs : atom list, rhs : atom list}
   type context = atom list
 
   (* Const term declarations *)
@@ -59,6 +60,7 @@ structure Ceptre = struct
     | termToString (Var i) = "(Var "^(varToString i)^")"
     | termToString (SLit s) = "\""^String.toCString s^"\""
     | termToString (ILit i) = IntInf.toString i  
+    | termToString (ExtVar i) = "(ExtVar "^(varToString i)^")"
 
   fun atomToString (Lin, p, args) = withArgs p (map termToString args)
     | atomToString (Pers, p, args) = withArgs ("!"^p) (map termToString args)
