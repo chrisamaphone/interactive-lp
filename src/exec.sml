@@ -55,7 +55,7 @@ fun fwdchain
   (sigma : Ceptre.sigma)
   (ctx : Ceptre.atom list) 
   (program as {init_stage,stages,...} : Ceptre.program) 
-  (print : string -> unit)
+  (io : Traces.step -> unit) (* Communicate step w/outside world *)
 : CoreEngine.fastctx * Ceptre.context * Traces.trace
 =
 let
@@ -64,7 +64,7 @@ let
     (* Write out the context *)
     val ceptre_ctx = CoreEngine.context fastctx
     val ctx_string = Ceptre.contextToString ceptre_ctx
-    val () = print ("\n---- " ^ ctx_string ^ "\n")
+    (* val () = print ("\n---- " ^ ctx_string ^ "\n") *)
     (* general transition handling *)
     fun take_transition T ctx =
       let
@@ -93,6 +93,9 @@ let
 
         (* get trace step *)
         val step = Traces.transitionToStep T newvars
+
+        (* Let outside world know about step *)
+        val () = io step
       in
         loop stage_id fastctx' (step::steps)
       end
@@ -106,16 +109,12 @@ let
               | SOME {nondet,...} =>
                   (case pick nondet L fastctx of
                         SOME T =>
-                          let
-                            val () = print "\nApplying transition "
-                            val () = print (CoreEngine.transitionToString T)
-                          in
                             take_transition T fastctx
-                          end
                       | NONE => (* quiesce take_transition fastctx steps *)
                         (* end the program *)
                         (fastctx, rev steps)
-                          ))
+                  )
+          )
   end
 
 
@@ -127,14 +126,48 @@ in
    (init_ctx, CoreEngine.context end_ctx, trace)
 end
 
+
+  fun stepToLogLine {rule, consts, input, outputs} =
+  let
+    (* Transition *)
+    val constStrings = map Ceptre.termToString consts
+    val constsString = String.concatWith " " constStrings
+    val transition = rule^" "^constsString
+    (* Removed predicates *)
+    val removedVars = CoreEngine.valueDeps input
+    (* Added predicates *)
+    val added = map (Ceptre.atomToString o (#2)) outputs
+    val addedString = "{"^(String.concatWith ", " added)^"}"
+  in
+    "--- STEP:    "^transition^"\n"^
+    "    REMOVED: "^ (* XXX *)   "\n"^
+    "    ADDED:   "^removedString^"\n"
+  end
+
+  fun stepToJSONLine {rule, consts, input, outputs} =
+    "{\"command\": \""^rule^"\"}"
+    (* XXX do this for real *)
+
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
   : CoreEngine.fastctx * Ceptre.context * Traces.trace  =
 let
   (* val senses = XXX (* set up sensors *) *)
   val logfile = TextIO.openOut "log.txt"
-  fun print s = (TextIO.output (logfile, s); TextIO.flushOut logfile)
+  fun log step = 
+    let
+      (* Log file *)
+      val step_string = stepToLogLine(step)
+      val () = TextIO.output (logfile, step_string)
+      val () = TextIO.flushOut logfile
+      (* JSON file *)
+      val jsonfile = TextIO.openOut "ceptre.json"
+      val step_json = stepToJSONLine(step)
+      val () = TextIO.output (jsonfile, step_json)
+      val () = TextIO.flushOut jsonfile
+      val () = TextIO.closeOut jsonfile
+    in () end
 in
-  fwdchain sigma init_state program (* senses *) print
+  fwdchain sigma init_state program (* senses *) log
   before
   TextIO.closeOut logfile
 end
