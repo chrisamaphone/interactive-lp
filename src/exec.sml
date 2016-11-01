@@ -141,7 +141,7 @@ end
   in
     "--- STEP:    "^transition^"\n"^
     "    REMOVED: "^ (* XXX *)   "\n"^
-    "    ADDED:   "^removedString^"\n"
+    "    ADDED:   "^addedString^"\n"
   end
 
   fun stepToJSONLine {rule, consts, input, outputs} =
