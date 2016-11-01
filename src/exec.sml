@@ -68,7 +68,7 @@ let
     (* general transition handling *)
     fun take_transition T ctx =
       let
-        val (fastctx', newvars : (CoreEngine.ctx_var * Ceptre.atom) list) = 
+        val (oldvars, fastctx', newvars : (CoreEngine.ctx_var * Ceptre.atom) list) = 
           CoreEngine.apply_transition ctx T
 
         (* XXX no actions anymore 
@@ -89,10 +89,10 @@ let
         
         (* Read out new stage from program *)
         val [(x, [Ceptre.Fn (stage_id, [])])] = 
-          CoreEngine.lookup fastctx' "stage"
+          CoreEngine.filterCtx fastctx' "stage"
 
         (* get trace step *)
-        val step = Traces.transitionToStep T newvars
+        val step = Traces.transitionToStep T oldvars newvars
 
         (* Let outside world know about step *)
         val () = io step
@@ -127,26 +127,30 @@ in
 end
 
 
-  fun stepToLogLine {rule, consts, input, outputs} =
+  fun stepToLogLine {rule, consts, input, input_deps, outputs} =
   let
     (* Transition *)
     val constStrings = map Ceptre.termToString consts
     val constsString = String.concatWith " " constStrings
     val transition = rule^" "^constsString
     (* Removed predicates *)
-    val removedVars = CoreEngine.valueDeps input
+    val removed = map (Ceptre.atomToString o (#2)) input_deps
+    val removedString = "{"^ (String.concatWith ", " removed) ^"}"
     (* Added predicates *)
     val added = map (Ceptre.atomToString o (#2)) outputs
     val addedString = "{"^(String.concatWith ", " added)^"}"
   in
     "--- STEP:    "^transition^"\n"^
-    "    REMOVED: "^ (* XXX *)   "\n"^
-    "    ADDED:   "^removedString^"\n"
+    "    REMOVED: "^ removedString  ^"\n"^
+    "    ADDED:   "^ addedString ^"\n"
   end
 
-  fun stepToJSONLine {rule, consts, input, outputs} =
-    "{\"command\": \""^rule^"\"}"
+  fun stepToJSONLine {rule, consts, input, input_deps, outputs} =
     (* XXX do this for real *)
+  let
+  in
+    "{\"command\": \""^rule^"\"}"
+  end
 
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
   : CoreEngine.fastctx * Ceptre.context * Traces.trace  =
