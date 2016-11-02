@@ -170,7 +170,7 @@ end
   in
     "{\"varname\": "^ varString ^", "^
     "\"mode\": "^ modeString ^", "^
-    "\"pred\": "^ predString ^", "^ "args: "^ argString ^"}"
+    "\"pred\": "^ predString ^", "^ "\"args\": "^ argString ^"}"
   end
 
   fun ruleAppToJSON rule args =
