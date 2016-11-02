@@ -145,11 +145,60 @@ end
     "    ADDED:   "^ addedString ^"\n"
   end
 
-  fun stepToJSONLine {rule, consts, input, input_deps, outputs} =
-    (* XXX do this for real *)
+
+  (* Create a string from l by comma-separating f of each element, then 
+    * prepend left and append right. *)
+  fun listToString l f left right =
   let
+    val pieces = map f l
+    val commasep = String.concatWith ", " pieces
+    val combined = left ^ commasep ^ right
   in
-    "{\"command\": \""^rule^"\"}"
+    combined
+  end
+
+  fun quote s = "\""^s^"\""
+
+  (* {varname: string, pred: string, mode: string, args: string array } *)
+  fun bindingToJSON (var:CoreEngine.ctx_var, ((mode, pred, terms) : Ceptre.atom)) =
+  let
+    val varString = quote (CoreEngine.varToString var)
+    val predString = quote pred
+    val modeString' = (case mode of Ceptre.Lin => "lin" | Ceptre.Pers => "pers")
+    val modeString = quote modeString'
+    val argString = listToString terms (quote o Ceptre.termToString) "[" "]"
+  in
+    "{\"varname\": "^ varString ^", "^
+    "\"mode\": "^ modeString ^", "^
+    "\"pred\": "^ predString ^", "^ "args: "^ argString ^"}"
+  end
+
+  fun ruleAppToJSON rule args =
+  let
+    val rfield = (quote "rulename") ^ ": " ^ (quote rule)
+    val argstring = listToString args (quote o Ceptre.termToString) "[" "]"
+    val argfield = (quote "args") ^ ": " ^ argstring
+  in
+    "{"^ rfield ^ ", " ^ argfield ^ "}"
+  end
+
+  (* XXX Consider moving to traces.sml? *)
+  (* Format:
+  *   term: {id: string, args: term array}
+  *   resource: {varname: string, pred:string, args: term array}
+  *   step: {command, removed, added} where
+  *     command: rulename
+  *     removed: array of resources
+  **    added: array of resources *)
+  fun stepToJSONLine {rule, consts, input, input_deps, outputs} =
+  let
+    val command = ruleAppToJSON rule consts
+    val removed = listToString input_deps bindingToJSON "[" "]"
+    val added   = listToString outputs bindingToJSON "[" "]"
+  in
+    "{\"command\": "^command^",\n"^
+    " \"removed\": "^removed^",\n"^
+    " \"added\": "^added^"\n}\n"
   end
 
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
