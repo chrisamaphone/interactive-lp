@@ -10,7 +10,7 @@ notp : pred.
 context init = {no_p_yet}.
 
 stage check_p = {
-find : no_p_yet * $p -o ().
+find : no_p_yet * p -o p.
 }.
 qui * stage check_p * no_p_yet -o stage do_q * notp.
 qui * stage check_p * $p -o stage done.

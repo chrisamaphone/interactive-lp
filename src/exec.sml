@@ -29,21 +29,14 @@ fun quiesce take_transition fastctx steps =
       (case pick Ceptre.Random L fastctx of
             SOME T =>
               let 
-                val () = print "Applying stage transition "
+                val () = () (* print "Applying stage transition " 
                 val () = print (CoreEngine.transitionToString T) 
-                val () = print "\n"
+                val () = print "\n" *)
               in
                 take_transition T fastctx
               end
           | NONE => (fastctx, rev steps) (* DONE *))
   end
-
-(*
-fun unzip1_2' ((x,y,z)::l) xs yzs =
-      unzip1_2' l (x::xs) ((y,z)::yzs)
-  | unzip1_2' nil xs yzs = (xs, yzs)
-fun unzip1_2 l = unzip1_2' l [] []
-*)
 
 (* fwdchain : Ceptre.context -> Ceptre.program
 *          -> Ceptre.context
@@ -55,7 +48,7 @@ fun fwdchain
   (sigma : Ceptre.sigma)
   (ctx : Ceptre.atom list) 
   (program as {init_stage,stages,...} : Ceptre.program) 
-  (io : Traces.step -> unit) (* Communicate step w/outside world *)
+  (io : Traces.step -> Ceptre.atom list -> unit) (* Communicate step w/outside world *)
 : CoreEngine.fastctx * Ceptre.context * Traces.trace
 =
 let
@@ -95,7 +88,7 @@ let
         val step = Traces.transitionToStep T oldvars newvars
 
         (* Let outside world know about step *)
-        val () = io step
+        val () = io step (CoreEngine.context fastctx')
       in
         loop stage_id fastctx' (step::steps)
       end
@@ -182,23 +175,30 @@ end
     "{"^ rfield ^ ", " ^ argfield ^ "}"
   end
 
-  (* XXX Consider moving to traces.sml? *)
+  fun contextToJSON ctx =
+    listToString ctx (quote o Ceptre.atomToString) "[" "]"
+
+  (* XXX Move to traces.sml *)
   (* Format:
   *   term: {id: string, args: term array}
   *   resource: {varname: string, pred:string, args: term array}
   *   step: {command, removed, added} where
   *     command: rulename
   *     removed: array of resources
-  **    added: array of resources *)
-  fun stepToJSONLine {rule, consts, input, input_deps, outputs} =
+  *     added: array of resources 
+  *   context: array of resources - current context
+  **)
+  fun stepToJSONLine {rule, consts, input, input_deps, outputs} ctx =
   let
     val command = ruleAppToJSON rule consts
     val removed = listToString input_deps bindingToJSON "[" "]"
     val added   = listToString outputs bindingToJSON "[" "]"
+    val context = contextToJSON ctx
   in
     "{\"command\": "^command^",\n"^
     " \"removed\": "^removed^",\n"^
-    " \"added\": "^added^"\n}\n"
+    " \"added\": "^added^",\n"^
+    " \"context\": "^context^"\n}"
   end
 
 fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
@@ -206,15 +206,15 @@ fun run (sigma : Ceptre.sigma) (program as {init_state,...} : Ceptre.program)
 let
   (* val senses = XXX (* set up sensors *) *)
   val logfile = TextIO.openOut "log.txt"
-  fun log step = 
+  fun log step ctx = 
     let
       (* Log file *)
-      val step_string = stepToLogLine(step)
+      val step_string = stepToLogLine step
       val () = TextIO.output (logfile, step_string)
       val () = TextIO.flushOut logfile
       (* JSON file *)
       val jsonfile = TextIO.openOut "ceptre.json"
-      val step_json = stepToJSONLine(step)
+      val step_json = stepToJSONLine step ctx
       val () = TextIO.output (jsonfile, step_json)
       val () = TextIO.flushOut jsonfile
       val () = TextIO.closeOut jsonfile

@@ -38,3 +38,4 @@ context init =
 {at alice hall, at bob hall, at charlie foyer, says alice hi}.
 
 #trace _ say init.
+
