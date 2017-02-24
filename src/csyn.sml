@@ -214,8 +214,11 @@ struct
        | P.Decl (P.Ascribe (P.Id id, P.Id "type")) => (remember id; CType id)
        | P.Decl (P.Ascribe (dc, P.Pred ())) => CPred (extractCls dc C.Prop)
        | P.Decl (P.Ascribe (dc, P.Id "bwd")) => CPred (extractCls dc C.Bwd)
-       | P.Decl (P.Ascribe (dc, P.Id "sense")) => CPred (extractCls dc C.Sense)
-       | P.Decl (P.Ascribe (dc, P.Id "action")) => CPred (extractCls dc C.Act)
+       (* Sensing and acting predicates - should handle this some way other than
+        * keyword.
+        | P.Decl (P.Ascribe (dc, P.Id "sense")) => CPred (extractCls dc C.Sense)
+        | P.Decl (P.Ascribe (dc, P.Id "action")) => CPred (extractCls dc C.Act)
+       *)
 
        | P.Decl (P.Ascribe (dc, class)) => extractDecl types dc class
        | P.Decl syn => extractDecl types (P.Id (gensym ())) syn 

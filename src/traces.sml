@@ -4,6 +4,7 @@ struct
 type step = {rule: Ceptre.ident, 
              consts: Ceptre.term list,
              input: CoreEngine.value,
+             input_deps : (CoreEngine.ctx_var * Ceptre.atom) list,
              (* x_1 : A_1 ... x_n : A_n *)
              outputs: (CoreEngine.ctx_var * Ceptre.atom) list}
 
@@ -11,14 +12,14 @@ type trace = step list
   (* XXX also initial and final? *)
               
 
-fun transitionToStep T outputs : step =
+fun transitionToStep T inputs outputs : step =
   let
     val {rule, arg, tms} = CoreEngine.transitionProof T
   in
-    {rule=rule, consts=tms, input=arg, outputs=outputs}
+    {rule=rule, consts=tms, input=arg, input_deps=inputs, outputs=outputs}
   end
 
-fun stepToString ({rule,consts,input,outputs} : step) =
+fun stepToString ({rule,consts,input,outputs,...} : step) =
   let
     val outputStrings = map (CoreEngine.varToString o (#1)) outputs
     val outputsString = String.concatWith ", " outputStrings
@@ -55,7 +56,7 @@ fun makeEdgeTo   n2 n1 = Dot.Edge (n1,n2)
 fun makeEdgeFrom n1 n2 = Dot.Edge (n1,n2)
 
 (* convert [step] to list of [Dot.line]s *)
-fun stepToLines ({rule,consts,input,outputs} : step) =
+fun stepToLines ({rule,consts,input,outputs,...} : step) =
 let
   val nodeName : string = gensym ()
   val constStrings = map Ceptre.termToString consts

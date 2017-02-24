@@ -46,7 +46,7 @@ sig
 
    (* Run a given transition *)
    val apply_transition: fastctx -> transition 
-          -> fastctx * (ctx_var * Ceptre.atom) list
+          -> (ctx_var * Ceptre.atom) list * fastctx * (ctx_var * Ceptre.atom) list
 
    (* Insert a ground atom into the context *)
    val insert: fastctx -> Ceptre.atom -> fastctx * ctx_var
@@ -54,11 +54,14 @@ sig
    (* Remove an atom from the context. Raises Subscript if it's not there. *)
    val remove: fastctx -> ctx_var -> fastctx
 
-   (* Remove all of a lis tof atoms from the context. *)
+   (* Remove all of a list of atoms from the context. *)
    val removeAll: fastctx -> ctx_var list -> fastctx
 
-   (* Look up all atoms with a particular name *)
-   val lookup: fastctx -> Ceptre.ident -> (ctx_var * Ceptre.term list) list
+   (* Get all atoms in the ctx with a particular name *)
+   val filterCtx : fastctx -> Ceptre.ident -> (ctx_var * Ceptre.term list) list
+   
+   (* Look up the type of a variable *)
+   val lookup : fastctx -> ctx_var -> Ceptre.atom
 
    (* get the (var * Ceptre.atom) list under the fastctx *)
    val get_concrete : fastctx -> (ctx_var * Ceptre.atom) list
@@ -605,12 +608,26 @@ fun add_to_ctx gsubst bi ((mode, a, ps), ({next, concrete}, xs)) =
     (next, atom) :: xs)
   end
 
-fun apply_transition (FC {prog, ctx = {concrete, next}}) {r, tms, Vs} =
+fun list_separate f l =
+  case l of [] => ([], [])
+          | (x::xs) => 
+              let
+                val (l1, l2) = list_separate f xs
+              in
+                if f x then (x::l1, l2) else (l1, x::l2)  
+              end
+
+fun apply_transition 
+    (FC {prog, ctx = {concrete, next}}) 
+    ({r, tms, Vs} : transition)
+ (* Returns used vars/preds, new context, and new var/preds *)
+: (ctx_var * Ceptre.atom) list * fastctx * (ctx_var * Ceptre.atom) list
+=
 let
 
    (* Remove linear identifiers from context *)
-   val concrete = 
-      List.filter (fn (x, a) => C.Pers = #1 a orelse not (is_in x Vs)) concrete
+   val (concrete, removed) = 
+      list_separate (fn (x, a) => C.Pers = #1 a orelse not (is_in x Vs)) concrete
 
    (* Find right hand side pattern hand side *)
    val (name, uid) = r
@@ -624,7 +641,7 @@ let
       List.foldr (add_to_ctx tms (#builtin prog)) 
          ({concrete = concrete, next = next}, []) rhs
 in
-   (FC {prog = prog, ctx = ctx}, xs)
+   (removed, FC {prog = prog, ctx = ctx}, xs)
 end
 
 fun insert (FC {prog, ctx = {concrete, next}}) (mode, a, tms) =
@@ -647,10 +664,17 @@ fun remove (FC {prog, ctx = {concrete, next}}) x =
 fun removeAll c0 xs =
   foldl (fn (x,c) => remove c x) c0 xs
 
-fun lookup (FC {prog, ctx}) a = 
+fun filterCtx (FC {prog, ctx}) a = 
   (List.mapPartial 
      (fn (x, (m, b, tms)) => if a = b then SOME (x, tms) else NONE)
      (#concrete ctx))
+
+fun pairListLookup x l =
+  case l of
+       [] => NONE
+     | ((y,t)::l) => if x=y then SOME t else pairListLookup x l
+
+fun lookup fc x = Option.valOf (pairListLookup x (fc_concrete fc))
 
 fun get_concrete (FC {prog, ctx}) = #concrete ctx
 
