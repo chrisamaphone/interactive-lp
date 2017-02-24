@@ -1,0 +1,63 @@
+food : pred.
+animal : pred.
+raw_meat : pred.
+fire : pred.
+land : pred.
+growing : pred.
+crop : pred.
+tree : pred.
+energy : pred.
+wood : pred.
+stone : pred.
+axe : pred.
+
+surviving : pred.
+dead : pred.
+
+turn : pred.
+
+context init =
+{turn, surviving, energy, energy, energy,
+  land, land, land, land, land, land, 
+  animal, animal, animal, animal, animal, animal,
+  tree, tree, tree}
+
+stage live = {
+
+hunt : $turn * animal * energy -o raw_meat.
+cook : $turn * $fire * raw_meat -o food.
+cultivate : $turn * $land * energy -o growing.
+harvest : $turn * crop * land -o food.
+eat : $turn * food -o energy.
+make_fire : $turn * wood -o fire.
+mine_ore : $turn * energy -o stone.
+make_tool : $turn * wood * stone * energy -o axe.
+chop_tree : $turn * axe * tree * energy -o wood.
+put_out_fire : $turn * fire -o ().
+done : turn -o ().
+
+} #interactive live.
+qui * stage live -o stage auto * turn * turn * turn.
+
+stage auto = {
+
+  fire_burns_out : fire -o ().
+  fire_destroys_tree : fire * tree -o ().
+  crops_die : turn * crop -o ().
+  animals_die : turn * animal -o ().
+  animals_repro : turn * animal * animal -o animal * animal * animal.
+  crop_grows : turn * growing -o crop.
+  tree_grows : turn -o tree.
+  tree_falls : turn * tree -o wood.
+  tree_fruit : turn * $tree -o crop.
+  metabolism : turn * energy -o ().  
+  meat_spoils : turn * raw_meat -o ().
+  food_spoils : turn * food -o ().
+
+  % starve : hunger * hunger * hunger * surviving -o dead.
+}
+qui * stage auto * $surviving -o stage live * turn.
+
+
+#trace _ live init.
+
