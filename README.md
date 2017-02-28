@@ -1,10 +1,19 @@
 interactive-lp
 ==============
 
-Project materials related to logic programming for interactive/reactive systems.
+This is the source repository for Ceptre, a tiny logic programming language
+for prototyping rulesets that you can run, interact with, and analyze.
 
-Ad-hoc instructions for anyone who wants to play while Ceptre is in
-development:
+Binaries for OS X/Win/Linux available here:
+https://drive.google.com/drive/folders/0B6BJA78gViuAN3A0WlVkdXBjMk0
+
+Ceptre runs on a Unix-based command line (for now), so you will need to
+know your way around a shell to use it.
+
+Please see [this tutorial](tutorial.md) to get started!
+
+
+To compile from source:
 
 - Get MLton (http://mlton.org/).
 - Clone the repo, and get cmlib into the lib/cmlib directory:
