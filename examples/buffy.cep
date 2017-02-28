@@ -91,7 +91,7 @@ stage pc_choices = {
   act/kidnap/evil
       : turn * $pc C
       * $evil C
-      * at C L * at C' L * weak C'
+      * at C L * at C' L * $weak C'
       * adjacent L L'
         -o at C L' * at C' L' * go.
 
