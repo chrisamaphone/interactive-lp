@@ -31,7 +31,7 @@ move : at C L * $adjacent L L' -o at C L'.
 
 take : $at C L * ato O L -o has C O.
 
-give : $at C L * $at C' L * has C O * likes C C' -o has C' O.
+give : $at C L * $at C' L * has C O * $likes C C' -o has C' O.
 
 }
 #interactive main.
