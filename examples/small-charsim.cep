@@ -1,0 +1,48 @@
+
+%% Tiny social sim example for microceptre.
+
+location : type.
+town : location.
+woods : location.
+fortress : location.
+castle : location.
+
+character : type.
+alice : character.
+red : character.
+wolf : character.
+jack : character.
+
+object : type.
+knife : object.
+apple : object.
+poison : object.
+ring : object.
+
+at character location : pred.
+ato object location : pred.
+has character object : pred.
+likes character character : pred.
+adjacent location location : pred.
+
+stage main = {
+
+move : at C L * $adjacent L L' -o at C L'.
+
+take : $at C L * ato O L -o has C O.
+
+give : $at C L * $at C' L * has C O * likes C C' -o has C' O.
+
+}
+#interactive main.
+
+context init = 
+{ at red town, at wolf woods, has red apple, at jack castle,
+  at alice fortress, likes red alice, likes alice red,
+  likes jack alice, likes alice wolf,
+  adjacent town woods, adjacent woods fortress, adjacent woods castle,
+  adjacent woods town, adjacent fortress woods, adjacent castle woods
+  }.
+
+#trace _ main init.
+
