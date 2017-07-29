@@ -1,0 +1,103 @@
+%% Instant runnoff voting
+
+candidate : type.
+a : candidate.
+b : candidate.
+c : candidate.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+plus nat nat nat : bwd.
+plus z N N.
+plus (s N) M (s P)
+  <- plus N M P.
+
+double nat nat : bwd.
+double N N2
+  <- plus N N N2.
+
+gte nat nat : bwd.
+gte N z.
+gte (s N) (s M)
+  <- gte N M.
+
+ballot : type.
+nil : ballot.
+cons candidate ballot : ballot.
+
+unprocessed ballot : pred.
+uncounted ballot : pred.
+next_round ballot : pred.
+nballots nat : pred.
+votes_for candidate nat : pred.
+winner candidate : pred.
+minvotes nat : pred.
+loser candidate : pred.
+no_winner : pred.
+
+context init =
+{ nballots z,
+  votes_for a z,
+  votes_for b z,
+  votes_for c z,
+  unprocessed (cons a (cons b (cons c nil))),
+  unprocessed (cons b (cons c nil)),
+  unprocessed (cons c (cons b (cons a nil)))
+}
+
+
+stage count = {
+
+process_ballot :
+    unprocessed B * nballots N -o 
+    uncounted B * nballots (s N).
+
+count_ballot :
+    uncounted (cons C B) * votes_for C V -o
+    next_round B * votes_for C (s V).
+}
+qui * stage count * $nballots N 
+-o stage check_winner * minvotes N * no_winner.
+
+stage check_winner = {
+
+lower_minvotes :
+$votes_for C Votes * minvotes N * gte N (s Votes) -o minvotes Votes.
+
+winner : votes_for C Votes * nballots Ballots
+          * double Votes Votes2 * gte Votes2 Ballots
+          * no_winner
+      -o winner C.
+
+}
+qui * stage check_winner * $winner C -o stage done.
+% #interactive check_winner.
+
+stage done = {}
+
+qui * stage check_winner * no_winner -o stage eliminate_loser.
+
+stage eliminate_loser = {
+
+determine_loser :
+votes_for C Votes * minvotes Votes -o loser C.
+
+get_next_round_votes :
+next_round B -o unprocessed B.
+
+eliminate_loser :
+unprocessed (cons C B) * $loser C -o unprocessed B.
+
+eliminate_empty_ballots :
+unprocessed nil -o ().
+
+}
+qui * stage eliminate_loser 
+-o 
+stage count
+  * nballots z * votes_for a z * votes_for b z * votes_for c z.
+
+#trace _ count init.
+
