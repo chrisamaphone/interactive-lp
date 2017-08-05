@@ -1,11 +1,4 @@
 
-animal : type.
-wolf : animal.
-rabbit : animal.
-
-eats animal animal : bwd.
-eats wolf rabbit.
-
 age : type.
 young : age.
 mature : age.
@@ -15,48 +8,40 @@ hunger_level : type.
 hungry : hunger_level.
 sated : hunger_level.
 
-denizen animal age hunger_level : pred.
+fox age hunger_level : pred.
+rabbit age : pred.
 
 stage sim = {
 
-eat :
-    denizen wolf A hungry
-  * denizen rabbit A' sated
--o
-    denizen wolf A sated.
+fox_eat : fox FoxAge hungry *  rabbit RabbitAge -o fox FoxAge sated.
 
-get_hungry :
-    denizen wolf A sated
--o
-    denizen wolf A hungry.
+fox_get_hungry : fox Age sated -o fox Age hungry.
 
-grow_young_mature:
-    denizen S young sated -o denizen S mature hungry.
+fox_reproduce :
+    $fox mature Hunger1 * $fox mature Hunger2 -o fox young hungry.
 
-grow_mature_old :
-    denizen S mature H -o denizen S old H.
+fox_grow_mature: fox young sated -o fox mature hungry.
 
-die_old :
-    denizen S old _ -o ().
+fox_grow_old : fox mature sated -o fox old hungry.
 
-die_hungry :
-    denizen S _ hungry -o ().
+fox_die_old : fox old _ -o ().
 
-reproduce :
-    $denizen S mature H * $denizen S mature H
--o
-    denizen S young hungry.
+fox_die_hungry : fox Age hungry -o ().
+
+rabbit_reproduce : $rabbit mature * $rabbit mature -o rabbit young.
+
+rabbit_grow_mature : rabbit young -o rabbit mature.
+
+rabbit_grow_old : rabbit mature -o rabbit old.
+
+rabbit_die_old : rabbit old -o ().
+
 }
 % #interactive sim.
 
 context init = {
-  denizen rabbit mature sated,
-  denizen rabbit mature sated,
-  denizen rabbit mature sated,
-  denizen rabbit mature sated,
-  denizen wolf young sated,
-  denizen wolf mature sated,
-  denizen wolf mature sated
+  rabbit mature, rabbit mature, rabbit mature, rabbit mature,
+  fox young hungry, fox mature sated, fox mature sated 
 }.
 
 #trace _ sim init.
