@@ -1,0 +1,122 @@
+food : type.
+cheese : food.
+worm : food.
+berries : food.
+honey : food.
+water : food.
+
+animal : type.
+bird : animal.
+bear : animal.
+mouse : animal.
+
+eats animal food : bwd.
+eats bird berries.
+eats bird worm.
+eats bird cheese.
+eats bear berries.
+eats bear honey.
+eats mouse cheese.
+
+problem : type.
+hunger : problem.
+thirst : problem.
+
+location : type.
+river : location.
+elm_tree : location.
+oak_tree : location.
+ground : location.
+
+character : type.
+world : character.
+joe animal : character.
+irving animal : character.
+wilma animal : character.
+
+is_animal character animal : bwd.
+is_animal (joe A) A.
+is_animal (irving A) A.
+is_animal (wilma A) A.
+
+solves_problem character problem food : bwd.
+solves_problem Any thirst water.
+solves_problem Char hunger Food 
+  <- is_animal Char Animal
+  <- eats Animal Food.
+
+
+bool : type.
+yes : bool.
+no : bool.
+
+information : type.
+atf food location : information.
+atc character location : information.
+likes character character bool : information.
+
+question : type.
+wheref food : question.
+wherec character : question.
+does_like character character : question.
+
+answers information question : bwd.
+answers (atf F L) (wheref F).
+answers (atc C L) (wherec C).
+answers (likes C1 C2 YN) (does_like C1 C2).
+
+%% Predicates
+knows character information : pred.
+asks character question character : pred.
+has_problem character problem : pred.
+
+%% Rules
+stage main = {
+
+ingest : has_problem C P * solves_problem C P F
+      * knows C (atc C L)
+      * knows C (atf F L)
+      * knows world (atf F L)
+    -o knows C (atc C L).
+
+ask : $has_problem C Problem * solves_problem C Problem F
+      * $knows C (atc C Loc)
+      * $knows C (atc Someone Loc)
+    -o asks C (wheref F) Someone.
+
+tell_info : asks Asker Question Teller
+      * $knows Teller Answer
+      * answers Answer Question
+      * $knows world (likes Teller Asker yes)
+      * $knows world (atc Asker Loc)
+      * $knows world (atc Teller Loc)
+    -o
+      knows Asker Answer.
+
+move : $has_problem C P * solves_problem C P F
+     * knows C (atc C L)
+     * knows world (atc C L)
+     * $knows C (atf F L')
+  -o knows C (atc C L') * knows world (atc C L').
+
+}
+#interactive main.
+
+context init =
+{ knows world (atf berries elm_tree),
+  knows world (atf water river),
+  knows world (atf worm ground),
+  knows world (atc (joe bear) oak_tree),
+  knows world (atc (wilma bird) oak_tree),
+  knows world (likes (wilma bird) (joe bear) yes),
+  knows world (likes (joe bear) (wilma bird) yes),
+  knows (joe bear) (atc (joe bear) oak_tree),
+  knows (joe bear) (atc (wilma bird) oak_tree),
+  knows (wilma bird) (atc (joe bear) oak_tree),
+  knows (wilma bird) (atc (joe bear) oak_tree),
+  knows (wilma bird) (atf berries elm_tree),
+  has_problem (joe bear) hunger
+}
+
+#trace _ main init.
+
