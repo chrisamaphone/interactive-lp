@@ -140,7 +140,7 @@ rule2 : b * b -o c * d
 
 Here we use the `*` syntax to conjoin different components, both prior to
 the `-o` and after it. `*` binds more tightly than `-o`: the above rule
-would be parenthesized `(b * b) -o (c * c)`.
+would be parenthesized `(b * b) -o (c * d)`.
 
 #### Predicates
 
