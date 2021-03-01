@@ -1,0 +1,17 @@
+% magic sets for even
+
+!go-even (s (s N))
+    -o !go-even N.
+
+!go-even z
+    -o !even z.
+
+!go-even (s (s N)),
+!even N
+    -o !even (s (s N)).
+
+% saturates with even (s (s (s (s z)))) in the database
+#exec _ (!go-even (s (s (s (s z))))).
+
+% saturates without adding any even facts, so we know it's not even
+#exec _ (!go-even (s (s (s (s (s z)))))).

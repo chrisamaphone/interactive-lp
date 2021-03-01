@@ -1,0 +1,855 @@
+Celf ver 2.9. Copyright (C) 2011
+[reading romeo.clf]
+nat: type.
+z: nat.
+s: nat -> nat.
+leq: nat -> nat -> type.
+leq/z: Pi N: nat. leq z N.
+leq/s: Pi M: nat. Pi N: nat. leq N M -> leq (s !N) (s !M).
+time: nat -> type.
+nchars: nat -> type.
+character: type.
+romeo: character.
+juliet: character.
+montague: character.
+capulet: character.
+mercutio: character.
+nurse: character.
+tybalt: character.
+apothecary: character.
+location: type.
+mon_house: location.
+cap_house: location.
+town: location.
+object: type.
+weapon: object.
+dead: character -> type.
+family: character -> character -> type.
+murdered: character -> character -> type.
+at: character -> location -> type.
+has: character -> object -> type.
+wants: character -> object -> type.
+married: character -> character -> type.
+unmarried: character -> type.
+anger: character -> character -> type.
+eros: character -> character -> type.
+philia: character -> character -> type.
+neutral: character -> character -> type.
+depressed: character -> type.
+suicidal: character -> type.
+boredom: type.
+accessible: location -> location -> type.
+mon/town: accessible mon_house town.
+town/mon: accessible town mon_house.
+cap/town: accessible cap_house town.
+town/cap: accessible town cap_house.
+actor: character -> type.
+a-romeo: actor romeo.
+a-juliet: actor juliet.
+a-montague: actor montague.
+a-capulet: actor capulet.
+a-mercutio: actor mercutio.
+a-nurse: actor nurse.
+a-tybalt: actor tybalt.
+a-apothecary: actor apothecary.
+action: type.
+travel: location -> action.
+flirt: character -> action.
+marry: character -> action.
+murder: character -> action.
+take: object -> action.
+mourn: character -> action.
+do/travelTo: Pi C: character. Pi C': character. Pi L: location. Pi L': location. (actor C * (actor C' * (philia C C' * (at C' L' * (at C L * accessible L L'))))) -o {@philia C C' * (@at C' L' * @at C L')}.
+do/travelBored: Pi C: character. Pi L: location. Pi L': location. (actor C * (at C L * (accessible L L' * (boredom * boredom)))) -o {@at C L'}.
+do/fallInLove: Pi C: character. Pi C': character. Pi L: location. Pi L': location. (actor C * (actor C' * (at C L * (at C' L' * eros C C')))) -o {@at C L * (@at C' L' * (@eros C C' * @philia C C'))}.
+do/eroticize: Pi C: character. Pi C': character. Pi L: location. Pi L': location. (actor C * (actor C' * (at C L * (at C' L' * (philia C C' * (philia C C' * (philia C C' * philia C C'))))))) -o {@at C L * (@at C' L' * (@philia C C' * @eros C C'))}.
+do/flirt/ok: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * (eros C C' * (unmarried C * unmarried C')))))) -o {@eros C C' * (@eros C' C * (@unmarried C * (@unmarried C' * (@at C L * @at C' L))))}.
+do/flirt/discrete: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * eros C C')))) -o {@eros C C' * (@eros C' C * (@at C L * @at C' L))}.
+do/flirt/conflict: Pi C: character. Pi C': character. Pi C'': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * (at C'' L * (eros C C' * eros C'' C)))))) -o {@eros C C' * (@eros C' C * (@eros C' C'' * (@anger C'' C' * (@anger C'' C * (@at C L * (@at C' L * @at C'' L))))))}.
+do/divorce: Pi C: character. Pi C': character. Pi L: location. Pi L': location. (actor C * (actor C' * (at C L * (at C' L' * (married C C' * (married C' C * (anger C C' * anger C C'))))))) -o {@anger C C' * (@anger C' C * (@unmarried C * (@unmarried C' * (@at C L * @at C' L'))))}.
+do/widdow: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (married C C' * (at C L * dead C')))) -o {@unmarried C * @at C L}.
+do/marry: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * (eros C C' * (philia C C' * (eros C' C * (philia C' C * (unmarried C * unmarried C'))))))))) -o {@married C C' * (@married C' C * (@at C L * (@at C' L * (@eros C C' * (@eros C' C * (@philia C C' * @philia C' C))))))}.
+do/formOpinion/like: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * neutral C C')))) -o {@at C L * (@at C' L * @philia C C')}.
+do/formOpinion/dislike: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * neutral C C')))) -o {@at C L * (@at C' L * @anger C C')}.
+do/murder: Pi C: character. Pi C': character. Pi L: location. Pi N: nat. (actor C * (actor C' * (anger C C' * (anger C C' * (anger C C' * (@anger C C' * (at C L * (at C' L * nchars (s !N))))))))) -o {@at C L * (!dead C' * (!murdered C C' * @nchars N))}.
+do/becomeSuicidal: Pi C: character. Pi L: location. (actor C * (at C L * (depressed C * (depressed C * (depressed C * depressed C))))) -o {@at C L * (@suicidal C * @wants C weapon)}.
+do/comfort: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * (suicidal C' * (philia C C' * @philia C' C)))))) -o {@at C L * (@at C' L * (@philia C C' * (@philia C' C * @philia C' C)))}.
+do/suicide: Pi C: character. Pi L: location. Pi N: nat. (actor C * (at C L * (suicidal C * (has C weapon * nchars (s !N))))) -o {@nchars N * !dead C}.
+do/give: Pi C: character. Pi C': character. Pi L: location. Pi O: object. (actor C * (actor C' * (at C L * (at C' L * (has C O * (wants C' O * philia C C')))))) -o {@at C L * (@at C' L * (@has C' O * @philia C C'))}.
+do/steal: Pi C: character. Pi C': character. Pi L: location. Pi O: object. (actor C * (actor C' * (at C L * (at C' L * (has C O * wants C' O))))) -o {@at C L * (@at C' L * (@has C' O * @anger C C'))}.
+do/loot: Pi C: character. Pi C': character. Pi L: location. Pi O: object. (actor C * (actor C' * (at C L * (dead C' * (has C' O * wants C O))))) -o {@at C L * @has C O}.
+do/compliment/private: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * @philia C C')))) -o {@at C L * (@at C' L * (@philia C C' * @philia C' C))}.
+do/compliment/witnessed: Pi C: character. Pi C': character. Pi L: location. Pi Witness: character. (actor C * (actor C' * (actor Witness * (at C L * (at C' L * (at Witness L * (@philia C C' * anger Witness C'))))))) -o {@at C L * (@at C' L * (@at Witness L * (@philia C C' * (@anger Witness C' * (@philia C' C * @anger Witness C)))))}.
+do/insult/private: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (at C' L * @anger C C')))) -o {@at C L * (@at C' L * (@anger C C' * (@anger C' C * @depressed C')))}.
+do/insult/witnessed: Pi C: character. Pi C': character. Pi L: location. Pi Witness: character. (actor C * (actor C' * (actor Witness * (at C L * (at C' L * (at Witness L * (@anger C C' * philia Witness C'))))))) -o {@at C L * (@at C' L * (@at Witness L * (@anger C C' * (@philia Witness C' * (@anger C' C * (@depressed C' * @anger Witness C))))))}.
+do/mourn: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (philia C C' * dead C')))) -o {@at C L * (@depressed C * @depressed C)}.
+do/thinkVengefully: Pi C: character. Pi Dead: character. Pi Killer: character. Pi L: location. Pi L': location. (actor C * (actor Killer * (actor Dead * (at C L * (at Killer L' * (philia C Dead * murdered Killer Dead)))))) -o {@at C L * (@at Killer L' * (@philia C Dead * (@anger C Killer * @anger C Killer)))}.
+mixed_feelings: Pi C: character. Pi C': character. Pi L: location. (actor C * (actor C' * (at C L * (anger C C' * philia C C')))) -o {@at C L * @neutral C C'}.
+maxtime: nat = s !(s !(s !(s !(s !(s !z))))).
+time_passes: Pi N: nat. Pi T: nat. (time T * nchars (s !N)) -o {@time (s !T) * (@nchars (s !N) * @boredom)}.
+story_over: (nchars z * time z) -o {1}.
+die_of_old_age: Pi C: character. Pi L: location. Pi N: nat. Pi T: nat. (actor C * (at C L * (time T * (nchars (s !N) * leq (s !(s !(s !(s !(s !(s !z)))))) T)))) -o {!dead C * (@time z * @nchars N)}.
+init: Type = {@at romeo town * (@at montague mon_house * (@at capulet cap_house * (@at mercutio town * (@at nurse cap_house * (@at juliet town * (@at tybalt town * (@at apothecary town * (@unmarried romeo * (@unmarried juliet * (@unmarried nurse * (@unmarried mercutio * (@unmarried tybalt * (@unmarried apothecary * (@anger montague capulet * (@anger capulet montague * (@anger tybalt romeo * (@anger capulet romeo * (@anger montague tybalt * (@philia mercutio romeo * (@philia romeo mercutio * (@philia montague romeo * (@philia capulet juliet * ({@(Pi L: location. (at romeo L * at juliet L) -o {@eros romeo juliet * (@at romeo L * @at juliet L)})} * (@has tybalt weapon * (@has romeo weapon * (@has apothecary weapon * (@philia juliet nurse * (@philia nurse juliet * (@neutral nurse romeo * (!family juliet tybalt * (@neutral mercutio juliet * (@neutral juliet mercutio * (@neutral apothecary nurse * (@neutral nurse apothecary * (@time z * @nchars (s !(s !(s !(s !(s !(s !(s !(s !z)))))))))))))))))))))))))))))))))))))))))))}.
+Query (*, *, *, 5) init -o {1}.
+Iteration 1
+Solution: \X1. {
+    let {[@X2, [@X3, [@X4, [@X5, [@X6, [@X7, [@X8, [@X9, [@X10, [@X11, [@X12, [@X13, [@X14, [@X15, [@X16, [@X17, [@X18, [@X19, [@X20, [@X21, [@X22, [@X23, [@X24, [X25, [@X26, [@X27, [@X28, [@X29, [@X30, [@X31, [!X32, [@X33, [@X34, [@X35, [@X36, [@X37, @X38]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]} = X1 in 
+    let {[@X39, [@X40, [@X41, @X42]]]} = do/compliment/private [a-romeo, [a-mercutio, [X2, [X5, @X22]]]] in 
+    let {[@X43, [@X44, [@X45, [@X46, [@X47, [@X48, [@X49, @X50]]]]]]]} = do/insult/witnessed [a-tybalt, [a-romeo, [a-mercutio, [X8, [X39, [X40, [@X18, X42]]]]]]] in 
+    let {[@X51, [@X52, @X53]]} = time_passes [X37, X38] in 
+    let {[@X54, [@X55, @X56]]} = time_passes [X51, X52] in 
+    let {[@X57, [@X58, [@X59, [@X60, [@X61, [@X62, @X63]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X45, [X44, [X43, [@X47, X46]]]]]]] in 
+    let {[@X64, [@X65, [@X66, @X67]]]} = do/compliment/private [a-mercutio, [a-romeo, [X57, [X58, @X21]]]] in 
+    let {[@X68, [@X69, @X70]]} = do/formOpinion/dislike [a-juliet, [a-mercutio, [X7, [X64, X34]]]] in 
+    let {@X71} = X25 in 
+    let {[@X72, [@X73, @X74]]} = do/travelTo [a-capulet, [a-juliet, [X24, [X68, [X4, cap/town]]]]] in 
+    let {[@X75, [@X76, [@X77, @X78]]]} = do/compliment/private [a-mercutio, [a-romeo, [X69, [X65, @X66]]]] in 
+    let {[@X79, [@X80, [@X81, [@X82, @X83]]]]} = do/insult/private [a-capulet, [a-romeo, [X74, [X76, @X19]]]] in 
+    let {[@X84, [@X85, @X86]]} = X71 !town [X80, X73] in 
+    let {[@X87, [@X88, @X89]]} = time_passes [X54, X55] in 
+    let {[@X90, [@X91, @X92]]} = do/formOpinion/dislike [a-mercutio, [a-juliet, [X75, [X86, X33]]]] in 
+    let {[@X93, [@X94, [@X95, @X96]]]} = do/compliment/private [a-capulet, [a-juliet, [X79, [X91, @X72]]]] in 
+    let {[@X97, [@X98, @X99]]} = do/travelTo [a-juliet, [a-nurse, [X29, [X6, [X94, town/cap]]]]] in 
+    let {[@X100, [@X101, [@X102, [@X103, [@X104, [@X105, @X106]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X90, [X85, [X59, [@X60, X61]]]]]]] in 
+    let {[@X107, [@X108, @X109]]} = do/travelTo [a-juliet, [a-capulet, [X96, [X93, [X99, cap/town]]]]] in 
+    let {[@X110, [@X111, @X112]]} = time_passes [X87, X88] in 
+    let {[@X113, [@X114, [@X115, @X116]]]} = do/eroticize [a-romeo, [a-mercutio, [X101, [X100, [X62, [X105, [X41, X67]]]]]]] in 
+    let {[@X117, [@X118, @X119]]} = do/travelTo [a-juliet, [a-nurse, [X97, [X98, [X109, town/cap]]]]] in 
+    let {[@X120, [@X121, [@X122, @X123]]]} = do/compliment/private [a-mercutio, [a-romeo, [X114, [X113, @X77]]]] in 
+    let {[@X124, [@X125, @X126]]} = time_passes [X110, X111] in 
+    let {[@X127, [@X128, [@X129, [@X130, @X131]]]]} = do/insult/private [a-mercutio, [a-tybalt, [X120, [X102, @X50]]]] in 
+    let {[@X132, [@X133, [@X134, @X135]]]} = do/fallInLove [a-romeo, [a-mercutio, [X121, [X127, X116]]]] in 
+    let {[@X136, [@X137, [@X138, @X139]]]} = do/compliment/private [a-juliet, [a-nurse, [X119, [X118, @X117]]]] in 
+    let {[@X140, [@X141, [@X142, @X143]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X132, [X133, X134]]]] in 
+    let {[@X144, [@X145, [@X146, [@X147, [@X148, [@X149, [@X150, @X151]]]]]]]} = do/marry [a-mercutio, [a-romeo, [X143, [X142, [X141, [X103, [X140, [X78, [X13, X10]]]]]]]]] in 
+    let {[@X152, [@X153, @X154]]} = do/travelTo [a-juliet, [a-capulet, [X107, [X108, [X136, cap/town]]]]] in 
+    let {[@X155, [@X156, [@X157, [@X158, @X159]]]]} = do/insult/private [a-juliet, [a-mercutio, [X154, [X146, @X70]]]] in 
+    let {[@X160, [@X161, [@X162, [@X163, [@X164, [@X165, [@X166, @X167]]]]]]]} = do/flirt/conflict [a-romeo, [a-juliet, [X147, [X155, [X156, [X84, X148]]]]]] in 
+    let {[@X168, [@X169, @X170]]} = time_passes [X124, X125] in 
+    let {[@X171, [@X172, @X173]]} = do/travelTo [a-montague, [a-romeo, [X23, [X165, [X3, mon/town]]]]] in 
+    let {[@X174, [@X175, [@X176, @X177]]]} = do/fallInLove [a-romeo, [a-juliet, [X172, [X166, X160]]]] in 
+    let {[@X178, [@X179, [@X180, @X181]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X174, [X167, X149]]]] in 
+    let {[@X182, [@X183, [@X184, [@X185, [@X186, [@X187, [@X188, @X189]]]]]]]} = do/flirt/conflict [a-juliet, [a-mercutio, [X175, [X181, [X180, [X162, X176]]]]]] in 
+    let {[@X190, [@X191, [@X192, @X193]]]} = do/flirt/discrete [a-juliet, [a-mercutio, [X187, [X188, X182]]]] in 
+    let {[@X194, @X195]} = mixed_feelings [a-mercutio, [a-romeo, [X193, [X164, X122]]]] in 
+    let {@X196} = do/travelBored [a-mercutio, [X194, [town/cap, [X112, X89]]]] in 
+    let {[@X197, [@X198, [@X199, @X200]]]} = do/eroticize [a-romeo, [a-mercutio, [X189, [X196, [X115, [X123, [X135, X151]]]]]]] in 
+    let {[@X201, [@X202, [@X203, [@X204, [@X205, [@X206, @X207]]]]]]} = do/compliment/witnessed [a-montague, [a-romeo, [a-tybalt, [X173, [X197, [X128, [@X171, X104]]]]]]] in 
+    let {[@X208, [@X209, @X210]]} = time_passes [X168, X169] in 
+    let {[@X211, [@X212, [@X213, [@X214, @X215]]]]} = do/insult/private [a-romeo, [a-juliet, [X202, [X192, @X186]]]] in 
+    let {[@X216, @X217]} = mixed_feelings [a-romeo, [a-juliet, [X211, [X213, X177]]]] in 
+    let {[@X218, [@X219, [@X220, @X221]]]} = do/fallInLove [a-romeo, [a-mercutio, [X216, [X198, X178]]]] in 
+    let {[@X222, [@X223, @X224]]} = time_passes [X208, X209] in 
+    let {[@X225, [@X226, [@X227, [@X228, [@X229, [@X230, [@X231, @X232]]]]]]]} = do/insult/witnessed [a-juliet, [a-romeo, [a-montague, [X212, [X218, [X201, [@X214, X204]]]]]]] in 
+    let {[@X233, [@X234, [@X235, @X236]]]} = do/compliment/private [a-montague, [a-romeo, [X227, [X226, @X229]]]] in 
+    let {[@X237, [@X238, @X239]]} = time_passes [X222, X223] in 
+    let {[@X240, [@X241, [@X242, [@X243, [@X244, [@X245, @X246]]]]]]} = do/compliment/witnessed [a-juliet, [a-capulet, [a-montague, [X225, [X153, [X233, [@X152, X16]]]]]]] in 
+    let {[@X247, [@X248, @X249]]} = do/formOpinion/like [a-romeo, [a-juliet, [X234, [X240, X217]]]] in 
+    let {[@X250, [@X251, @X252]]} = do/travelTo [a-romeo, [a-mercutio, [X221, [X219, [X247, town/cap]]]]] in 
+    let {[@X253, [@X254, @X255]]} = do/travelTo [a-romeo, [a-montague, [X236, [X242, [X252, cap/town]]]]] in 
+    let {@X256} = do/travelBored [a-nurse, [X137, [cap/town, [X53, X210]]]] in 
+    let {[@X257, [@X258, [@X259, @X260]]]} = do/fallInLove [a-romeo, [a-mercutio, [X255, [X251, X200]]]] in 
+    let {[@X261, [@X262, [@X263, [@X264, @X265]]]]} = do/insult/private [a-capulet, [a-montague, [X241, [X254, @X17]]]] in 
+    let {[@X266, [@X267, @X268]]} = do/travelTo [a-romeo, [a-mercutio, [X250, [X258, [X257, town/cap]]]]] in 
+    let {[@X269, [@X270, [@X271, [@X272, [@X273, [@X274, @X275]]]]]]} = do/compliment/witnessed [a-nurse, [a-juliet, [a-montague, [X256, [X248, [X262, [@X30, X232]]]]]]] in 
+    let {[@X276, [@X277, @X278]]} = time_passes [X237, X238] in 
+    let {[!X279, [@X280, @X281]]} = die_of_old_age [a-apothecary, [X9, [X276, [X277, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X282, [@X283, @X284]]} = do/formOpinion/dislike [a-mercutio, [a-romeo, [X267, [X268, X195]]]] in 
+    let {[@X285, [@X286, [@X287, @X288]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X283, [X282, X259]]]] in 
+    let {[@X289, [@X290, [@X291, [@X292, @X293]]]]} = do/insult/private [a-capulet, [a-montague, [X261, [X271, @X263]]]] in 
+    let {[@X294, [@X295, [@X296, [@X297, [@X298, [@X299, @X300]]]]]]} = do/compliment/witnessed [a-nurse, [a-juliet, [a-montague, [X269, [X270, [X290, [@X139, X273]]]]]]] in 
+    let {[@X301, [@X302, [@X303, @X304]]]} = do/compliment/private [a-juliet, [a-capulet, [X295, [X289, @X243]]]] in 
+    let {[@X305, [@X306, @X307]]} = do/travelTo [a-montague, [a-romeo, [X235, [X287, [X296, town/cap]]]]] in 
+    let {@X308} = do/travelBored [a-tybalt, [X203, [town/mon, [X278, X170]]]] in 
+    let {@X309} = do/travelBored [a-capulet, [X302, [town/mon, [X224, X56]]]] in 
+    let {[@X310, [@X311, [@X312, [@X313, @X314]]]]} = do/insult/private [a-romeo, [a-mercutio, [X306, [X288, @X185]]]] in 
+    let {[@X315, @X316]} = mixed_feelings [a-romeo, [a-juliet, [X310, [X230, X249]]]] in 
+    let {@X317} = do/travelBored [a-montague, [X307, [cap/town, [X239, X126]]]] in 
+    let {[@X318, [@X319, [@X320, [@X321, [@X322, [@X323, [@X324, @X325]]]]]]]} = do/insult/witnessed [a-montague, [a-nurse, [a-juliet, [X317, [X294, [X301, [@X300, X299]]]]]]] in 
+    let {[@X326, [@X327, [@X328, [@X329, [@X330, [@X331, [@X332, @X333]]]]]]]} = do/insult/witnessed [a-montague, [a-juliet, [a-nurse, [X318, [X320, [X319, [@X246, X272]]]]]]] in 
+    let {[@X334, [@X335, [@X336, [@X337, [@X338, [@X339, @X340]]]]]]} = do/compliment/witnessed [a-juliet, [a-nurse, [a-montague, [X327, [X328, [X326, [@X274, X321]]]]]]] in 
+    let {[@X341, @X342]} = mixed_feelings [a-romeo, [a-mercutio, [X315, [X312, X266]]]] in 
+    let {[@X343, @X344]} = mixed_feelings [a-mercutio, [a-romeo, [X311, [X284, X150]]]] in 
+    let {[@X345, [@X346, @X347]]} = time_passes [X280, X281] in 
+    let {[@X348, [@X349, @X350]]} = do/formOpinion/like [a-romeo, [a-mercutio, [X341, [X343, X342]]]] in 
+    let {[@X351, [@X352, [@X353, [@X354, @X355]]]]} = do/insult/private [a-mercutio, [a-romeo, [X349, [X348, @X313]]]] in 
+    let {[@X356, [@X357, @X358]]} = do/travelTo [a-romeo, [a-montague, [X253, [X336, [X352, cap/town]]]]] in 
+    let {[@X359, [@X360, [@X361, @X362]]]} = do/flirt/discrete [a-juliet, [a-romeo, [X334, [X358, X161]]]] in 
+    let {[@X363, [@X364, [@X365, [@X366, [@X367, [@X368, [@X369, @X370]]]]]]]} = do/insult/witnessed [a-montague, [a-nurse, [a-juliet, [X357, [X335, [X361, [@X338, X138]]]]]]] in 
+    let {[@X371, [@X372, [@X373, [@X374, [@X375, [@X376, [@X377, @X378]]]]]]]} = do/insult/witnessed [a-juliet, [a-romeo, [a-montague, [X365, [X362, [X363, [@X228, X305]]]]]]] in 
+    let {[@X379, [@X380, @X381]]} = do/becomeSuicidal [a-romeo, [X372, [X231, [X377, [X355, X49]]]]] in 
+    let {[@X382, [@X383, [@X384, @X385]]]} = do/compliment/private [a-romeo, [a-montague, [X379, [X373, @X206]]]] in 
+    let {[@X386, [@X387, [@X388, [@X389, @X390]]]]} = do/comfort [a-montague, [a-romeo, [X383, [X382, [X380, [X375, @X384]]]]]] in 
+    let {[@X391, [@X392, @X393]]} = do/formOpinion/dislike [a-romeo, [a-juliet, [X387, [X371, X316]]]] in 
+    let {[@X394, [@X395, [@X396, @X397]]]} = do/fallInLove [a-juliet, [a-romeo, [X392, [X391, X359]]]] in 
+    let {[@X398, [@X399, [@X400, @X401]]]} = do/compliment/private [a-nurse, [a-juliet, [X364, [X394, @X297]]]] in 
+    let {[@X402, [@X403, [@X404, @X405]]]} = do/eroticize [a-juliet, [a-nurse, [X399, [X398, [X322, [X337, [X367, X401]]]]]]] in 
+    let {[@X406, [@X407, [@X408, [@X409, @X410]]]]} = do/insult/private [a-juliet, [a-romeo, [X402, [X395, @X374]]]] in 
+    let {[@X411, [!X412, [!X413, @X414]]]} = do/murder [a-montague, [a-juliet, [X298, [X340, [X378, [@X329, [X386, [X406, X346]]]]]]]] in 
+    let {[@X415, [@X416, @X417]]} = do/formOpinion/like [a-nurse, [a-romeo, [X403, [X407, X31]]]] in 
+    let {[@X418, [@X419, @X420]]} = do/mourn [a-capulet, [a-juliet, [X309, [X304, X412]]]] in 
+    let {[@X421, [@X422, [@X423, [@X424, @X425]]]]} = do/insult/private [a-montague, [a-nurse, [X411, [X415, @X275]]]] in 
+    let {[@X426, [@X427, @X428]]} = do/mourn [a-capulet, [a-juliet, [X418, [X95, X412]]]] in 
+    let {[@X429, [@X430, @X431]]} = do/mourn [a-capulet, [a-juliet, [X426, [X245, X412]]]] in 
+    let {[@X432, [@X433, @X434]]} = do/mourn [a-nurse, [a-juliet, [X422, [X400, X412]]]] in 
+    let {[@X435, [@X436, @X437]]} = do/travelTo [a-romeo, [a-mercutio, [X199, [X351, [X416, town/cap]]]]] in 
+    let {[@X438, [@X439, @X440]]} = do/formOpinion/like [a-mercutio, [a-romeo, [X436, [X437, X344]]]] in 
+    let {[@X441, [@X442, [@X443, [@X444, @X445]]]]} = do/thinkVengefully [a-nurse, [a-montague, [a-juliet, [X432, [X421, [X339, X413]]]]]] in 
+    let {[@X446, [@X447, @X448]]} = time_passes [X345, X414] in 
+    let {@X449} = do/travelBored [a-capulet, [X429, [mon/town, [X448, X347]]]] in 
+    let {[@X450, [@X451, [@X452, @X453]]]} = do/compliment/private [a-mercutio, [a-romeo, [X438, [X439, @X440]]]] in 
+    let {[@X454, [@X455, [@X456, [@X457, @X458]]]]} = do/thinkVengefully [a-nurse, [a-montague, [a-juliet, [X441, [X442, [X330, X413]]]]]] in 
+    let {[@X459, @X460]} = do/loot [a-romeo, [a-apothecary, [X451, [X279, [X28, X381]]]]] in 
+    let {[@X461, [@X462, [@X463, @X464]]]} = do/eroticize [a-romeo, [a-mercutio, [X459, [X450, [X435, [X260, [X453, X350]]]]]]] in 
+    let {[@X465, [@X466, @X467]]} = do/becomeSuicidal [a-nurse, [X454, [X433, [X324, [X425, X369]]]]] in 
+    let {[@X468, [@X469, @X470]]} = do/mourn [a-nurse, [a-juliet, [X465, [X456, X412]]]] in 
+    let {[@X471, [@X472, @X473]]} = time_passes [X446, X447] in 
+    let {[@X474, [!X475, [!X476, @X477]]]} = do/murder [a-nurse, [a-montague, [X457, [X424, [X333, [@X368, [X468, [X455, X472]]]]]]]] in 
+    let {[@X478, [@X479, [@X480, @X481]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X461, [X462, X220]]]] in 
+    let {[@X482, [@X483, [@X484, @X485]]]} = do/fallInLove [a-romeo, [a-mercutio, [X480, [X481, X285]]]] in 
+    let {[@X486, [@X487, [@X488, [@X489, @X490]]]]} = do/insult/private [a-romeo, [a-mercutio, [X482, [X483, @X354]]]] in 
+    let {[@X491, [@X492, @X493]]} = do/travelTo [a-nurse, [a-romeo, [X417, [X486, [X474, town/cap]]]]] in 
+    let {[@X494, [@X495, [@X496, @X497]]]} = do/compliment/private [a-nurse, [a-romeo, [X493, [X492, @X491]]]] in 
+    let {[@X498, [@X499, [@X500, [@X501, [@X502, [@X503, @X504]]]]]]} = do/compliment/witnessed [a-nurse, [a-romeo, [a-mercutio, [X494, [X495, [X487, [@X496, X489]]]]]]] in 
+    let {[@X505, [@X506, [@X507, @X508]]]} = do/steal [a-romeo, [a-nurse, [X499, [X498, [X460, X467]]]]] in 
+    let {[@X509, !X510]} = do/suicide [a-nurse, [X506, [X466, [X507, X477]]]] in 
+    let {[@X511, [@X512, [@X513, @X514]]]} = do/compliment/private [a-mercutio, [a-romeo, [X500, [X505, @X452]]]] in 
+    let {[@X515, [@X516, @X517]]} = time_passes [X471, X509] in 
+    let {[@X518, [@X519, @X520]]} = do/becomeSuicidal [a-capulet, [X449, [X419, [X428, [X420, X430]]]]] in 
+    let {[@X521, [@X522, [@X523, [@X524, @X525]]]]} = do/insult/private [a-mercutio, [a-romeo, [X511, [X512, @X502]]]] in 
+    let {[@X526, [@X527, [@X528, [@X529, [@X530, @X531]]]]]} = do/divorce [a-mercutio, [a-romeo, [X521, [X522, [X144, [X145, [X353, X523]]]]]]] in 
+    let {[@X532, [@X533, [@X534, [@X535, [@X536, @X537]]]]]} = do/flirt/ok [a-romeo, [a-mercutio, [X531, [X530, [X484, [X529, X528]]]]]] in 
+    let {[@X538, [@X539, [@X540, @X541]]]} = do/compliment/private [a-romeo, [a-mercutio, [X536, [X537, @X485]]]] in 
+    let {[@X542, [@X543, [@X544, @X545]]]} = do/fallInLove [a-mercutio, [a-romeo, [X539, [X538, X286]]]] in 
+    let {[@X546, [@X547, [@X548, [@X549, @X550]]]]} = do/insult/private [a-mercutio, [a-romeo, [X542, [X543, @X526]]]] in 
+    let {[@X551, [@X552, [@X553, [@X554, [@X555, @X556]]]]]} = do/flirt/ok [a-romeo, [a-mercutio, [X547, [X546, [X532, [X534, X535]]]]]] in 
+    let {[@X557, [@X558, [@X559, [@X560, [@X561, [@X562, [@X563, @X564]]]]]]]} = do/marry [a-mercutio, [a-romeo, [X556, [X555, [X533, [X541, [X478, [X540, [X554, X553]]]]]]]]] in 
+    let {[@X565, @X566]} = mixed_feelings [a-mercutio, [a-romeo, [X559, [X548, X545]]]] in 
+    let {[@X567, [@X568, @X569]]} = time_passes [X515, X516] in 
+    let {[@X570, [@X571, [@X572, [@X573, @X574]]]]} = do/insult/private [a-romeo, [a-mercutio, [X560, [X565, @X549]]]] in 
+    let {[@X575, [!X576, [!X577, @X578]]]} = do/murder [a-romeo, [a-mercutio, [X572, [X527, [X488, [@X524, [X570, [X571, X568]]]]]]]] in 
+    let {[@X579, @X580]} = do/widdow [a-romeo, [a-mercutio, [X558, [X575, X576]]]] in 
+    let {[@X581, [@X582, @X583]]} = do/mourn [a-romeo, [a-montague, [X580, [X356, X475]]]] in 
+    let {[@X584, [@X585, @X586]]} = do/becomeSuicidal [a-romeo, [X581, [X525, [X583, [X550, X410]]]]] in 
+    let {[@X587, @X588]} = mixed_feelings [a-romeo, [a-nurse, [X584, [X508, X503]]]] in 
+    let {@X589} = do/travelBored [a-capulet, [X518, [town/cap, [X517, X569]]]] in 
+    let {[@X590, [@X591, [@X592, @X593]]]} = do/steal [a-romeo, [a-capulet, [X587, [X589, [X27, X520]]]]] in 
+    let {[@X594, [@X595, [@X596, @X597]]]} = do/steal [a-capulet, [a-romeo, [X591, [X590, [X592, X586]]]]] in 
+    let {[@X598, [@X599, @X600]]} = time_passes [X567, X578] in 
+    let {[@X601, !X602]} = do/suicide [a-romeo, [X595, [X585, [X596, X599]]]] in 
+    let {[!X603, [@X604, @X605]]} = die_of_old_age [a-tybalt, [X308, [X598, [X601, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {@X606} = do/travelBored [a-capulet, [X594, [cap/town, [X600, X473]]]] in 
+    let {[@X607, [@X608, @X609]]} = time_passes [X604, X605] in 
+    let {[@X610, [@X611, @X612]]} = time_passes [X607, X608] in 
+    let {@X613} = do/travelBored [a-capulet, [X606, [town/cap, [X609, X612]]]] in 
+    let {[@X614, [@X615, @X616]]} = time_passes [X610, X611] in 
+    let {[@X617, [@X618, @X619]]} = time_passes [X614, X615] in 
+    let {[@X620, [@X621, @X622]]} = time_passes [X617, X618] in 
+    let {[@X623, [@X624, @X625]]} = time_passes [X620, X621] in 
+    let {@X626} = do/travelBored [a-capulet, [X613, [cap/town, [X622, X619]]]] in 
+    let {@X627} = do/travelBored [a-capulet, [X626, [town/mon, [X625, X616]]]] in 
+    let {[!X628, [@X629, @X630]]} = die_of_old_age [a-capulet, [X627, [X623, [X624, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {1} = story_over [X630, X629] in 1}
+Iteration 2
+Solution: \X1. {
+    let {[@X2, [@X3, [@X4, [@X5, [@X6, [@X7, [@X8, [@X9, [@X10, [@X11, [@X12, [@X13, [@X14, [@X15, [@X16, [@X17, [@X18, [@X19, [@X20, [@X21, [@X22, [@X23, [@X24, [X25, [@X26, [@X27, [@X28, [@X29, [@X30, [@X31, [!X32, [@X33, [@X34, [@X35, [@X36, [@X37, @X38]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]} = X1 in 
+    let {[@X39, [@X40, @X41]]} = do/travelTo [a-juliet, [a-nurse, [X29, [X6, [X7, town/cap]]]]] in 
+    let {[@X42, [@X43, @X44]]} = do/travelTo [a-montague, [a-romeo, [X23, [X2, [X3, mon/town]]]]] in 
+    let {@X45} = X25 in 
+    let {[@X46, [@X47, @X48]]} = time_passes [X37, X38] in 
+    let {[@X49, [@X50, [@X51, [@X52, @X53]]]]} = do/insult/private [a-tybalt, [a-romeo, [X8, [X43, @X18]]]] in 
+    let {[@X54, [@X55, @X56]]} = time_passes [X46, X47] in 
+    let {[@X57, [@X58, [@X59, [@X60, [@X61, [@X62, @X63]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X5, [X50, [X49, [@X21, X51]]]]]]] in 
+    let {[@X64, [@X65, [@X66, @X67]]]} = do/compliment/private [a-romeo, [a-mercutio, [X58, [X57, @X22]]]] in 
+    let {[@X68, [@X69, @X70]]} = time_passes [X54, X55] in 
+    let {[@X71, [@X72, [@X73, [@X74, [@X75, [@X76, [@X77, @X78]]]]]]]} = do/insult/witnessed [a-tybalt, [a-mercutio, [a-romeo, [X59, [X65, [X64, [@X63, X62]]]]]]] in 
+    let {[@X79, [@X80, [@X81, [@X82, [@X83, [@X84, @X85]]]]]]} = do/compliment/witnessed [a-romeo, [a-mercutio, [a-tybalt, [X73, [X72, [X71, [@X66, X74]]]]]]] in 
+    let {@X86} = do/travelBored [a-juliet, [X41, [cap/town, [X48, X56]]]] in 
+    let {[@X87, [@X88, @X89]]} = time_passes [X68, X69] in 
+    let {@X90} = do/travelBored [a-montague, [X44, [town/mon, [X89, X70]]]] in 
+    let {[@X91, [@X92, @X93]]} = time_passes [X87, X88] in 
+    let {[@X94, [@X95, [@X96, [@X97, [@X98, [@X99, @X100]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X80, [X79, [X81, [@X67, X85]]]]]]] in 
+    let {[@X101, [@X102, [@X103, @X104]]]} = do/compliment/private [a-romeo, [a-mercutio, [X95, [X94, @X75]]]] in 
+    let {[@X105, [@X106, [@X107, @X108]]]} = do/eroticize [a-mercutio, [a-romeo, [X102, [X101, [X104, [X60, [X84, X97]]]]]]] in 
+    let {[@X109, [@X110, @X111]]} = do/travelTo [a-nurse, [a-juliet, [X30, [X86, [X40, cap/town]]]]] in 
+    let {[@X112, [@X113, [@X114, [@X115, @X116]]]]} = do/insult/private [a-tybalt, [a-mercutio, [X96, [X105, @X83]]]] in 
+    let {[@X117, [@X118, @X119]]} = do/formOpinion/like [a-juliet, [a-mercutio, [X110, [X113, X34]]]] in 
+    let {[@X120, [@X121, @X122]]} = do/formOpinion/dislike [a-mercutio, [a-juliet, [X118, [X117, X33]]]] in 
+    let {[@X123, [@X124, @X125]]} = do/travelTo [a-capulet, [a-juliet, [X24, [X121, [X4, cap/town]]]]] in 
+    let {[@X126, [@X127, @X128]]} = do/formOpinion/dislike [a-apothecary, [a-nurse, [X9, [X111, X35]]]] in 
+    let {[@X129, [@X130, @X131]]} = do/formOpinion/dislike [a-nurse, [a-romeo, [X127, [X106, X31]]]] in 
+    let {[@X132, [@X133, @X134]]} = do/formOpinion/dislike [a-nurse, [a-apothecary, [X129, [X126, X36]]]] in 
+    let {[@X135, [@X136, [@X137, [@X138, [@X139, @X140]]]]]} = do/flirt/ok [a-mercutio, [a-romeo, [X120, [X130, [X108, [X13, X10]]]]]] in 
+    let {[@X141, [@X142, [@X143, @X144]]]} = do/compliment/private [a-capulet, [a-juliet, [X125, [X124, @X123]]]] in 
+    let {[@X145, [@X146, @X147]]} = do/travelTo [a-montague, [a-romeo, [X42, [X140, [X90, mon/town]]]]] in 
+    let {[@X148, [@X149, [@X150, [@X151, [@X152, [@X153, @X154]]]]]]} = do/compliment/witnessed [a-capulet, [a-juliet, [a-mercutio, [X141, [X142, [X139, [@X143, X122]]]]]]] in 
+    let {[@X155, [@X156, [@X157, [@X158, [@X159, @X160]]]]]} = do/flirt/ok [a-romeo, [a-mercutio, [X146, [X150, [X136, [X138, X137]]]]]] in 
+    let {[@X161, [@X162, [@X163, @X164]]]} = do/compliment/private [a-nurse, [a-juliet, [X132, [X149, @X109]]]] in 
+    let {[@X165, [@X166, @X167]]} = time_passes [X91, X92] in 
+    let {[@X168, [@X169, [@X170, @X171]]]} = do/fallInLove [a-mercutio, [a-romeo, [X160, [X159, X156]]]] in 
+    let {[@X172, [@X173, [@X174, [@X175, [@X176, @X177]]]]]} = do/flirt/ok [a-mercutio, [a-romeo, [X168, [X169, [X135, [X158, X157]]]]]] in 
+    let {[@X178, [@X179, [@X180, @X181]]]} = do/fallInLove [a-mercutio, [a-romeo, [X176, [X177, X172]]]] in 
+    let {[@X182, [@X183, [@X184, [@X185, [@X186, @X187]]]]]} = do/flirt/ok [a-romeo, [a-mercutio, [X179, [X178, [X173, [X175, X174]]]]]] in 
+    let {[@X188, [@X189, [@X190, [@X191, @X192]]]]} = do/insult/private [a-romeo, [a-tybalt, [X186, [X112, @X52]]]] in 
+    let {[@X193, [@X194, [@X195, [@X196, @X197]]]]} = do/insult/private [a-capulet, [a-montague, [X148, [X147, @X17]]]] in 
+    let {[@X198, [@X199, [@X200, [@X201, @X202]]]]} = do/insult/private [a-montague, [a-capulet, [X194, [X193, @X196]]]] in 
+    let {[@X203, [@X204, @X205]]} = X45 !town [X188, X162] in 
+    let {[@X206, [@X207, [@X208, @X209]]]} = do/flirt/discrete [a-mercutio, [a-romeo, [X187, [X204, X180]]]] in 
+    let {[@X210, [@X211, [@X212, [@X213, [@X214, [@X215, [@X216, @X217]]]]]]]} = do/flirt/conflict [a-romeo, [a-juliet, [X209, [X205, [X208, [X203, X183]]]]]] in 
+    let {[@X218, [@X219, [@X220, @X221]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X215, [X217, X182]]]] in 
+    let {[@X222, [@X223, [@X224, [@X225, [@X226, [@X227, [@X228, @X229]]]]]]]} = do/flirt/conflict [a-romeo, [a-juliet, [X220, [X216, [X221, [X210, X219]]]]]] in 
+    let {[@X230, @X231]} = mixed_feelings [a-mercutio, [a-romeo, [X229, [X226, X107]]]] in 
+    let {[@X232, @X233]} = mixed_feelings [a-mercutio, [a-romeo, [X230, [X214, X181]]]] in 
+    let {[@X234, [@X235, [@X236, @X237]]]} = do/compliment/private [a-nurse, [a-juliet, [X161, [X228, @X163]]]] in 
+    let {[@X238, [@X239, [@X240, @X241]]]} = do/fallInLove [a-mercutio, [a-romeo, [X232, [X227, X206]]]] in 
+    let {[@X242, [@X243, @X244]]} = do/formOpinion/dislike [a-mercutio, [a-romeo, [X238, [X239, X231]]]] in 
+    let {[@X245, [@X246, [@X247, @X248]]]} = do/flirt/discrete [a-romeo, [a-juliet, [X243, [X235, X222]]]] in 
+    let {[@X249, [@X250, @X251]]} = time_passes [X165, X166] in 
+    let {[@X252, @X253]} = mixed_feelings [a-mercutio, [a-romeo, [X242, [X244, X171]]]] in 
+    let {[@X254, [@X255, [@X256, [@X257, [@X258, [@X259, [@X260, @X261]]]]]]]} = do/insult/witnessed [a-nurse, [a-romeo, [a-mercutio, [X234, [X247, [X252, [@X131, X241]]]]]]] in 
+    let {[@X262, [@X263, [@X264, @X265]]]} = do/flirt/discrete [a-romeo, [a-juliet, [X255, [X248, X245]]]] in 
+    let {[@X266, [@X267, [@X268, [@X269, [@X270, [@X271, [@X272, @X273]]]]]]]} = do/flirt/conflict [a-mercutio, [a-romeo, [X256, [X264, [X265, [X240, X212]]]]]] in 
+    let {[@X274, [@X275, @X276]]} = do/formOpinion/dislike [a-mercutio, [a-romeo, [X271, [X272, X253]]]] in 
+    let {[!X277, [@X278, @X279]]} = die_of_old_age [a-capulet, [X199, [X249, [X250, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X280, [@X281, [@X282, [@X283, @X284]]]]} = do/insult/private [a-nurse, [a-romeo, [X254, [X275, @X257]]]] in 
+    let {[@X285, [@X286, [@X287, [@X288, [@X289, @X290]]]]]} = do/flirt/ok [a-romeo, [a-mercutio, [X281, [X274, [X218, [X184, X185]]]]]] in 
+    let {[@X291, [@X292, @X293]]} = time_passes [X278, X279] in 
+    let {[@X294, [@X295, @X296]]} = do/mourn [a-juliet, [a-capulet, [X273, [X144, X277]]]] in 
+    let {[@X297, [@X298, [@X299, [@X300, [@X301, [@X302, [@X303, @X304]]]]]]]} = do/marry [a-mercutio, [a-romeo, [X290, [X289, [X170, [X258, [X267, [X103, [X288, X287]]]]]]]]] in 
+    let {[@X305, [@X306, [@X307, @X308]]]} = do/fallInLove [a-juliet, [a-mercutio, [X294, [X299, X224]]]] in 
+    let {[@X309, [@X310, [@X311, @X312]]]} = do/flirt/discrete [a-romeo, [a-juliet, [X300, [X305, X262]]]] in 
+    let {[@X313, [@X314, [@X315, [@X316, [@X317, [@X318, [@X319, @X320]]]]]]]} = do/insult/witnessed [a-nurse, [a-romeo, [a-montague, [X280, [X311, [X198, [@X282, X145]]]]]]] in 
+    let {[@X321, [@X322, @X323]]} = do/formOpinion/like [a-mercutio, [a-romeo, [X306, [X314, X233]]]] in 
+    let {[@X324, [@X325, [@X326, [@X327, @X328]]]]} = do/insult/private [a-nurse, [a-romeo, [X313, [X322, @X316]]]] in 
+    let {[@X329, [@X330, [@X331, [@X332, [@X333, [@X334, [@X335, @X336]]]]]]]} = do/insult/witnessed [a-tybalt, [a-romeo, [a-mercutio, [X189, [X325, [X321, [@X98, X303]]]]]]] in 
+    let {[@X337, [@X338, [@X339, [@X340, [@X341, [@X342, [@X343, @X344]]]]]]]} = do/insult/witnessed [a-montague, [a-nurse, [a-juliet, [X315, [X324, [X312, [@X320, X164]]]]]]] in 
+    let {[@X345, [@X346, [@X347, [@X348, @X349]]]]} = do/insult/private [a-mercutio, [a-juliet, [X331, [X339, @X152]]]] in 
+    let {[@X350, [@X351, [@X352, @X353]]]} = do/fallInLove [a-juliet, [a-romeo, [X346, [X330, X263]]]] in 
+    let {[@X354, [@X355, [@X356, [@X357, @X358]]]]} = do/insult/private [a-juliet, [a-romeo, [X350, [X351, @X269]]]] in 
+    let {[@X359, [@X360, [@X361, [@X362, @X363]]]]} = do/insult/private [a-montague, [a-nurse, [X337, [X338, @X340]]]] in 
+    let {[@X364, [@X365, @X366]]} = do/becomeSuicidal [a-romeo, [X355, [X328, [X260, [X53, X284]]]]] in 
+    let {[@X367, [@X368, @X369]]} = time_passes [X291, X292] in 
+    let {[@X370, [@X371, [@X372, [@X373, [@X374, [@X375, [@X376, @X377]]]]]]]} = do/flirt/conflict [a-juliet, [a-mercutio, [X354, [X345, [X364, [X307, X268]]]]]] in 
+    let {[@X378, [@X379, [@X380, @X381]]]} = do/fallInLove [a-romeo, [a-mercutio, [X377, [X376, X155]]]] in 
+    let {[@X382, [@X383, [@X384, [@X385, @X386]]]]} = do/comfort [a-mercutio, [a-romeo, [X379, [X378, [X365, [X333, @X82]]]]]] in 
+    let {[@X387, [@X388, [@X389, [@X390, [@X391, [@X392, [@X393, @X394]]]]]]]} = do/insult/witnessed [a-romeo, [a-mercutio, [a-juliet, [X383, [X382, [X375, [@X373, X119]]]]]]] in 
+    let {[@X395, [@X396, @X397]]} = do/mourn [a-juliet, [a-capulet, [X389, [X153, X277]]]] in 
+    let {[@X398, [@X399, [@X400, [@X401, @X402]]]]} = do/insult/private [a-juliet, [a-romeo, [X395, [X387, @X394]]]] in 
+    let {[@X403, [@X404, [@X405, [@X406, @X407]]]]} = do/insult/private [a-romeo, [a-mercutio, [X399, [X388, @X390]]]] in 
+    let {[@X408, [@X409, [@X410, [@X411, [@X412, @X413]]]]]} = do/divorce [a-mercutio, [a-romeo, [X404, [X403, [X297, [X298, [X406, X276]]]]]]] in 
+    let {[@X414, [!X415, [!X416, @X417]]]} = do/murder [a-romeo, [a-nurse, [X318, [X327, [X283, [@X259, [X413, [X360, X368]]]]]]]] in 
+    let {[@X418, [@X419, [@X420, [@X421, @X422]]]]} = do/thinkVengefully [a-juliet, [a-romeo, [a-nurse, [X398, [X414, [X237, X416]]]]]] in 
+    let {[@X423, [@X424, [@X425, [@X426, [@X427, [@X428, [@X429, @X430]]]]]]]} = do/insult/witnessed [a-romeo, [a-mercutio, [a-juliet, [X419, [X412, [X418, [@X409, X391]]]]]]] in 
+    let {[@X431, [@X432, [@X433, [@X434, [@X435, [@X436, [@X437, @X438]]]]]]]} = do/marry [a-mercutio, [a-romeo, [X424, [X423, [X286, [X323, [X207, [X99, [X410, X411]]]]]]]]] in 
+    let {[@X439, [@X440, @X441]]} = do/mourn [a-juliet, [a-nurse, [X425, [X420, X415]]]] in 
+    let {[@X442, [@X443, [@X444, [@X445, [@X446, [@X447, @X448]]]]]]} = do/compliment/witnessed [a-romeo, [a-mercutio, [a-tybalt, [X434, [X433, [X329, [@X304, X114]]]]]]] in 
+    let {[@X449, [!X450, [!X451, @X452]]]} = do/murder [a-tybalt, [a-romeo, [X332, [X191, [X448, [@X61, [X444, [X442, X417]]]]]]]] in 
+    let {[@X453, [@X454, [@X455, @X456]]]} = do/compliment/private [a-juliet, [a-mercutio, [X439, [X443, @X427]]]] in 
+    let {[@X457, [@X458, @X459]]} = do/becomeSuicidal [a-mercutio, [X454, [X116, [X77, [X407, X393]]]]] in 
+    let {[@X460, [@X461, @X462]]} = do/becomeSuicidal [a-juliet, [X453, [X295, [X349, [X440, X397]]]]] in 
+    let {[@X463, [@X464, [@X465, @X466]]]} = do/flirt/discrete [a-juliet, [a-mercutio, [X460, [X457, X370]]]] in 
+    let {[@X467, [@X468, [@X469, [@X470, @X471]]]]} = do/comfort [a-mercutio, [a-juliet, [X466, [X465, [X461, [X456, @X308]]]]]] in 
+    let {[@X472, @X473]} = do/widdow [a-mercutio, [a-romeo, [X431, [X467, X450]]]] in 
+    let {[@X474, [@X475, [@X476, [@X477, [@X478, [@X479, @X480]]]]]]} = do/compliment/witnessed [a-juliet, [a-mercutio, [a-tybalt, [X468, [X473, [X449, [@X471, X446]]]]]]] in 
+    let {[@X481, [@X482, [@X483, [@X484, [@X485, [@X486, [@X487, @X488]]]]]]]} = do/marry [a-juliet, [a-mercutio, [X474, [X475, [X463, [X470, [X371, [X469, [X11, X472]]]]]]]]] in 
+    let {[@X489, [@X490, @X491]]} = do/mourn [a-mercutio, [a-romeo, [X484, [X384, X450]]]] in 
+    let {[@X492, @X493]} = do/loot [a-mercutio, [a-romeo, [X489, [X450, [X27, X459]]]]] in 
+    let {@X494} = do/travelBored [a-juliet, [X483, [town/cap, [X93, X369]]]] in 
+    let {[@X495, [@X496, @X497]]} = time_passes [X367, X452] in 
+    let {@X498} = do/travelBored [a-apothecary, [X133, [town/cap, [X497, X251]]]] in 
+    let {[@X499, [@X500, @X501]]} = do/travelTo [a-mercutio, [a-juliet, [X488, [X494, [X492, town/cap]]]]] in 
+    let {[@X502, [@X503, [@X504, @X505]]]} = do/flirt/discrete [a-juliet, [a-mercutio, [X500, [X501, X485]]]] in 
+    let {[@X506, [@X507, [@X508, [@X509, @X510]]]]} = do/insult/private [a-montague, [a-tybalt, [X359, [X476, @X20]]]] in 
+    let {[@X511, [@X512, @X513]]} = time_passes [X495, X496] in 
+    let {[@X514, [@X515, [@X516, @X517]]]} = do/fallInLove [a-mercutio, [a-juliet, [X505, [X504, X464]]]] in 
+    let {[@X518, [@X519, [@X520, [@X521, @X522]]]]} = do/comfort [a-juliet, [a-mercutio, [X515, [X514, [X458, [X477, @X499]]]]]] in 
+    let {[@X523, @X524]} = mixed_feelings [a-mercutio, [a-romeo, [X519, [X408, X437]]]] in 
+    let {[@X525, [@X526, @X527]]} = do/mourn [a-juliet, [a-nurse, [X518, [X39, X415]]]] in 
+    let {[@X528, [@X529, [@X530, [@X531, @X532]]]]} = do/insult/private [a-mercutio, [a-juliet, [X523, [X525, @X213]]]] in 
+    let {[@X533, [@X534, [@X535, @X536]]]} = do/fallInLove [a-mercutio, [a-juliet, [X528, [X529, X486]]]] in 
+    let {[@X537, [@X538, [@X539, @X540]]]} = do/give [a-mercutio, [a-juliet, [X533, [X534, [X493, [X462, X536]]]]]] in 
+    let {[@X541, [@X542, [@X543, @X544]]]} = do/compliment/private [a-juliet, [a-mercutio, [X538, [X537, @X487]]]] in 
+    let {[@X545, [@X546, [@X547, [@X548, [@X549, @X550]]]]]} = do/divorce [a-mercutio, [a-juliet, [X542, [X541, [X482, [X481, [X347, X225]]]]]]] in 
+    let {[@X551, [@X552, @X553]]} = time_passes [X511, X512] in 
+    let {[@X554, [@X555, [@X556, @X557]]]} = do/eroticize [a-mercutio, [a-juliet, [X549, [X550, [X521, [X522, [X479, X540]]]]]]] in 
+    let {[@X558, [@X559, [@X560, [@X561, [@X562, [@X563, [@X564, @X565]]]]]]]} = do/marry [a-juliet, [a-mercutio, [X555, [X554, [X502, [X543, [X503, [X556, [X548, X547]]]]]]]]] in 
+    let {[@X566, [@X567, [@X568, [@X569, [@X570, @X571]]]]]} = do/divorce [a-mercutio, [a-juliet, [X561, [X560, [X559, [X558, [X530, X545]]]]]]] in 
+    let {[@X572, [@X573, [@X574, [@X575, @X576]]]]} = do/thinkVengefully [a-mercutio, [a-tybalt, [a-romeo, [X570, [X507, [X447, X451]]]]]] in 
+    let {[@X577, [@X578, [@X579, @X580]]]} = do/compliment/private [a-mercutio, [a-juliet, [X572, [X571, @X565]]]] in 
+    let {[@X581, [@X582, @X583]]} = time_passes [X551, X552] in 
+    let {[@X584, [@X585, [@X586, @X587]]]} = do/compliment/private [a-mercutio, [a-juliet, [X577, [X578, @X579]]]] in 
+    let {[@X588, [@X589, [@X590, [@X591, @X592]]]]} = do/insult/private [a-tybalt, [a-montague, [X573, [X506, @X509]]]] in 
+    let {[@X593, [@X594, [@X595, [@X596, @X597]]]]} = do/thinkVengefully [a-juliet, [a-tybalt, [a-romeo, [X585, [X588, [X353, X451]]]]]] in 
+    let {[@X598, [@X599, [@X600, @X601]]]} = do/flirt/discrete [a-juliet, [a-mercutio, [X593, [X584, X562]]]] in 
+    let {[@X602, [@X603, [@X604, @X605]]]} = do/fallInLove [a-juliet, [a-mercutio, [X600, [X601, X598]]]] in 
+    let {[@X606, [@X607, @X608]]} = time_passes [X581, X582] in 
+    let {[@X609, [!X610, [!X611, @X612]]]} = do/murder [a-juliet, [a-mercutio, [X531, [X567, [X270, [@X348, [X602, [X603, X607]]]]]]]] in 
+    let {[!X613, [@X614, @X615]]} = die_of_old_age [a-tybalt, [X594, [X606, [X612, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X616, [@X617, @X618]]} = do/mourn [a-juliet, [a-romeo, [X609, [X595, X450]]]] in 
+    let {@X619} = do/travelBored [a-apothecary, [X498, [cap/town, [X553, X583]]]] in 
+    let {[@X620, [@X621, @X622]]} = do/mourn [a-juliet, [a-nurse, [X616, [X341, X415]]]] in 
+    let {[@X623, @X624]} = mixed_feelings [a-juliet, [a-mercutio, [X620, [X546, X520]]]] in 
+    let {@X625} = do/travelBored [a-apothecary, [X619, [town/cap, [X608, X293]]]] in 
+    let {[@X626, [@X627, @X628]]} = do/becomeSuicidal [a-juliet, [X623, [X396, [X527, [X621, X622]]]]] in 
+    let {[@X629, [@X630, @X631]]} = do/mourn [a-montague, [a-romeo, [X589, [X317, X450]]]] in 
+    let {[@X632, !X633]} = do/suicide [a-juliet, [X626, [X627, [X539, X615]]]] in 
+    let {[@X634, [@X635, @X636]]} = do/becomeSuicidal [a-montague, [X629, [X197, [X592, [X630, X631]]]]] in 
+    let {[@X637, @X638]} = do/loot [a-montague, [a-tybalt, [X634, [X613, [X26, X636]]]]] in 
+    let {[@X639, [@X640, @X641]]} = time_passes [X614, X632] in 
+    let {[@X642, !X643]} = do/suicide [a-montague, [X637, [X635, [X638, X640]]]] in 
+    let {[@X644, [@X645, @X646]]} = time_passes [X639, X642] in 
+    let {[@X647, [@X648, @X649]]} = time_passes [X644, X645] in 
+    let {@X650} = do/travelBored [a-apothecary, [X625, [cap/town, [X646, X513]]]] in 
+    let {[@X651, [@X652, @X653]]} = time_passes [X647, X648] in 
+    let {@X654} = do/travelBored [a-apothecary, [X650, [town/cap, [X653, X641]]]] in 
+    let {@X655} = do/travelBored [a-apothecary, [X654, [cap/town, [X167, X649]]]] in 
+    let {[@X656, [@X657, @X658]]} = time_passes [X651, X652] in 
+    let {[@X659, [@X660, @X661]]} = time_passes [X656, X657] in 
+    let {@X662} = do/travelBored [a-apothecary, [X655, [town/cap, [X661, X658]]]] in 
+    let {[@X663, [@X664, @X665]]} = time_passes [X659, X660] in 
+    let {[!X666, [@X667, @X668]]} = die_of_old_age [a-apothecary, [X662, [X663, [X664, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {1} = story_over [X668, X667] in 1}
+Iteration 3
+Solution: \X1. {
+    let {[@X2, [@X3, [@X4, [@X5, [@X6, [@X7, [@X8, [@X9, [@X10, [@X11, [@X12, [@X13, [@X14, [@X15, [@X16, [@X17, [@X18, [@X19, [@X20, [@X21, [@X22, [@X23, [@X24, [X25, [@X26, [@X27, [@X28, [@X29, [@X30, [@X31, [!X32, [@X33, [@X34, [@X35, [@X36, [@X37, @X38]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]} = X1 in 
+    let {[@X39, [@X40, @X41]]} = time_passes [X37, X38] in 
+    let {[@X42, [@X43, [@X44, [@X45, [@X46, [@X47, [@X48, @X49]]]]]]]} = do/insult/witnessed [a-tybalt, [a-romeo, [a-mercutio, [X8, [X2, [X5, [@X18, X21]]]]]]] in 
+    let {[@X50, [@X51, [@X52, [@X53, @X54]]]]} = do/insult/private [a-mercutio, [a-tybalt, [X44, [X42, @X49]]]] in 
+    let {[@X55, [@X56, @X57]]} = time_passes [X39, X40] in 
+    let {[@X58, [@X59, [@X60, [@X61, @X62]]]]} = do/insult/private [a-romeo, [a-tybalt, [X43, [X51, @X47]]]] in 
+    let {[@X63, [@X64, @X65]]} = do/formOpinion/like [a-mercutio, [a-juliet, [X50, [X7, X33]]]] in 
+    let {[@X66, [@X67, [@X68, [@X69, [@X70, [@X71, @X72]]]]]]} = do/compliment/witnessed [a-romeo, [a-mercutio, [a-tybalt, [X58, [X63, [X59, [@X22, X53]]]]]]] in 
+    let {@X73} = do/travelBored [a-tybalt, [X68, [town/mon, [X57, X41]]]] in 
+    let {[@X74, [@X75, [@X76, [@X77, @X78]]]]} = do/insult/private [a-montague, [a-tybalt, [X3, [X73, @X20]]]] in 
+    let {[@X79, [@X80, [@X81, [@X82, @X83]]]]} = do/insult/private [a-tybalt, [a-montague, [X75, [X74, @X77]]]] in 
+    let {[@X84, [@X85, @X86]]} = time_passes [X55, X56] in 
+    let {[@X87, [@X88, @X89]]} = time_passes [X84, X85] in 
+    let {[@X90, [@X91, @X92]]} = do/formOpinion/like [a-juliet, [a-mercutio, [X64, [X67, X34]]]] in 
+    let {@X93} = do/travelBored [a-capulet, [X4, [cap/town, [X89, X86]]]] in 
+    let {[@X94, [@X95, [@X96, @X97]]]} = do/compliment/private [a-romeo, [a-mercutio, [X66, [X91, @X69]]]] in 
+    let {[@X98, [@X99, @X100]]} = do/travelTo [a-montague, [a-romeo, [X23, [X94, [X80, mon/town]]]]] in 
+    let {[@X101, [@X102, [@X103, [@X104, @X105]]]]} = do/insult/private [a-capulet, [a-montague, [X93, [X100, @X17]]]] in 
+    let {[@X106, [@X107, [@X108, @X109]]]} = do/compliment/private [a-juliet, [a-mercutio, [X90, [X95, @X92]]]] in 
+    let {[@X110, [@X111, [@X112, [@X113, [@X114, [@X115, @X116]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-capulet, [X107, [X99, [X101, [@X71, X19]]]]]]] in 
+    let {[@X117, [@X118, [@X119, [@X120, [@X121, [@X122, @X123]]]]]]} = do/compliment/witnessed [a-montague, [a-romeo, [a-capulet, [X102, [X111, [X112, [@X98, X114]]]]]]] in 
+    let {[@X124, [@X125, [@X126, @X127]]]} = do/compliment/private [a-montague, [a-romeo, [X117, [X118, @X120]]]] in 
+    let {[@X128, [@X129, @X130]]} = do/travelTo [a-nurse, [a-juliet, [X30, [X106, [X6, cap/town]]]]] in 
+    let {[@X131, [@X132, @X133]]} = do/formOpinion/like [a-nurse, [a-apothecary, [X130, [X9, X36]]]] in 
+    let {[@X134, [@X135, [@X136, [@X137, [@X138, [@X139, @X140]]]]]]} = do/compliment/witnessed [a-montague, [a-romeo, [a-capulet, [X124, [X125, [X119, [@X126, X121]]]]]]] in 
+    let {[@X141, [@X142, [@X143, [@X144, [@X145, [@X146, @X147]]]]]]} = do/compliment/witnessed [a-romeo, [a-montague, [a-capulet, [X135, [X134, [X136, [@X127, X123]]]]]]] in 
+    let {[@X148, [@X149, @X150]]} = do/formOpinion/like [a-apothecary, [a-nurse, [X132, [X131, X35]]]] in 
+    let {[@X151, [@X152, @X153]]} = do/formOpinion/dislike [a-nurse, [a-romeo, [X149, [X141, X31]]]] in 
+    let {[@X154, [@X155, [@X156, @X157]]]} = do/compliment/private [a-montague, [a-romeo, [X142, [X152, @X137]]]] in 
+    let {[@X158, [@X159, @X160]]} = time_passes [X87, X88] in 
+    let {[@X161, [@X162, [@X163, [@X164, [@X165, [@X166, [@X167, @X168]]]]]]]} = do/insult/witnessed [a-nurse, [a-romeo, [a-montague, [X151, [X155, [X154, [@X153, X156]]]]]]] in 
+    let {[@X169, [@X170, @X171]]} = time_passes [X158, X159] in 
+    let {[@X172, [@X173, [@X174, [@X175, [@X176, [@X177, @X178]]]]]]} = do/compliment/witnessed [a-juliet, [a-mercutio, [a-capulet, [X129, [X110, [X143, [@X108, X116]]]]]]] in 
+    let {@X179} = X25 in 
+    let {[!X180, [@X181, @X182]]} = die_of_old_age [a-montague, [X163, [X169, [X170, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X183, [@X184, [@X185, [@X186, [@X187, [@X188, [@X189, @X190]]]]]]]} = do/insult/witnessed [a-nurse, [a-romeo, [a-mercutio, [X161, [X162, [X173, [@X164, X97]]]]]]] in 
+    let {[@X191, @X192]} = mixed_feelings [a-capulet, [a-juliet, [X174, [X178, X24]]]] in 
+    let {[@X193, [@X194, @X195]]} = X179 !town [X184, X172] in 
+    let {[@X196, [@X197, [@X198, @X199]]]} = do/fallInLove [a-romeo, [a-juliet, [X194, [X195, X193]]]] in 
+    let {[@X200, [@X201, [@X202, @X203]]]} = do/fallInLove [a-romeo, [a-juliet, [X196, [X197, X198]]]] in 
+    let {[@X204, [@X205, [@X206, [@X207, [@X208, @X209]]]]]} = do/flirt/ok [a-romeo, [a-juliet, [X200, [X201, [X202, [X10, X11]]]]]] in 
+    let {[@X210, [@X211, [@X212, [@X213, [@X214, [@X215, @X216]]]]]]} = do/compliment/witnessed [a-juliet, [a-nurse, [a-mercutio, [X209, [X183, [X185, [@X29, X190]]]]]]] in 
+    let {[@X217, @X218]} = mixed_feelings [a-mercutio, [a-juliet, [X212, [X216, X65]]]] in 
+    let {[@X219, [@X220, [@X221, @X222]]]} = do/fallInLove [a-juliet, [a-romeo, [X210, [X208, X205]]]] in 
+    let {[@X223, [@X224, @X225]]} = do/formOpinion/like [a-capulet, [a-juliet, [X191, [X219, X192]]]] in 
+    let {[@X226, [@X227, @X228]]} = do/formOpinion/dislike [a-mercutio, [a-juliet, [X217, [X224, X218]]]] in 
+    let {[@X229, [@X230, [@X231, [@X232, [@X233, [@X234, [@X235, @X236]]]]]]]} = do/insult/witnessed [a-mercutio, [a-juliet, [a-romeo, [X226, [X227, [X220, [@X228, X199]]]]]]] in 
+    let {[@X237, [@X238, @X239]]} = do/mourn [a-romeo, [a-montague, [X231, [X139, X180]]]] in 
+    let {[@X240, [@X241, [@X242, @X243]]]} = do/compliment/private [a-romeo, [a-mercutio, [X237, [X229, @X96]]]] in 
+    let {[@X244, [@X245, [@X246, @X247]]]} = do/compliment/private [a-capulet, [a-juliet, [X223, [X230, @X225]]]] in 
+    let {[@X248, [@X249, [@X250, [@X251, [@X252, @X253]]]]]} = do/flirt/ok [a-juliet, [a-romeo, [X245, [X240, [X221, [X207, X206]]]]]] in 
+    let {[@X254, [@X255, [@X256, [@X257, [@X258, @X259]]]]]} = do/flirt/ok [a-romeo, [a-juliet, [X253, [X252, [X249, [X251, X250]]]]]] in 
+    let {[@X260, [@X261, [@X262, [@X263, @X264]]]]} = do/insult/private [a-juliet, [a-mercutio, [X259, [X241, @X234]]]] in 
+    let {[@X265, [@X266, [@X267, @X268]]]} = do/eroticize [a-mercutio, [a-romeo, [X261, [X258, [X187, [X243, [X113, X46]]]]]]] in 
+    let {[@X269, [@X270, [@X271, [@X272, [@X273, @X274]]]]]} = do/flirt/ok [a-romeo, [a-juliet, [X266, [X260, [X204, [X256, X257]]]]]] in 
+    let {@X275} = do/travelBored [a-juliet, [X274, [town/mon, [X171, X160]]]] in 
+    let {[@X276, [@X277, @X278]]} = do/travelTo [a-romeo, [a-juliet, [X203, [X275, [X273, town/mon]]]]] in 
+    let {[@X279, [@X280, [@X281, [@X282, @X283]]]]} = do/insult/private [a-capulet, [a-mercutio, [X244, [X265, @X176]]]] in 
+    let {[@X284, [@X285, [@X286, [@X287, [@X288, [@X289, [@X290, @X291]]]]]]]} = do/insult/witnessed [a-tybalt, [a-romeo, [a-juliet, [X79, [X278, [X277, [@X45, X222]]]]]]] in 
+    let {[@X292, [@X293, [@X294, [@X295, [@X296, @X297]]]]]} = do/flirt/ok [a-romeo, [a-juliet, [X285, [X286, [X254, [X271, X272]]]]]] in 
+    let {[@X298, [@X299, @X300]]} = time_passes [X181, X182] in 
+    let {[@X301, [@X302, [@X303, [@X304, [@X305, [@X306, [@X307, @X308]]]]]]]} = do/marry [a-romeo, [a-juliet, [X296, [X297, [X269, [X276, [X270, [X288, [X294, X295]]]]]]]]] in 
+    let {[@X309, [@X310, @X311]]} = do/mourn [a-romeo, [a-montague, [X303, [X144, X180]]]] in 
+    let {[@X312, [@X313, @X314]]} = time_passes [X298, X299] in 
+    let {[@X315, [@X316, @X317]]} = do/travelTo [a-capulet, [a-juliet, [X246, [X304, [X279, town/mon]]]]] in 
+    let {[@X318, [@X319, @X320]]} = do/becomeSuicidal [a-romeo, [X309, [X238, [X310, [X290, X311]]]]] in 
+    let {[@X321, [@X322, [@X323, [@X324, @X325]]]]} = do/insult/private [a-tybalt, [a-romeo, [X284, [X318, @X72]]]] in 
+    let {[@X326, [@X327, [@X328, @X329]]]} = do/compliment/private [a-apothecary, [a-nurse, [X148, [X211, @X150]]]] in 
+    let {[@X330, !X331]} = do/suicide [a-romeo, [X322, [X319, [X27, X313]]]] in 
+    let {[@X332, [@X333, @X334]]} = do/mourn [a-mercutio, [a-romeo, [X280, [X267, X331]]]] in 
+    let {[@X335, @X336]} = do/widdow [a-juliet, [a-romeo, [X302, [X316, X331]]]] in 
+    let {[@X337, [@X338, @X339]]} = time_passes [X312, X330] in 
+    let {[@X340, [@X341, [@X342, [@X343, [@X344, [@X345, @X346]]]]]]} = do/compliment/witnessed [a-apothecary, [a-nurse, [a-mercutio, [X326, [X327, [X332, [@X328, X214]]]]]]] in 
+    let {[@X347, [@X348, [@X349, @X350]]]} = do/compliment/private [a-apothecary, [a-nurse, [X340, [X341, @X343]]]] in 
+    let {[@X351, [@X352, [@X353, [@X354, [@X355, [@X356, [@X357, @X358]]]]]]]} = do/insult/witnessed [a-mercutio, [a-apothecary, [a-nurse, [X342, [X347, [X348, [@X346, X329]]]]]]] in 
+    let {[@X359, [@X360, @X361]]} = do/becomeSuicidal [a-mercutio, [X351, [X264, [X334, [X283, X333]]]]] in 
+    let {[@X362, [@X363, [@X364, @X365]]]} = do/compliment/private [a-nurse, [a-apothecary, [X353, [X352, @X355]]]] in 
+    let {[@X366, [@X367, [@X368, [@X369, @X370]]]]} = do/insult/private [a-mercutio, [a-apothecary, [X359, [X363, @X354]]]] in 
+    let {[@X371, [@X372, @X373]]} = do/mourn [a-juliet, [a-romeo, [X336, [X308, X331]]]] in 
+    let {[@X374, [@X375, @X376]]} = do/travelTo [a-mercutio, [a-juliet, [X177, [X371, [X366, town/mon]]]]] in 
+    let {[@X377, [@X378, @X379]]} = do/travelTo [a-juliet, [a-nurse, [X213, [X362, [X375, mon/town]]]]] in 
+    let {[@X380, [@X381, [@X382, @X383]]]} = do/steal [a-tybalt, [a-mercutio, [X321, [X376, [X26, X361]]]]] in 
+    let {[@X384, [@X385, [@X386, @X387]]]} = do/eroticize [a-nurse, [a-apothecary, [X378, [X367, [X133, [X350, [X345, X364]]]]]]] in 
+    let {[@X388, @X389]} = mixed_feelings [a-juliet, [a-mercutio, [X379, [X262, X175]]]] in 
+    let {[@X390, [@X391, [@X392, @X393]]]} = do/flirt/discrete [a-nurse, [a-apothecary, [X384, [X385, X387]]]] in 
+    let {[@X394, [@X395, [@X396, @X397]]]} = do/fallInLove [a-apothecary, [a-nurse, [X393, [X392, X391]]]] in 
+    let {[@X398, !X399]} = do/suicide [a-mercutio, [X381, [X360, [X382, X338]]]] in 
+    let {[@X400, [@X401, [@X402, [@X403, [@X404, @X405]]]]]} = do/flirt/ok [a-nurse, [a-apothecary, [X395, [X394, [X390, [X12, X15]]]]]] in 
+    let {[@X406, [@X407, @X408]]} = do/travelTo [a-juliet, [a-capulet, [X247, [X317, [X388, town/mon]]]]] in 
+    let {[@X409, [@X410, [@X411, [@X412, @X413]]]]} = do/insult/private [a-juliet, [a-tybalt, [X408, [X380, @X291]]]] in 
+    let {[@X414, [@X415, [@X416, [@X417, [@X418, [@X419, [@X420, @X421]]]]]]]} = do/insult/witnessed [a-tybalt, [a-juliet, [a-capulet, [X410, [X409, [X407, [@X412, X315]]]]]]] in 
+    let {[@X422, [@X423, @X424]]} = do/becomeSuicidal [a-juliet, [X415, [X420, [X235, [X372, X373]]]]] in 
+    let {[@X425, [@X426, [@X427, [@X428, [@X429, [@X430, [@X431, @X432]]]]]]]} = do/insult/witnessed [a-tybalt, [a-juliet, [a-capulet, [X414, [X422, [X416, [@X417, X418]]]]]]] in 
+    let {[@X433, [@X434, @X435]]} = do/becomeSuicidal [a-tybalt, [X425, [X413, [X54, [X78, X62]]]]] in 
+    let {[@X436, [@X437, [@X438, [@X439, [@X440, [@X441, @X442]]]]]]} = do/compliment/witnessed [a-capulet, [a-juliet, [a-tybalt, [X427, [X426, [X433, [@X429, X428]]]]]]] in 
+    let {[@X443, [@X444, [@X445, @X446]]]} = do/flirt/discrete [a-nurse, [a-apothecary, [X404, [X405, X400]]]] in 
+    let {[@X447, [@X448, [@X449, [@X450, @X451]]]]} = do/insult/private [a-tybalt, [a-juliet, [X438, [X437, @X440]]]] in 
+    let {[@X452, [@X453, [@X454, @X455]]]} = do/flirt/discrete [a-apothecary, [a-nurse, [X446, [X445, X444]]]] in 
+    let {@X456} = do/travelBored [a-juliet, [X448, [mon/town, [X314, X300]]]] in 
+    let {[@X457, [@X458, [@X459, @X460]]]} = do/steal [a-apothecary, [a-juliet, [X454, [X456, [X28, X424]]]]] in 
+    let {[@X461, [@X462, [@X463, @X464]]]} = do/compliment/private [a-juliet, [a-nurse, [X458, [X455, @X377]]]] in 
+    let {[@X465, [@X466, [@X467, @X468]]]} = do/flirt/discrete [a-nurse, [a-apothecary, [X462, [X457, X453]]]] in 
+    let {[@X469, [@X470, [@X471, [@X472, [@X473, [@X474, [@X475, @X476]]]]]]]} = do/insult/witnessed [a-apothecary, [a-juliet, [a-nurse, [X468, [X461, [X467, [@X460, X128]]]]]]] in 
+    let {[@X477, @X478]} = mixed_feelings [a-nurse, [a-apothecary, [X471, [X476, X386]]]] in 
+    let {[@X479, [@X480, @X481]]} = do/travelTo [a-juliet, [a-capulet, [X441, [X436, [X470, town/mon]]]]] in 
+    let {[@X482, [@X483, [@X484, [@X485, [@X486, @X487]]]]]} = do/flirt/ok [a-nurse, [a-apothecary, [X477, [X469, [X465, [X402, X403]]]]]] in 
+    let {[@X488, [!X489, [!X490, @X491]]]} = do/murder [a-juliet, [a-tybalt, [X411, [X419, [X450, [@X430, [X481, [X447, X398]]]]]]]] in 
+    let {[@X492, [@X493, @X494]]} = do/formOpinion/dislike [a-nurse, [a-apothecary, [X486, [X487, X478]]]] in 
+    let {[@X495, [@X496, @X497]]} = time_passes [X337, X491] in 
+    let {[@X498, [@X499, @X500]]} = time_passes [X495, X496] in 
+    let {[@X501, [@X502, [@X503, @X504]]]} = do/fallInLove [a-apothecary, [a-nurse, [X493, [X492, X466]]]] in 
+    let {[@X505, [@X506, [@X507, [@X508, [@X509, @X510]]]]]} = do/flirt/ok [a-nurse, [a-apothecary, [X502, [X501, [X482, [X484, X485]]]]]] in 
+    let {@X511} = do/travelBored [a-apothecary, [X510, [town/mon, [X497, X500]]]] in 
+    let {[@X512, [@X513, @X514]]} = do/travelTo [a-apothecary, [a-nurse, [X365, [X509, [X511, mon/town]]]]] in 
+    let {[@X515, [@X516, [@X517, @X518]]]} = do/fallInLove [a-apothecary, [a-nurse, [X514, [X513, X452]]]] in 
+    let {[@X519, [@X520, [@X521, @X522]]]} = do/eroticize [a-apothecary, [a-nurse, [X515, [X516, [X397, [X518, [X512, X349]]]]]]] in 
+    let {[@X523, [@X524, @X525]]} = time_passes [X498, X499] in 
+    let {[!X526, [@X527, @X528]]} = die_of_old_age [a-nurse, [X520, [X523, [X524, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X529, [@X530, [@X531, @X532]]]} = do/compliment/private [a-juliet, [a-capulet, [X488, [X480, @X479]]]] in 
+    let {[@X533, [@X534, @X535]]} = do/mourn [a-apothecary, [a-nurse, [X519, [X504, X526]]]] in 
+    let {@X536} = do/travelBored [a-juliet, [X529, [mon/town, [X339, X525]]]] in 
+    let {[@X537, [@X538, @X539]]} = time_passes [X527, X528] in 
+    let {[@X540, [@X541, [@X542, [@X543, @X544]]]]} = do/insult/private [a-apothecary, [a-juliet, [X533, [X536, @X472]]]] in 
+    let {[@X545, [@X546, @X547]]} = do/becomeSuicidal [a-juliet, [X541, [X431, [X544, [X475, X451]]]]] in 
+    let {[@X548, [@X549, [@X550, [@X551, @X552]]]]} = do/insult/private [a-juliet, [a-apothecary, [X545, [X540, @X474]]]] in 
+    let {[@X553, !X554]} = do/suicide [a-juliet, [X548, [X546, [X459, X538]]]] in 
+    let {[@X555, [@X556, @X557]]} = do/mourn [a-capulet, [a-juliet, [X530, [X532, X554]]]] in 
+    let {[@X558, [@X559, @X560]]} = do/becomeSuicidal [a-apothecary, [X549, [X534, [X535, [X370, X357]]]]] in 
+    let {[@X561, [@X562, @X563]]} = time_passes [X537, X553] in 
+    let {[@X564, [@X565, @X566]]} = time_passes [X561, X562] in 
+    let {[@X567, [@X568, @X569]]} = do/mourn [a-capulet, [a-juliet, [X555, [X439, X554]]]] in 
+    let {[@X570, [@X571, @X572]]} = do/mourn [a-apothecary, [a-nurse, [X558, [X521, X526]]]] in 
+    let {[@X573, [@X574, @X575]]} = time_passes [X564, X565] in 
+    let {[@X576, [@X577, @X578]]} = time_passes [X573, X574] in 
+    let {[@X579, [@X580, @X581]]} = do/becomeSuicidal [a-capulet, [X567, [X557, [X568, [X556, X569]]]]] in 
+    let {[@X582, [@X583, @X584]]} = time_passes [X576, X577] in 
+    let {@X585} = do/travelBored [a-capulet, [X579, [mon/town, [X566, X539]]]] in 
+    let {[!X586, [@X587, @X588]]} = die_of_old_age [a-apothecary, [X570, [X582, [X583, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {@X589} = do/travelBored [a-capulet, [X585, [town/mon, [X575, X563]]]] in 
+    let {@X590} = do/travelBored [a-capulet, [X589, [mon/town, [X578, X584]]]] in 
+    let {[@X591, [@X592, @X593]]} = time_passes [X587, X588] in 
+    let {[@X594, [@X595, @X596]]} = time_passes [X591, X592] in 
+    let {[@X597, [@X598, @X599]]} = time_passes [X594, X595] in 
+    let {@X600} = do/travelBored [a-capulet, [X590, [town/cap, [X593, X599]]]] in 
+    let {[@X601, [@X602, @X603]]} = time_passes [X597, X598] in 
+    let {@X604} = do/travelBored [a-capulet, [X600, [cap/town, [X603, X596]]]] in 
+    let {[@X605, [@X606, @X607]]} = time_passes [X601, X602] in 
+    let {[@X608, [@X609, @X610]]} = time_passes [X605, X606] in 
+    let {[@X611, [@X612, @X613]]} = time_passes [X608, X609] in 
+    let {[!X614, [@X615, @X616]]} = die_of_old_age [a-capulet, [X604, [X611, [X612, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {1} = story_over [X616, X615] in 1}
+Iteration 4
+Solution: \X1. {
+    let {[@X2, [@X3, [@X4, [@X5, [@X6, [@X7, [@X8, [@X9, [@X10, [@X11, [@X12, [@X13, [@X14, [@X15, [@X16, [@X17, [@X18, [@X19, [@X20, [@X21, [@X22, [@X23, [@X24, [X25, [@X26, [@X27, [@X28, [@X29, [@X30, [@X31, [!X32, [@X33, [@X34, [@X35, [@X36, [@X37, @X38]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]} = X1 in 
+    let {[@X39, [@X40, [@X41, [@X42, [@X43, [@X44, [@X45, @X46]]]]]]]} = do/insult/witnessed [a-tybalt, [a-romeo, [a-mercutio, [X8, [X2, [X5, [@X18, X21]]]]]]] in 
+    let {[@X47, [@X48, @X49]]} = do/formOpinion/dislike [a-juliet, [a-mercutio, [X7, [X41, X34]]]] in 
+    let {[@X50, [@X51, [@X52, [@X53, [@X54, [@X55, @X56]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X48, [X40, [X39, [@X43, X42]]]]]]] in 
+    let {[@X57, [@X58, @X59]]} = do/formOpinion/like [a-mercutio, [a-juliet, [X50, [X47, X33]]]] in 
+    let {[@X60, [@X61, [@X62, @X63]]]} = do/compliment/private [a-mercutio, [a-romeo, [X57, [X51, @X53]]]] in 
+    let {[@X64, [@X65, @X66]]} = do/travelTo [a-nurse, [a-juliet, [X30, [X58, [X6, cap/town]]]]] in 
+    let {[@X67, [@X68, [@X69, [@X70, @X71]]]]} = do/insult/private [a-juliet, [a-mercutio, [X65, [X60, @X49]]]] in 
+    let {[@X72, [@X73, [@X74, @X75]]]} = do/compliment/private [a-juliet, [a-nurse, [X67, [X66, @X29]]]] in 
+    let {[@X76, @X77]} = mixed_feelings [a-mercutio, [a-juliet, [X68, [X70, X59]]]] in 
+    let {[@X78, [@X79, @X80]]} = do/formOpinion/dislike [a-nurse, [a-romeo, [X73, [X61, X31]]]] in 
+    let {[@X81, [@X82, [@X83, [@X84, @X85]]]]} = do/insult/private [a-tybalt, [a-mercutio, [X52, [X76, @X56]]]] in 
+    let {[@X86, [@X87, @X88]]} = time_passes [X37, X38] in 
+    let {[@X89, [@X90, [@X91, @X92]]]} = do/compliment/private [a-mercutio, [a-romeo, [X82, [X79, @X62]]]] in 
+    let {[@X93, [@X94, [@X95, [@X96, [@X97, [@X98, @X99]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-nurse, [X89, [X90, [X78, [@X91, X80]]]]]]] in 
+    let {[@X100, [@X101, @X102]]} = do/formOpinion/dislike [a-mercutio, [a-juliet, [X93, [X72, X77]]]] in 
+    let {[@X103, [@X104, @X105]]} = do/formOpinion/dislike [a-apothecary, [a-nurse, [X9, [X95, X35]]]] in 
+    let {[@X106, [@X107, [@X108, @X109]]]} = do/compliment/private [a-mercutio, [a-romeo, [X100, [X94, @X96]]]] in 
+    let {[@X110, [@X111, [@X112, [@X113, [@X114, [@X115, [@X116, @X117]]]]]]]} = do/insult/witnessed [a-nurse, [a-romeo, [a-mercutio, [X104, [X107, [X106, [@X97, X108]]]]]]] in 
+    let {[@X118, [@X119, [@X120, @X121]]]} = do/eroticize [a-romeo, [a-mercutio, [X111, [X112, [X109, [X55, [X22, X63]]]]]]] in 
+    let {[@X122, [@X123, @X124]]} = time_passes [X86, X87] in 
+    let {[@X125, [@X126, @X127]]} = time_passes [X122, X123] in 
+    let {[@X128, [@X129, @X130]]} = time_passes [X125, X126] in 
+    let {[@X131, [@X132, [@X133, [@X134, [@X135, @X136]]]]]} = do/flirt/ok [a-romeo, [a-mercutio, [X118, [X119, [X121, [X10, X13]]]]]] in 
+    let {[@X137, [@X138, [@X139, [@X140, [@X141, [@X142, [@X143, @X144]]]]]]]} = do/marry [a-mercutio, [a-romeo, [X136, [X135, [X132, [X114, [X131, [X92, [X134, X133]]]]]]]]] in 
+    let {[@X145, [@X146, @X147]]} = do/formOpinion/dislike [a-nurse, [a-apothecary, [X110, [X103, X36]]]] in 
+    let {@X148} = X25 in 
+    let {[@X149, [@X150, @X151]]} = X148 !town [X140, X101] in 
+    let {[@X152, [@X153, [@X154, @X155]]]} = do/compliment/private [a-nurse, [a-juliet, [X145, [X151, @X75]]]] in 
+    let {[@X156, [@X157, [@X158, @X159]]]} = do/flirt/discrete [a-romeo, [a-juliet, [X150, [X153, X149]]]] in 
+    let {[@X160, [@X161, [@X162, [@X163, [@X164, [@X165, [@X166, @X167]]]]]]]} = do/insult/witnessed [a-juliet, [a-mercutio, [a-romeo, [X159, [X139, [X158, [@X69, X98]]]]]]] in 
+    let {[@X168, [@X169, [@X170, [@X171, [@X172, [@X173, [@X174, @X175]]]]]]]} = do/insult/witnessed [a-mercutio, [a-nurse, [a-juliet, [X161, [X152, [X160, [@X117, X74]]]]]]] in 
+    let {[@X176, [@X177, [@X178, [@X179, [@X180, [@X181, @X182]]]]]]} = do/compliment/witnessed [a-juliet, [a-nurse, [a-apothecary, [X170, [X169, [X146, [@X155, X105]]]]]]] in 
+    let {[@X183, [@X184, @X185]]} = time_passes [X128, X129] in 
+    let {[@X186, [@X187, [@X188, @X189]]]} = do/flirt/discrete [a-mercutio, [a-romeo, [X168, [X162, X141]]]] in 
+    let {[@X190, [@X191, [@X192, @X193]]]} = do/fallInLove [a-mercutio, [a-romeo, [X188, [X189, X186]]]] in 
+    let {[@X194, [@X195, [@X196, @X197]]]} = do/compliment/private [a-mercutio, [a-romeo, [X190, [X191, @X143]]]] in 
+    let {[@X198, [@X199, [@X200, @X201]]]} = do/fallInLove [a-juliet, [a-romeo, [X176, [X195, X157]]]] in 
+    let {[@X202, [@X203, [@X204, [@X205, [@X206, [@X207, [@X208, @X209]]]]]]]} = do/flirt/conflict [a-romeo, [a-mercutio, [X199, [X194, [X198, [X187, X200]]]]]] in 
+    let {[@X210, [@X211, [@X212, [@X213, [@X214, [@X215, [@X216, @X217]]]]]]]} = do/flirt/conflict [a-romeo, [a-juliet, [X207, [X209, [X208, [X156, X203]]]]]] in 
+    let {[@X218, [@X219, [@X220, @X221]]]} = do/compliment/private [a-mercutio, [a-romeo, [X217, [X215, @X193]]]] in 
+    let {@X222} = do/travelBored [a-capulet, [X4, [cap/town, [X127, X130]]]] in 
+    let {[@X223, [@X224, [@X225, @X226]]]} = do/fallInLove [a-romeo, [a-juliet, [X219, [X216, X210]]]] in 
+    let {[@X227, [@X228, [@X229, [@X230, [@X231, [@X232, [@X233, @X234]]]]]]]} = do/insult/witnessed [a-apothecary, [a-nurse, [a-juliet, [X178, [X177, [X224, [@X180, X179]]]]]]] in 
+    let {[@X235, [@X236, [@X237, @X238]]]} = do/fallInLove [a-romeo, [a-juliet, [X223, [X229, X225]]]] in 
+    let {@X239} = do/travelBored [a-apothecary, [X227, [town/mon, [X88, X124]]]] in 
+    let {[@X240, [@X241, @X242]]} = time_passes [X183, X184] in 
+    let {[@X243, [@X244, [@X245, [@X246, [@X247, [@X248, @X249]]]]]]} = do/compliment/witnessed [a-juliet, [a-nurse, [a-mercutio, [X236, [X228, [X218, [@X172, X171]]]]]]] in 
+    let {[@X250, [@X251, @X252]]} = time_passes [X240, X241] in 
+    let {[@X253, [@X254, [@X255, @X256]]]} = do/compliment/private [a-romeo, [a-mercutio, [X235, [X245, @X144]]]] in 
+    let {[@X257, [@X258, [@X259, @X260]]]} = do/flirt/discrete [a-romeo, [a-juliet, [X253, [X243, X237]]]] in 
+    let {[@X261, @X262]} = mixed_feelings [a-mercutio, [a-romeo, [X254, [X214, X220]]]] in 
+    let {[!X263, [@X264, @X265]]} = die_of_old_age [a-capulet, [X222, [X250, [X251, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X266, [@X267, [@X268, @X269]]]} = do/eroticize [a-romeo, [a-mercutio, [X259, [X261, [X120, [X164, [X197, X255]]]]]]] in 
+    let {@X270} = do/travelBored [a-nurse, [X244, [town/mon, [X185, X252]]]] in 
+    let {[@X271, @X272]} = mixed_feelings [a-juliet, [a-romeo, [X260, [X206, X201]]]] in 
+    let {[@X273, [@X274, [@X275, @X276]]]} = do/flirt/discrete [a-romeo, [a-juliet, [X266, [X271, X257]]]] in 
+    let {[@X277, [@X278, [@X279, [@X280, [@X281, [@X282, @X283]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X267, [X275, [X81, [@X256, X54]]]]]]] in 
+    let {[@X284, [@X285, [@X286, @X287]]]} = do/compliment/private [a-mercutio, [a-romeo, [X277, [X278, @X280]]]] in 
+    let {[@X288, [@X289, @X290]]} = time_passes [X264, X265] in 
+    let {@X291} = do/travelBored [a-tybalt, [X279, [town/cap, [X242, X290]]]] in 
+    let {[@X292, [@X293, @X294]]} = do/travelTo [a-juliet, [a-nurse, [X231, [X270, [X276, town/mon]]]]] in 
+    let {[@X295, [@X296, [@X297, [@X298, [@X299, [@X300, @X301]]]]]]} = do/compliment/witnessed [a-nurse, [a-juliet, [a-apothecary, [X293, [X294, [X239, [@X64, X182]]]]]]] in 
+    let {[@X302, [@X303, @X304]]} = do/formOpinion/like [a-mercutio, [a-romeo, [X284, [X285, X262]]]] in 
+    let {[@X305, @X306]} = mixed_feelings [a-romeo, [a-juliet, [X303, [X167, X226]]]] in 
+    let {[@X307, [@X308, [@X309, @X310]]]} = do/compliment/private [a-juliet, [a-nurse, [X296, [X295, @X246]]]] in 
+    let {[@X311, [@X312, [@X313, [@X314, [@X315, [@X316, @X317]]]]]]} = do/compliment/witnessed [a-juliet, [a-nurse, [a-apothecary, [X307, [X308, [X297, [@X292, X230]]]]]]] in 
+    let {[@X318, [@X319, [@X320, @X321]]]} = do/compliment/private [a-nurse, [a-juliet, [X312, [X311, @X310]]]] in 
+    let {[@X322, [@X323, @X324]]} = time_passes [X288, X289] in 
+    let {[@X325, [@X326, [@X327, [@X328, [@X329, [@X330, [@X331, @X332]]]]]]]} = do/insult/witnessed [a-apothecary, [a-nurse, [a-juliet, [X313, [X318, [X319, [@X315, X300]]]]]]] in 
+    let {[@X333, [@X334, [@X335, @X336]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X305, [X302, X202]]]] in 
+    let {[@X337, [@X338, [@X339, @X340]]]} = do/compliment/private [a-romeo, [a-mercutio, [X335, [X336, @X268]]]] in 
+    let {[@X341, [@X342, [@X343, [@X344, [@X345, [@X346, @X347]]]]]]} = do/compliment/witnessed [a-juliet, [a-nurse, [a-apothecary, [X327, [X326, [X325, [@X321, X301]]]]]]] in 
+    let {[@X348, [@X349, [@X350, @X351]]]} = do/eroticize [a-nurse, [a-juliet, [X342, [X341, [X298, [X181, [X320, X316]]]]]]] in 
+    let {[@X352, [@X353, [@X354, @X355]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X337, [X338, X333]]]] in 
+    let {[@X356, [@X357, [@X358, @X359]]]} = do/fallInLove [a-nurse, [a-juliet, [X348, [X349, X351]]]] in 
+    let {[@X360, [@X361, [@X362, @X363]]]} = do/fallInLove [a-mercutio, [a-romeo, [X355, [X354, X353]]]] in 
+    let {[@X364, [@X365, [@X366, @X367]]]} = do/eroticize [a-nurse, [a-juliet, [X356, [X357, [X346, [X248, [X154, X350]]]]]]] in 
+    let {[@X368, [@X369, [@X370, @X371]]]} = do/fallInLove [a-nurse, [a-juliet, [X364, [X365, X358]]]] in 
+    let {[@X372, [@X373, [@X374, [@X375, [@X376, @X377]]]]]} = do/flirt/ok [a-nurse, [a-juliet, [X368, [X369, [X367, [X12, X11]]]]]] in 
+    let {[@X378, [@X379, [@X380, @X381]]]} = do/fallInLove [a-juliet, [a-mercutio, [X377, [X360, X212]]]] in 
+    let {[@X382, [@X383, [@X384, @X385]]]} = do/compliment/private [a-nurse, [a-juliet, [X376, [X378, @X371]]]] in 
+    let {[@X386, [@X387, @X388]]} = time_passes [X322, X323] in 
+    let {[@X389, [@X390, @X391]]} = time_passes [X386, X387] in 
+    let {[@X392, [@X393, [@X394, @X395]]]} = do/fallInLove [a-romeo, [a-juliet, [X361, [X383, X273]]]] in 
+    let {[@X396, [@X397, [@X398, @X399]]]} = do/compliment/private [a-juliet, [a-nurse, [X393, [X382, @X309]]]] in 
+    let {[@X400, [@X401, [@X402, @X403]]]} = do/eroticize [a-juliet, [a-nurse, [X396, [X397, [X398, [X385, [X344, X329]]]]]]] in 
+    let {[@X404, [@X405, [@X406, [@X407, @X408]]]]} = do/insult/private [a-nurse, [a-apothecary, [X401, [X343, @X330]]]] in 
+    let {[@X409, [@X410, [@X411, [@X412, [@X413, @X414]]]]]} = do/flirt/ok [a-nurse, [a-juliet, [X404, [X400, [X372, [X374, X375]]]]]] in 
+    let {[@X415, [@X416, @X417]]} = time_passes [X389, X390] in 
+    let {[@X418, [@X419, [@X420, @X421]]]} = do/fallInLove [a-romeo, [a-juliet, [X392, [X414, X394]]]] in 
+    let {[@X422, [@X423, [@X424, [@X425, [@X426, @X427]]]]]} = do/flirt/ok [a-nurse, [a-juliet, [X413, [X419, [X370, [X411, X412]]]]]] in 
+    let {[@X428, [@X429, [@X430, [@X431, [@X432, [@X433, [@X434, @X435]]]]]]]} = do/insult/witnessed [a-apothecary, [a-juliet, [a-nurse, [X405, [X427, [X426, [@X347, X384]]]]]]] in 
+    let {[@X436, [@X437, [@X438, [@X439, [@X440, [@X441, [@X442, @X443]]]]]]]} = do/marry [a-nurse, [a-juliet, [X430, [X429, [X409, [X432, [X423, [X402, [X424, X425]]]]]]]]] in 
+    let {@X444} = do/travelBored [a-mercutio, [X379, [town/mon, [X391, X388]]]] in 
+    let {[@X445, [!X446, [!X447, @X448]]]} = do/murder [a-nurse, [a-apothecary, [X406, [X232, [X147, [@X435, [X438, [X428, X416]]]]]]]] in 
+    let {[@X449, [@X450, [@X451, [@X452, [@X453, [@X454, [@X455, @X456]]]]]]]} = do/flirt/conflict [a-juliet, [a-mercutio, [X439, [X444, [X445, [X380, X440]]]]]] in 
+    let {[@X457, [@X458, [@X459, [@X460, [@X461, [@X462, @X463]]]]]]} = do/compliment/witnessed [a-nurse, [a-juliet, [a-mercutio, [X456, [X454, [X455, [@X399, X165]]]]]]] in 
+    let {[@X464, [!X465, [!X466, @X467]]]} = do/murder [a-mercutio, [a-juliet, [X213, [X461, [X102, [@X249, [X459, [X458, X448]]]]]]]] in 
+    let {[@X468, [@X469, @X470]]} = do/travelTo [a-montague, [a-romeo, [X23, [X418, [X3, mon/town]]]]] in 
+    let {[@X471, [@X472, [@X473, @X474]]]} = do/compliment/private [a-montague, [a-romeo, [X470, [X469, @X468]]]] in 
+    let {[@X475, [@X476, [@X477, @X478]]]} = do/flirt/discrete [a-mercutio, [a-nurse, [X464, [X457, X451]]]] in 
+    let {[@X479, [@X480, [@X481, [@X482, @X483]]]]} = do/insult/private [a-nurse, [a-mercutio, [X478, [X477, @X452]]]] in 
+    let {[@X484, [@X485, [@X486, @X487]]]} = do/flirt/discrete [a-mercutio, [a-nurse, [X480, [X479, X475]]]] in 
+    let {[@X488, [@X489, [@X490, @X491]]]} = do/flirt/discrete [a-mercutio, [a-nurse, [X486, [X487, X484]]]] in 
+    let {[@X492, [@X493, [@X494, @X495]]]} = do/flirt/discrete [a-mercutio, [a-nurse, [X490, [X491, X488]]]] in 
+    let {[@X496, @X497]} = mixed_feelings [a-nurse, [a-juliet, [X495, [X453, X359]]]] in 
+    let {[@X498, @X499]} = do/widdow [a-nurse, [a-juliet, [X436, [X496, X465]]]] in 
+    let {[@X500, [@X501, [@X502, @X503]]]} = do/eroticize [a-romeo, [a-mercutio, [X472, [X494, [X221, [X339, [X287, X282]]]]]]] in 
+    let {[@X504, [@X505, [@X506, @X507]]]} = do/flirt/discrete [a-mercutio, [a-nurse, [X501, [X499, X492]]]] in 
+    let {[@X508, [@X509, [@X510, [@X511, @X512]]]]} = do/insult/private [a-mercutio, [a-nurse, [X506, [X507, @X463]]]] in 
+    let {[@X513, [@X514, @X515]]} = do/travelTo [a-romeo, [a-mercutio, [X502, [X508, [X500, town/mon]]]]] in 
+    let {[@X516, [@X517, @X518]]} = do/becomeSuicidal [a-mercutio, [X514, [X71, [X85, [X483, X166]]]]] in 
+    let {[@X519, [@X520, @X521]]} = do/mourn [a-nurse, [a-juliet, [X509, [X442, X465]]]] in 
+    let {[@X522, [@X523, [@X524, [@X525, @X526]]]]} = do/insult/private [a-romeo, [a-nurse, [X515, [X519, @X115]]]] in 
+    let {[@X527, [!X528, [!X529, @X530]]]} = do/murder [a-nurse, [a-mercutio, [X173, [X99, [X511, [@X481, [X523, [X516, X467]]]]]]]] in 
+    let {[@X531, [@X532, [@X533, [@X534, @X535]]]]} = do/thinkVengefully [a-romeo, [a-nurse, [a-mercutio, [X522, [X527, [X513, X529]]]]]] in 
+    let {@X536} = do/travelBored [a-montague, [X471, [town/mon, [X417, X324]]]] in 
+    let {[@X537, [@X538, [@X539, [@X540, [@X541, [@X542, [@X543, @X544]]]]]]]} = do/insult/witnessed [a-nurse, [a-romeo, [a-montague, [X532, [X531, [X536, [@X525, X473]]]]]]] in 
+    let {[@X545, [@X546, [@X547, @X548]]]} = do/compliment/private [a-romeo, [a-montague, [X538, [X539, @X474]]]] in 
+    let {[@X549, [@X550, [@X551, @X552]]]} = do/compliment/private [a-romeo, [a-montague, [X545, [X546, @X547]]]] in 
+    let {[@X553, [!X554, [!X555, @X556]]]} = do/murder [a-romeo, [a-nurse, [X524, [X542, [X534, [@X535, [X549, [X537, X530]]]]]]]] in 
+    let {[@X557, [@X558, @X559]]} = do/mourn [a-romeo, [a-mercutio, [X553, [X533, X528]]]] in 
+    let {[@X560, [@X561, @X562]]} = do/mourn [a-romeo, [a-juliet, [X557, [X421, X465]]]] in 
+    let {[@X563, @X564]} = do/widdow [a-romeo, [a-mercutio, [X138, [X560, X528]]]] in 
+    let {[@X565, [@X566, @X567]]} = do/becomeSuicidal [a-romeo, [X564, [X116, [X561, [X558, X562]]]]] in 
+    let {[@X568, !X569]} = do/suicide [a-romeo, [X565, [X566, [X27, X556]]]] in 
+    let {[@X570, [@X571, @X572]]} = time_passes [X415, X568] in 
+    let {[@X573, [@X574, @X575]]} = time_passes [X570, X571] in 
+    let {[!X576, [@X577, @X578]]} = die_of_old_age [a-tybalt, [X291, [X573, [X574, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X579, [@X580, @X581]]} = time_passes [X577, X578] in 
+    let {[@X582, [@X583, @X584]]} = time_passes [X579, X580] in 
+    let {[@X585, [@X586, @X587]]} = do/mourn [a-montague, [a-romeo, [X550, [X552, X569]]]] in 
+    let {[@X588, [@X589, @X590]]} = time_passes [X582, X583] in 
+    let {@X591} = do/travelBored [a-montague, [X585, [mon/town, [X572, X590]]]] in 
+    let {[@X592, [@X593, @X594]]} = do/mourn [a-montague, [a-romeo, [X591, [X548, X569]]]] in 
+    let {[@X595, [@X596, @X597]]} = do/mourn [a-montague, [a-romeo, [X592, [X541, X569]]]] in 
+    let {[@X598, [@X599, @X600]]} = do/becomeSuicidal [a-montague, [X595, [X597, [X596, [X594, X586]]]]] in 
+    let {[@X601, @X602]} = do/loot [a-montague, [a-tybalt, [X598, [X576, [X26, X600]]]]] in 
+    let {[@X603, [@X604, @X605]]} = time_passes [X588, X589] in 
+    let {[@X606, [@X607, @X608]]} = time_passes [X603, X604] in 
+    let {[@X609, !X610]} = do/suicide [a-montague, [X601, [X599, [X602, X607]]]] in 1}
+Iteration 5
+Solution: \X1. {
+    let {[@X2, [@X3, [@X4, [@X5, [@X6, [@X7, [@X8, [@X9, [@X10, [@X11, [@X12, [@X13, [@X14, [@X15, [@X16, [@X17, [@X18, [@X19, [@X20, [@X21, [@X22, [@X23, [@X24, [X25, [@X26, [@X27, [@X28, [@X29, [@X30, [@X31, [!X32, [@X33, [@X34, [@X35, [@X36, [@X37, @X38]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]} = X1 in 
+    let {[@X39, [@X40, [@X41, [@X42, [@X43, [@X44, @X45]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X5, [X2, [X8, [@X21, X18]]]]]]] in 
+    let {[@X46, [@X47, [@X48, [@X49, [@X50, [@X51, [@X52, @X53]]]]]]]} = do/insult/witnessed [a-tybalt, [a-romeo, [a-mercutio, [X41, [X40, [X39, [@X43, X42]]]]]]] in 
+    let {[@X54, [@X55, [@X56, @X57]]]} = do/compliment/private [a-mercutio, [a-romeo, [X48, [X47, @X50]]]] in 
+    let {[@X58, [@X59, [@X60, [@X61, @X62]]]]} = do/insult/private [a-romeo, [a-tybalt, [X55, [X46, @X51]]]] in 
+    let {[@X63, [@X64, @X65]]} = time_passes [X37, X38] in 
+    let {[@X66, [@X67, [@X68, [@X69, [@X70, [@X71, @X72]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X54, [X58, [X59, [@X56, X61]]]]]]] in 
+    let {[@X73, [@X74, [@X75, @X76]]]} = do/eroticize [a-romeo, [a-mercutio, [X67, [X66, [X44, [X71, [X57, X22]]]]]]] in 
+    let {[@X77, [@X78, [@X79, [@X80, [@X81, [@X82, @X83]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-tybalt, [X74, [X73, [X68, [@X69, X49]]]]]]] in 
+    let {[@X84, [@X85, [@X86, @X87]]]} = do/compliment/private [a-mercutio, [a-romeo, [X77, [X78, @X80]]]] in 
+    let {[@X88, [@X89, [@X90, @X91]]]} = do/fallInLove [a-romeo, [a-mercutio, [X85, [X84, X76]]]] in 
+    let {[@X92, [@X93, [@X94, @X95]]]} = do/fallInLove [a-romeo, [a-mercutio, [X88, [X89, X90]]]] in 
+    let {[@X96, [@X97, [@X98, [@X99, [@X100, [@X101, [@X102, @X103]]]]]]]} = do/insult/witnessed [a-tybalt, [a-mercutio, [a-romeo, [X79, [X93, [X92, [@X83, X87]]]]]]] in 
+    let {[@X104, [@X105, @X106]]} = time_passes [X63, X64] in 
+    let {@X107} = do/travelBored [a-tybalt, [X96, [town/mon, [X65, X106]]]] in 
+    let {[@X108, [@X109, @X110]]} = time_passes [X104, X105] in 
+    let {[@X111, [@X112, [@X113, [@X114, @X115]]]]} = do/insult/private [a-montague, [a-tybalt, [X3, [X107, @X20]]]] in 
+    let {[@X116, [@X117, [@X118, @X119]]]} = do/compliment/private [a-romeo, [a-mercutio, [X98, [X97, @X75]]]] in 
+    let {[@X120, [@X121, [@X122, @X123]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X116, [X117, X94]]]] in 
+    let {[@X124, [@X125, [@X126, [@X127, [@X128, @X129]]]]]} = do/flirt/ok [a-mercutio, [a-romeo, [X123, [X122, [X121, [X13, X10]]]]]] in 
+    let {[@X130, [@X131, @X132]]} = do/formOpinion/dislike [a-mercutio, [a-juliet, [X128, [X7, X33]]]] in 
+    let {[@X133, [@X134, [@X135, @X136]]]} = do/compliment/private [a-mercutio, [a-romeo, [X130, [X129, @X86]]]] in 
+    let {@X137} = X25 in 
+    let {[@X138, [@X139, [@X140, @X141]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X134, [X133, X120]]]] in 
+    let {[@X142, [@X143, @X144]]} = do/travelTo [a-capulet, [a-juliet, [X24, [X131, [X4, cap/town]]]]] in 
+    let {[@X145, [@X146, @X147]]} = do/formOpinion/like [a-juliet, [a-mercutio, [X143, [X141, X34]]]] in 
+    let {[@X148, [@X149, [@X150, @X151]]]} = do/eroticize [a-romeo, [a-mercutio, [X140, [X146, [X136, [X82, [X118, X95]]]]]]] in 
+    let {[@X152, [@X153, [@X154, @X155]]]} = do/compliment/private [a-romeo, [a-mercutio, [X148, [X149, @X91]]]] in 
+    let {[@X156, [@X157, [@X158, @X159]]]} = do/flirt/discrete [a-mercutio, [a-romeo, [X153, [X152, X139]]]] in 
+    let {[@X160, [@X161, [@X162, [@X163, [@X164, [@X165, [@X166, @X167]]]]]]]} = do/marry [a-romeo, [a-mercutio, [X159, [X158, [X151, [X100, [X124, [X119, [X127, X126]]]]]]]]] in 
+    let {[@X168, [@X169, [@X170, [@X171, [@X172, [@X173, @X174]]]]]]} = do/compliment/witnessed [a-mercutio, [a-romeo, [a-capulet, [X163, [X162, [X144, [@X155, X19]]]]]]] in 
+    let {[@X175, [@X176, @X177]]} = do/travelTo [a-montague, [a-romeo, [X23, [X169, [X111, mon/town]]]]] in 
+    let {[@X178, [@X179, @X180]]} = do/travelTo [a-nurse, [a-juliet, [X30, [X145, [X6, cap/town]]]]] in 
+    let {[@X181, [@X182, [@X183, [@X184, [@X185, [@X186, [@X187, @X188]]]]]]]} = do/insult/witnessed [a-capulet, [a-mercutio, [a-juliet, [X170, [X168, [X179, [@X174, X147]]]]]]] in 
+    let {[@X189, [@X190, [@X191, [@X192, [@X193, [@X194, [@X195, @X196]]]]]]]} = do/insult/witnessed [a-capulet, [a-mercutio, [a-juliet, [X181, [X182, [X183, [@X184, X185]]]]]]] in 
+    let {[@X197, [@X198, @X199]]} = do/formOpinion/like [a-apothecary, [a-nurse, [X9, [X180, X35]]]] in 
+    let {[@X200, [@X201, [@X202, @X203]]]} = do/eroticize [a-romeo, [a-mercutio, [X176, [X190, [X166, [X150, [X173, X154]]]]]]] in 
+    let {[@X204, [@X205, [@X206, [@X207, [@X208, [@X209, @X210]]]]]]} = do/compliment/witnessed [a-nurse, [a-juliet, [a-mercutio, [X198, [X191, [X201, [@X178, X132]]]]]]] in 
+    let {[@X211, [@X212, [@X213, @X214]]]} = do/compliment/private [a-capulet, [a-juliet, [X189, [X205, @X142]]]] in 
+    let {[@X215, [@X216, @X217]]} = X137 !town [X200, X212] in 
+    let {[@X218, [@X219, @X220]]} = do/formOpinion/like [a-nurse, [a-romeo, [X204, [X216, X31]]]] in 
+    let {[@X221, @X222]} = mixed_feelings [a-juliet, [a-capulet, [X217, [X188, X214]]]] in 
+    let {[@X223, [@X224, @X225]]} = time_passes [X108, X109] in 
+    let {[@X226, [@X227, @X228]]} = do/formOpinion/like [a-juliet, [a-capulet, [X221, [X211, X222]]]] in 
+    let {[@X229, [@X230, @X231]]} = do/formOpinion/like [a-nurse, [a-apothecary, [X218, [X197, X36]]]] in 
+    let {[@X232, [@X233, [@X234, @X235]]]} = do/flirt/discrete [a-mercutio, [a-romeo, [X206, [X219, X165]]]] in 
+    let {[@X236, [@X237, [@X238, @X239]]]} = do/compliment/private [a-apothecary, [a-nurse, [X230, [X229, @X199]]]] in 
+    let {@X240} = do/travelBored [a-juliet, [X226, [town/cap, [X110, X225]]]] in 
+    let {[@X241, [@X242, [@X243, @X244]]]} = do/compliment/private [a-apothecary, [a-nurse, [X236, [X237, @X238]]]] in 
+    let {[@X245, [@X246, [@X247, [@X248, [@X249, [@X250, @X251]]]]]]} = do/compliment/witnessed [a-apothecary, [a-nurse, [a-mercutio, [X241, [X242, [X234, [@X243, X210]]]]]]] in 
+    let {[@X252, [@X253, [@X254, [@X255, [@X256, [@X257, [@X258, @X259]]]]]]]} = do/insult/witnessed [a-mercutio, [a-nurse, [a-apothecary, [X247, [X246, [X245, [@X249, X248]]]]]]] in 
+    let {[@X260, [@X261, [@X262, @X263]]]} = do/eroticize [a-nurse, [a-apothecary, [X253, [X254, [X244, [X250, [X231, X239]]]]]]] in 
+    let {[@X264, [@X265, [@X266, [@X267, @X268]]]]} = do/insult/private [a-montague, [a-capulet, [X177, [X227, @X16]]]] in 
+    let {[@X269, [@X270, [@X271, [@X272, [@X273, [@X274, @X275]]]]]]} = do/compliment/witnessed [a-romeo, [a-mercutio, [a-apothecary, [X235, [X252, [X261, [@X202, X259]]]]]]] in 
+    let {[@X276, [@X277, [@X278, [@X279, @X280]]]]} = do/insult/private [a-mercutio, [a-apothecary, [X270, [X271, @X251]]]] in 
+    let {[@X281, [@X282, [@X283, @X284]]]} = do/compliment/private [a-apothecary, [a-nurse, [X277, [X260, @X256]]]] in 
+    let {[@X285, [@X286, [@X287, @X288]]]} = do/compliment/private [a-apothecary, [a-nurse, [X281, [X282, @X283]]]] in 
+    let {[@X289, [@X290, [@X291, [@X292, [@X293, [@X294, [@X295, @X296]]]]]]]} = do/insult/witnessed [a-apothecary, [a-mercutio, [a-romeo, [X285, [X276, [X269, [@X279, X272]]]]]]] in 
+    let {[@X297, [@X298, [@X299, @X300]]]} = do/flirt/discrete [a-romeo, [a-mercutio, [X291, [X290, X203]]]] in 
+    let {[@X301, [@X302, [@X303, [@X304, [@X305, [@X306, [@X307, @X308]]]]]]]} = do/insult/witnessed [a-nurse, [a-mercutio, [a-romeo, [X286, [X300, [X299, [@X257, X293]]]]]]] in 
+    let {[@X309, [@X310, [@X311, @X312]]]} = do/fallInLove [a-romeo, [a-mercutio, [X303, [X302, X138]]]] in 
+    let {[@X313, [@X314, [@X315, @X316]]]} = do/compliment/private [a-mercutio, [a-romeo, [X310, [X309, @X274]]]] in 
+    let {[@X317, @X318]} = mixed_feelings [a-juliet, [a-capulet, [X240, [X196, X228]]]] in 
+    let {[@X319, [@X320, @X321]]} = time_passes [X223, X224] in 
+    let {[@X322, [@X323, [@X324, @X325]]]} = do/compliment/private [a-montague, [a-romeo, [X264, [X314, @X175]]]] in 
+    let {[@X326, [@X327, [@X328, @X329]]]} = do/flirt/discrete [a-nurse, [a-apothecary, [X301, [X289, X263]]]] in 
+    let {[@X330, [@X331, [@X332, @X333]]]} = do/eroticize [a-mercutio, [a-romeo, [X313, [X323, [X135, [X171, [X315, X167]]]]]]] in 
+    let {[@X334, [@X335, [@X336, @X337]]]} = do/compliment/private [a-apothecary, [a-nurse, [X329, [X328, @X287]]]] in 
+    let {[@X338, [@X339, [@X340, [@X341, [@X342, [@X343, [@X344, @X345]]]]]]]} = do/marry [a-apothecary, [a-nurse, [X334, [X335, [X327, [X336, [X326, [X337, [X15, X12]]]]]]]]] in 
+    let {[@X346, [@X347, @X348]]} = do/travelTo [a-juliet, [a-nurse, [X29, [X341, [X317, cap/town]]]]] in 
+    let {[@X349, [@X350, [@X351, @X352]]]} = do/eroticize [a-nurse, [a-apothecary, [X347, [X340, [X345, [X288, [X284, X262]]]]]]] in 
+    let {[@X353, [@X354, [@X355, @X356]]]} = do/fallInLove [a-mercutio, [a-romeo, [X330, [X331, X232]]]] in 
+    let {[@X357, [@X358, @X359]]} = do/becomeSuicidal [a-mercutio, [X353, [X307, [X195, [X295, X187]]]]] in 
+    let {[@X360, [@X361, [@X362, @X363]]]} = do/flirt/discrete [a-apothecary, [a-nurse, [X350, [X349, X342]]]] in 
+    let {[@X364, [@X365, [@X366, @X367]]]} = do/steal [a-romeo, [a-mercutio, [X354, [X357, [X27, X359]]]]] in 
+    let {[@X368, [@X369, [@X370, [@X371, [@X372, [@X373, [@X374, @X375]]]]]]]} = do/insult/witnessed [a-apothecary, [a-romeo, [a-nurse, [X362, [X364, [X363, [@X275, X220]]]]]]] in 
+    let {[@X376, @X377]} = mixed_feelings [a-romeo, [a-mercutio, [X369, [X367, X305]]]] in 
+    let {[@X378, !X379]} = do/suicide [a-mercutio, [X365, [X358, [X366, X320]]]] in 
+    let {[@X380, @X381]} = mixed_feelings [a-nurse, [a-apothecary, [X370, [X375, X351]]]] in 
+    let {[@X382, [@X383, [@X384, [@X385, @X386]]]]} = do/insult/private [a-montague, [a-capulet, [X322, [X265, @X266]]]] in 
+    let {[@X387, [@X388, @X389]]} = time_passes [X319, X378] in 
+    let {[@X390, [@X391, [@X392, [@X393, @X394]]]]} = do/insult/private [a-montague, [a-capulet, [X382, [X383, @X384]]]] in 
+    let {[!X395, [@X396, @X397]]} = die_of_old_age [a-juliet, [X348, [X387, [X388, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X398, [!X399, [!X400, @X401]]]} = do/murder [a-capulet, [a-montague, [X393, [X385, [X17, [@X267, [X391, [X390, X397]]]]]]]] in 
+    let {[@X402, [@X403, [@X404, [@X405, [@X406, [@X407, [@X408, @X409]]]]]]]} = do/insult/witnessed [a-capulet, [a-romeo, [a-nurse, [X398, [X376, [X380, [@X172, X372]]]]]]] in 
+    let {[@X410, [@X411, @X412]]} = do/mourn [a-capulet, [a-juliet, [X402, [X213, X395]]]] in 
+    let {[@X413, [@X414, [@X415, @X416]]]} = do/fallInLove [a-nurse, [a-apothecary, [X404, [X368, X352]]]] in 
+    let {[@X417, [@X418, [@X419, @X420]]]} = do/compliment/private [a-nurse, [a-romeo, [X413, [X403, @X406]]]] in 
+    let {[@X421, [@X422, [@X423, [@X424, @X425]]]]} = do/insult/private [a-capulet, [a-romeo, [X410, [X418, @X405]]]] in 
+    let {[@X426, [@X427, [@X428, @X429]]]} = do/flirt/discrete [a-apothecary, [a-nurse, [X414, [X417, X360]]]] in 
+    let {[@X430, @X431]} = do/widdow [a-romeo, [a-mercutio, [X160, [X422, X379]]]] in 
+    let {[@X432, [@X433, [@X434, [@X435, @X436]]]]} = do/thinkVengefully [a-romeo, [a-capulet, [a-montague, [X431, [X421, [X325, X400]]]]]] in 
+    let {[@X437, [@X438, [@X439, @X440]]]} = do/fallInLove [a-apothecary, [a-nurse, [X428, [X429, X426]]]] in 
+    let {[@X441, [@X442, @X443]]} = do/formOpinion/like [a-nurse, [a-apothecary, [X438, [X437, X381]]]] in 
+    let {[@X444, [@X445, [@X446, [@X447, @X448]]]]} = do/insult/private [a-nurse, [a-capulet, [X441, [X433, @X409]]]] in 
+    let {[@X449, [!X450, [!X451, @X452]]]} = do/murder [a-romeo, [a-capulet, [X436, [X424, [X435, [@X407, [X432, [X445, X401]]]]]]]] in 
+    let {[@X453, [@X454, [@X455, @X456]]]} = do/fallInLove [a-nurse, [a-apothecary, [X444, [X442, X343]]]] in 
+    let {[@X457, [@X458, [@X459, [@X460, [@X461, [@X462, @X463]]]]]]} = do/compliment/witnessed [a-apothecary, [a-nurse, [a-romeo, [X454, [X453, [X449, [@X440, X308]]]]]]] in 
+    let {[@X464, @X465]} = mixed_feelings [a-romeo, [a-nurse, [X459, [X461, X420]]]] in 
+    let {@X466} = do/travelBored [a-nurse, [X458, [town/mon, [X389, X321]]]] in 
+    let {[@X467, [@X468, [@X469, [@X470, @X471]]]]} = do/insult/private [a-romeo, [a-apothecary, [X464, [X457, @X373]]]] in 
+    let {[@X472, [@X473, [@X474, @X475]]]} = do/fallInLove [a-nurse, [a-apothecary, [X466, [X468, X427]]]] in 
+    let {[@X476, [@X477, [@X478, @X479]]]} = do/eroticize [a-nurse, [a-apothecary, [X472, [X473, [X462, [X475, [X456, X443]]]]]]] in 
+    let {[@X480, [@X481, @X482]]} = time_passes [X396, X452] in 
+    let {[@X483, [@X484, @X485]]} = do/travelTo [a-nurse, [a-romeo, [X419, [X467, [X476, mon/town]]]]] in 
+    let {[@X486, [@X487, [@X488, [@X489, [@X490, [@X491, @X492]]]]]]} = do/compliment/witnessed [a-nurse, [a-romeo, [a-apothecary, [X485, [X484, [X477, [@X483, X470]]]]]]] in 
+    let {[@X493, @X494]} = mixed_feelings [a-apothecary, [a-nurse, [X488, [X492, X344]]]] in 
+    let {[@X495, [@X496, [@X497, [@X498, @X499]]]]} = do/insult/private [a-apothecary, [a-romeo, [X493, [X487, @X490]]]] in 
+    let {[@X500, [@X501, @X502]]} = do/becomeSuicidal [a-romeo, [X496, [X425, [X499, [X52, X408]]]]] in 
+    let {[@X503, [@X504, [@X505, @X506]]]} = do/flirt/discrete [a-nurse, [a-apothecary, [X486, [X495, X361]]]] in 
+    let {[@X507, [@X508, @X509]]} = do/formOpinion/dislike [a-apothecary, [a-nurse, [X506, [X505, X494]]]] in 
+    let {[@X510, [@X511, [@X512, [@X513, [@X514, [@X515, @X516]]]]]]} = do/compliment/witnessed [a-nurse, [a-romeo, [a-apothecary, [X508, [X500, [X507, [@X489, X497]]]]]]] in 
+    let {[@X517, [@X518, @X519]]} = do/formOpinion/dislike [a-romeo, [a-nurse, [X511, [X510, X465]]]] in 
+    let {[@X520, [@X521, [@X522, [@X523, [@X524, [@X525, @X526]]]]]]} = do/compliment/witnessed [a-apothecary, [a-nurse, [a-romeo, [X512, [X518, [X517, [@X460, X519]]]]]]] in 
+    let {[@X527, @X528]} = mixed_feelings [a-romeo, [a-nurse, [X522, [X524, X515]]]] in 
+    let {[@X529, [@X530, @X531]]} = do/mourn [a-nurse, [a-juliet, [X521, [X207, X395]]]] in 
+    let {[@X532, [@X533, @X534]]} = do/formOpinion/dislike [a-romeo, [a-nurse, [X527, [X529, X528]]]] in 
+    let {[@X535, [@X536, [@X537, [@X538, [@X539, [@X540, @X541]]]]]]} = do/compliment/witnessed [a-nurse, [a-apothecary, [a-romeo, [X533, [X520, [X532, [@X478, X469]]]]]]] in 
+    let {[@X542, [@X543, [@X544, [@X545, [@X546, [@X547, @X548]]]]]]} = do/compliment/witnessed [a-romeo, [a-nurse, [a-apothecary, [X537, [X535, [X536, [@X491, X509]]]]]]] in 
+    let {[@X549, [@X550, @X551]]} = time_passes [X480, X481] in 
+    let {@X552} = do/travelBored [a-nurse, [X543, [town/cap, [X551, X482]]]] in 
+    let {[@X553, [@X554, @X555]]} = time_passes [X549, X550] in 
+    let {[@X556, [@X557, @X558]]} = time_passes [X553, X554] in 
+    let {[@X559, [@X560, [@X561, @X562]]]} = do/steal [a-apothecary, [a-romeo, [X544, [X542, [X28, X502]]]]] in 
+    let {[@X563, [!X564, [!X565, @X566]]]} = do/murder [a-romeo, [a-apothecary, [X498, [X526, [X296, [@X539, [X560, [X559, X557]]]]]]]] in 
+    let {[@X567, @X568]} = do/widdow [a-nurse, [a-apothecary, [X339, [X552, X564]]]] in 
+    let {[@X569, !X570]} = do/suicide [a-romeo, [X563, [X501, [X561, X566]]]] in 
+    let {[@X571, [@X572, @X573]]} = do/mourn [a-nurse, [a-apothecary, [X568, [X416, X564]]]] in 
+    let {[@X574, [@X575, @X576]]} = do/mourn [a-nurse, [a-apothecary, [X571, [X525, X564]]]] in 
+    let {@X577} = do/travelBored [a-nurse, [X574, [cap/town, [X555, X558]]]] in 
+    let {[@X578, [@X579, @X580]]} = do/becomeSuicidal [a-nurse, [X577, [X258, [X573, [X575, X530]]]]] in 
+    let {[@X581, [@X582, @X583]]} = time_passes [X556, X569] in 
+    let {[@X584, [@X585, @X586]]} = time_passes [X581, X582] in 
+    let {@X587} = do/travelBored [a-tybalt, [X112, [mon/town, [X583, X586]]]] in 
+    let {[!X588, [@X589, @X590]]} = die_of_old_age [a-tybalt, [X587, [X584, [X585, leq/s !(leq/s !(leq/s !(leq/s !(leq/s !(leq/s !leq/z)))))]]]] in 
+    let {[@X591, [@X592, @X593]]} = do/mourn [a-nurse, [a-romeo, [X578, [X547, X570]]]] in 
+    let {[@X594, [@X595, @X596]]} = do/mourn [a-nurse, [a-romeo, [X591, [X513, X570]]]] in 
+    let {[@X597, [@X598, @X599]]} = time_passes [X589, X590] in 
+    let {[@X600, [@X601, @X602]]} = do/mourn [a-nurse, [a-apothecary, [X594, [X538, X564]]]] in 
+    let {[@X603, [@X604, @X605]]} = do/becomeSuicidal [a-nurse, [X600, [X593, [X592, [X596, X572]]]]] in 
+    let {[@X606, [@X607, @X608]]} = do/becomeSuicidal [a-nurse, [X603, [X576, [X531, [X602, X595]]]]] in 
+    let {[@X609, @X610]} = do/loot [a-nurse, [a-tybalt, [X606, [X588, [X26, X580]]]]] in 
+    let {[@X611, [@X612, @X613]]} = time_passes [X597, X598] in 
+    let {[@X614, !X615]} = do/suicide [a-nurse, [X609, [X607, [X610, X612]]]] in 1}
+[closing romeo.clf]
