@@ -1,0 +1,81 @@
+%%% Simulating movement on a 2D square grid %%%
+
+entity : type.
+crate : entity.
+player : entity.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+lt nat nat : bwd.
+lt z (s N).
+lt (s N) (s M)
+  <- lt N M.
+
+cell : type.
+xy nat nat : cell.
+
+width nat : bwd.
+width 3.
+
+% on C E  means   entity E is on cell C
+on cell entity : pred.
+% empty C means   cell C is empty (possible for the player/a crate to move
+% onto)
+empty cell : pred.
+
+direction : type.
+up : direction.
+down : direction.
+left : direction.
+right : direction.
+
+%  00 01 02
+%  10 11 12
+%  20 21 22
+
+% in_dir D C1 C2  means  cell C2 is in direction D from cell C1
+in_dir direction cell cell : bwd.
+in_dir right (xy X Y) (xy (s X) Y)
+  <- width W
+  <- lt (s X) W.
+in_dir down  (xy X Y) (xy X (s Y))
+  <- width W
+  <- lt (s Y) W.
+in_dir left  (xy (s X) Y) (xy X Y).
+in_dir up    (xy X (s Y)) (xy X Y).
+
+stage play = {
+
+  %   [@][_]  -->  [_][@]
+  move_empty : on C1 player * in_dir D C1 C2 * empty C2 -o empty C1 * on C2 player.
+
+  %   [@][#][_] --> [_][@][#]
+  move_push  : 
+    on C1 player * in_dir D C1 C2 * on C2 crate * in_dir D C2 C3 * empty C3
+    -o empty C1 * on C2 player * on C3 crate.
+
+}
+#interactive play.
+
+
+%  00 10 20
+%   #  _  #
+%  01 11 21
+%   @  #  _
+%  02 12 22
+%   _  _  _
+
+context init = {
+  on    (xy 0 0) crate,   empty (xy 1 0),       on    (xy 2 0) crate, 
+  on    (xy 0 1) player,  on    (xy 1 1) crate, empty (xy 2 1),
+  empty (xy 0 2),         empty (xy 1 2),       empty (xy 2 2)}.
+
+#trace _ play init.
+
+
