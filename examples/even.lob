@@ -1,3 +1,0 @@
-!even X (s (s Y)) -o !even (s (s X)) Y.
-
-#exec _ (!even 0 (s(s(s(s(s(s(0)))))))).

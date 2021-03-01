@@ -1,4 +1,0 @@
-!edge X Y -o !path X Y.
-!edge X Z, !path Z Y -o !path X Y.
-
-#exec _ (!edge a d, !edge a b, !edge b c, !edge c a).
