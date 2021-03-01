@@ -1,0 +1,45 @@
+% tiny model of farming sim
+
+location : type.
+being : type.
+soil : being.
+planted_seed : being.
+seedling : being.
+fruiting_plant : being.
+fruit : being.
+seed : being.
+
+hole location : pred.
+at location being : pred.
+watered location : pred.
+dry location : pred.
+inventory being : pred.
+
+stage main {
+
+ dig : at L X -o hole L * inventory X.
+ plant_seed : hole L * inventory seed -o at L planted_seed * dry L.
+ water : dry L -o watered L.
+ grow_seed : at L planted_seed * watered L -o at L seedling * dry L.
+ grow_seedling : at L seedling * watered L -o at L fruiting_plant * dry L.
+ harvest : at L fruiting_plant -o inventory fruit * inventory fruit
+              * at L seedling.
+ eat : inventory fruit -o inventory seed * inventory seed.
+
+}
+#interactive main.
+
+plot1 : location.
+plot2 : location.
+plot3 : location.
+
+context init = {
+  at plot1 soil,
+  at plot2 soil,
+  at plot3 soil,
+  inventory seed,
+  inventory seed,
+  inventory seed
+}.
+
+#trace _ main init.
