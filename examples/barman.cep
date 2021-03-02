@@ -1,0 +1,121 @@
+hand : type.
+left   : hand.
+right  : hand.
+
+container : type.
+beverage : type.
+
+quantity : type.
+empty : quantity.
+one_shot : quantity.
+two_shots : quantity.
+full_shaker : quantity.
+
+add quantity quantity quantity : bwd.
+add empty Q Q.
+add Q empty Q.
+add one_shot one_shot two_shots.
+
+ontable container : pred.
+holding hand container : pred.
+hand_empty hand : pred.
+contains container beverage : pred.
+fill_level container quantity : pred.
+clean container : pred.
+used container : pred.
+dispenser beverage : pred.
+unshaken container : pred.
+shaken container : pred.
+
+capacity container quantity : bwd.
+
+cocktail-part1 beverage beverage : bwd.
+cocktail-part2 beverage beverage : bwd.
+
+whiskey : beverage.
+soda : beverage.
+gin : beverage.
+vermouth : beverage.
+whiskey_soda : beverage.
+martini : beverage.
+vermouth_soda : beverage.
+
+cocktail-part1 whiskey_soda whiskey.
+cocktail-part2 whiskey_soda soda.
+cocktail-part1 martini gin.
+cocktail-part2 martini vermouth.
+cocktail-part1 vermouth_soda vermouth.
+cocktail-part2 vermouth_soda soda.
+
+shaker : container.
+shot1 : container.
+shot2 : container.
+shot3 : container.
+
+capacity shaker full_shaker.
+capacity shot1 one_shot.
+capacity shot2 one_shot.
+capacity shot3 one_shot.
+
+context init =
+{ ontable shaker,
+  ontable shot1,
+  ontable shot2,
+  ontable shot3,
+  dispenser whiskey,
+  dispenser soda,
+  dispenser gin,
+  dispenser vermouth,
+  hand_empty left,
+  hand_empty right,
+  fill_level shot1 empty,
+  fill_level shot2 empty,
+  fill_level shot3 empty,
+  fill_level shaker empty,
+  clean shaker,
+  clean shot1,
+  clean shot2,
+  clean shot3
+}
+
+stage main = {
+
+  grasp : ontable C * hand_empty H -o holding H C.
+
+  leave : holding H C -o ontable C * hand_empty H.
+
+  fill : $holding H C * $hand_empty H2 * $dispenser I
+          * fill_level C empty * clean C * capacity C Q
+        -o contains C I * used C * fill_level C Q.
+
+  pour_into_empty_shaker : 
+        $holding H1 S * contains S I 
+            * fill_level S one_shot
+            * fill_level D empty * capacity D full_shaker * clean D
+        -o fill_level S empty * unshaken D * contains D I * fill_level D one_shot
+            * used D.
+
+  pour_into_partially_full_shaker : $holding H1 S * contains S I
+            * fill_level S one_shot
+            * fill_level D one_shot * capacity D full_shaker
+          -o fill_level S empty * contains D I * fill_level D two_shots.
+
+
+  shake : $holding H1 S * $hand_empty H2 * contains S D1 * contains S D2
+          * cocktail-part1 B D1 * cocktail-part2 B D2 * unshaken S
+          -o
+            shaken S * contains S B.
+
+  clean : $hand_empty H1 * $hand_empty H2 * $fill_level C empty * used C -o clean C.
+
+  pour_shaker_to_shot :
+          $holding H S * $shaken S * $contains S B
+            * fill_level D empty * clean D * capacity D Shot
+            * fill_level S Q * add Remainder Shot Q % Q-one_shot = Rem
+        -o contains D B * fill_level S Remainder
+            * fill_level D Shot.
+
+}
+#interactive main.
+
+#trace _ main init.
