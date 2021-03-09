@@ -1,0 +1,34 @@
+role : type.
+vampire : role.
+human : role.
+
+person : type.
+
+has_role person role : pred.
+
+stage main = {
+
+
+bite : has_role V vampire * has_role Bitten human -o 
+       has_role V vampire * has_role Bitten vampire.
+
+cancel : has_role V1 vampire * has_role V2 vampire -o
+          has_role V1 human * has_role V2 human.
+
+}
+
+p1 : person.
+p2 : person.
+p3 : person. 
+p4 : person. 
+p5 : person. 
+
+context init = {
+  has_role p1 vampire,
+  has_role p2 human,
+  has_role p3 human,
+  has_role p4 human,
+  has_role p5 human
+}
+
+#trace _ main init.
