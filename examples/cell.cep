@@ -1,0 +1,52 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+plus nat nat nat : bwd.
+plus z N N.
+plus (s N) M (s P)
+  <- plus N M P.
+
+exp : type.
+enat nat : exp.
+eplus : exp.
+eapp exp exp : exp.
+
+tp : type.
+tnat : tp.
+tfn tp tp : tp.
+
+of exp tp : bwd.
+of (enat N) tnat.
+of eplus (tfn tnat (tfn tnat tnat)).
+of (eapp F Arg) B
+  <- of F (tfn A B)
+  <- of Arg A.
+
+eval exp exp : bwd.
+eval (eapp (eapp eplus (enat N1)) (enat N2)) (enat Sum)
+  <- plus N1 N2 Sum.
+
+floating exp : pred.
+
+stage main = {
+  apply_fn :
+  floating F * of F (tfn A B) * floating Arg * of Arg A  
+    -o floating (eapp F Arg).
+
+  eval :
+  floating E * eval E E' -o floating E'.
+}
+
+context init = {
+  floating (enat 3), 
+  floating (enat 8),
+  floating eplus
+}
+
+#trace _ main init.
+
