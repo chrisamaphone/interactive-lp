@@ -1,0 +1,97 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+lt nat nat : bwd.
+lt z (s N).
+lt (s N) (s M)
+  <- lt N M.
+
+tile : type.
+
+snake_head : tile.
+snake_body nat : tile.
+
+apple : tile.
+
+pos : type.
+cell nat nat : pos.
+
+dir : type.
+up : dir.
+left : dir.
+right : dir.
+down : dir.
+
+key dir : bwd.
+key up.
+key left.
+key right.
+key down.
+
+adj pos pos : bwd.
+adj/horizontal
+  : adj (cell X Y) (cell (s X) Y).
+adj/vertical
+  : adj (cell X Y) (cell X (s Y)).
+
+dir_from pos dir pos : bwd.
+dir_from/down
+  : dir_from (cell X Y) down (cell X (s Y)).
+dir_from/up
+  : dir_from P up P'
+    <- dir_from P' down P.
+dir_from/right
+  : dir_from (cell X Y) right (cell (s X) Y).
+dir_from/left
+  : dir_from P left P'
+    <- dir_from P' right P.
+
+at tile pos : pred.
+snake_dir dir : pred.
+snake_length nat : pred.
+grid_size nat : pred.
+intend_move pos : pred.
+before_move : pred.
+
+context init =
+{
+  grid_size 5,
+  at snake_head (cell 1 1),
+  at apple (cell 2 2),
+  snake_length 0,
+  snake_dir up,
+  before_move   % no movement intention
+}.
+
+stage main = {
+  begin_move :
+    before_move
+    * $at snake_head Pos * $snake_dir Dir
+      * dir_from Pos Dir (cell X Y)
+      * $grid_size Max * lt X Max * lt Y Max
+    -o intend_move (cell X Y).
+
+  change_dir : snake_dir Dir * key Dir' -o snake_dir Dir'.
+
+  eat_apple :
+    at snake_head Pos * intend_move Next * at apple Next
+    * snake_length Len
+  -o
+    at snake_head Next * before_move * at (snake_body (s Len)) Pos
+      * snake_length (s Len).
+
+  move :
+    at snake_head Pos * intend_move Next
+  -o
+    at snake_head Next * before_move.
+    
+}.
+#interactive main.
+
+#trace _ main init.
+
