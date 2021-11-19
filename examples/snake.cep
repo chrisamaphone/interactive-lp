@@ -55,8 +55,8 @@ at tile pos : pred.
 snake_dir dir : pred.
 snake_length nat : pred.
 grid_size nat : pred.
-intend_move pos : pred.
-before_move : pred.
+intend_move tile pos : pred.
+before_move tile : pred.
 
 context init =
 {
@@ -65,30 +65,43 @@ context init =
   at apple (cell 2 2),
   snake_length 0,
   snake_dir up,
-  before_move   % no movement intention
+  before_move snake_head   % no movement intention
 }.
 
 stage main = {
   begin_move :
-    before_move
+    before_move snake_head
     * $at snake_head Pos * $snake_dir Dir
       * dir_from Pos Dir (cell X Y)
       * $grid_size Max * lt X Max * lt Y Max
-    -o intend_move (cell X Y).
+    -o intend_move snake_head (cell X Y).
 
   change_dir : snake_dir Dir * key Dir' -o snake_dir Dir'.
 
   eat_apple :
-    at snake_head Pos * intend_move Next * at apple Next
+    at snake_head Pos * intend_move snake_head Next * at apple Next
     * snake_length Len
   -o
-    at snake_head Next * before_move * at (snake_body (s Len)) Pos
+    at snake_head Next * before_move snake_head 
+      * at (snake_body (s Len)) Pos * before_move (snake_body (s Len))
       * snake_length (s Len).
 
   move :
-    at snake_head Pos * intend_move Next
+    at Tile Pos * intend_move Tile Next
   -o
-    at snake_head Next * before_move.
+    at Tile Next * before_move Tile.
+
+  % Body follows head
+  begin_move_body_lastseg :
+    $snake_length N * before_move (snake_body N)
+      * $at snake_head Pos * $intend_move snake_head Next
+  -o intend_move (snake_body N) Pos.
+
+  begin_move_body_follow :
+    before_move (snake_body N)
+      * $at (snake_body (s N)) Pos * $intend_move (snake_body (s N)) Next
+  -o intend_move (snake_body N) Pos.
+    
     
 }.
 #interactive main.
