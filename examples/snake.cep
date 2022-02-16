@@ -1,3 +1,8 @@
+%% Minimal implementation of the "snake" arcade game. Snake has an
+%% inertial movement direction, can eat apples to grow, can be told
+%% to change direction. Body segments are generated as growth;
+%% follow head sement/body segments closer to head.
+
 nat : type.
 z : nat.
 s nat : nat.
@@ -51,12 +56,13 @@ dir_from/left
   : dir_from P left P'
     <- dir_from P' right P.
 
-at tile pos : pred.
-snake_dir dir : pred.
-snake_length nat : pred.
-grid_size nat : pred.
-intend_move tile pos : pred.
-before_move tile : pred.
+%% Predicates %%
+at tile pos : pred.         % tile T is at pos P
+snake_dir dir : pred.       % the snake is moving in dir D
+snake_length nat : pred.    % the snake's current length is N
+grid_size nat : pred.       % grid is bounded to w/h X
+intend_move tile pos : pred. % tile intends to move to pos
+before_move tile : pred.     % tile has no movement intention
 
 context init =
 {
@@ -67,6 +73,7 @@ context init =
   snake_dir up,
   before_move snake_head   % no movement intention
 }.
+
 
 stage main = {
   begin_move :
@@ -108,3 +115,18 @@ stage main = {
 
 #trace _ main init.
 
+%% TODO:
+% - Separate into 2 stages, one for generating movement intentions and
+%   another for actually executing movement
+% - Add a third stage for pressing a key to change dir? Or think about
+%   more interesting representations of inertia, and generalize
+%   begin_move to pick any adjacent tile.
+% - Growth: how does actual snake do this? Does it actually grow from the
+%     tail, *after* moving all previous body segments?
+% - Add more apple generation
+% - Add lose condition - running into wall or self
+% - Add win condition? Certain length reached?
+% - Code improvements:
+%   - Just make the snake head be a body segment at "distance 0" from the
+%   head; encode all other segs as their distance from the head? more
+%   annoying though for growth.
