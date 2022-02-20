@@ -1,39 +1,25 @@
 
-age : type.
-young : age.
-mature : age.
-old : age.
 
-hunger_level : type.
-hungry : hunger_level.
-sated : hunger_level.
+organism : type.
+plant : organism.
+fruit : organism.
+seed : organism.
+bird : organism.
 
-fox age hunger_level : pred.
-rabbit age : pred.
+here organism : pred.
 
-stage sim = {
-
-fox_eat : fox FoxAge hungry *  rabbit RabbitAge -o fox FoxAge sated.
-fox_get_hungry : fox Age sated -o fox Age hungry.
-fox_reproduce :
-    $fox mature Hunger1 * $fox mature Hunger2 -o fox young hungry.
-fox_grow_mature: fox young sated -o fox mature hungry.
-fox_grow_old : fox mature sated -o fox old hungry.
-fox_die_old : fox old _ -o ().
-fox_die_hungry : fox Age hungry -o ().
-
-rabbit_reproduce : $rabbit mature * $rabbit mature -o rabbit young.
-rabbit_grow_mature : rabbit young -o rabbit mature.
-rabbit_grow_old : rabbit mature -o rabbit old.
-rabbit_die_old : rabbit old -o ().
-
+% Plants make berries; birds eat them and distribute the seeds;
+%   seeds grow more plants
+stage main = {
+  plant_fruits : here plant -o here plant * here fruit.
+  bird_eat_fruit : here fruit * here bird -o here bird * here seed.
+  seed_grows : here seed -o here plant.
+  seed_dies : here seed -o ().
 }
-% #interactive sim.
+#interactive main.
 
 context init = {
-  rabbit mature, rabbit mature, rabbit mature, rabbit mature,
-  fox young hungry, fox mature sated, fox mature sated 
+  here bird, here plant
 }.
 
-#trace _ sim init.
-
+#trace _ main init.
