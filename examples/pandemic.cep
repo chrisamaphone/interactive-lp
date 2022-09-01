@@ -1,0 +1,80 @@
+city : type.
+player : type.
+card : type.
+% city cards are card-forming constants that take a city argument
+city_card city : card.
+
+adjacent city city : bwd. % Edge on the map graph
+
+res_ctr city : pred.       % Research center
+disease city : pred.      % City has disease cube
+at player city : pred.    % Player is at city
+turn player : pred.       % Player has a turn
+hand player card : pred.  % Player has card in hand
+discard card : pred.      % Card is in discard pile
+draw player : pred.       % Player is obliged to draw
+
+% Player actions
+stage play = {
+  drive :
+    turn P * at P C * adjacent C C'
+  -o
+    at P C'.
+
+  fly :
+    turn P * at P C * hand P (city_card C')
+  -o
+    at P C'.
+
+  build :
+    turn P * $at P C * hand P (city_card C)
+  -o
+    res_ctr C.
+
+  treat :
+    turn P * $at P C * disease C
+  -o
+    ().
+
+
+} #interactive play.
+
+stage between_turns = {
+
+}.
+
+atlanta : city.
+los_angeles : city.
+bogota : city.
+kinshasa : city.
+delhi : city.
+
+adjacent atlanta los_angeles.
+adjacent los_angeles atlanta.
+adjacent los_angeles bogota.
+adjacent bogota los_angeles.
+adjacent bogota kinshasa.
+adjacent kinshasa delhi.
+adjacent delhi kinshasa.
+adjacent delhi los_angeles.
+adjacent los_angeles delhi.
+
+player_a : player.
+player_b : player.
+player_c : player.
+player_d : player.
+
+context init = {
+  res_ctr atlanta,
+  at player_a atlanta,
+  at player_b atlanta,
+  at player_c atlanta,
+  at player_d atlanta,
+  turn player_a, turn player_a,
+  turn player_a, turn player_a,
+  hand player_a (city_card bogota),
+  hand player_a (city_card los_angeles),
+  disease delhi
+}.
+
+#trace _ play init.
