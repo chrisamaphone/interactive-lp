@@ -1,3 +1,7 @@
+% Demonstration example from the paper, implementing just the player
+% actions in Pandemic as Ceptre rules (no implementation of what happens
+% between player turns)
+
 city : type.
 player : type.
 card : type.
@@ -38,10 +42,6 @@ stage play = {
 
 
 } #interactive play.
-
-stage between_turns = {
-
-}.
 
 atlanta : city.
 los_angeles : city.
