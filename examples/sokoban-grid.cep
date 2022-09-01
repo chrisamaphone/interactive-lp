@@ -60,8 +60,9 @@ stage play = {
     on C1 player * in_dir D C1 C2 * on C2 crate * in_dir D C2 C3 * empty C3
     -o empty C1 * on C2 player * on C3 crate.
 
+  disappear : on _ player -o ().
 }
-#interactive play.
+% #interactive play.
 
 
 %  00 10 20

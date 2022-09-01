@@ -1,0 +1,35 @@
+tree : pred.
+wood : pred.
+plank : pred.
+stick : pred.
+table : pred.
+cobble : pred.
+stone : pred.
+wood_pickaxe : pred.
+stone_pickaxe : pred.
+
+stage main = {
+  chop_tree : 
+    tree -o wood.
+  chop_wood :
+    wood -o plank * plank * plank * plank.
+  chop_plank :
+    plank -o stick * stick * stick * stick.
+  
+  craft_table :
+    plank * plank * plank * plank -o table.
+  craft_wood_pickaxe :
+    $table * stick * stick * plank * plank * plank -o wood_pickaxe.
+  craft_stone_pickaxe :
+    $table * stick * stick * cobble * cobble * cobble -o stone_pickaxe.
+   
+  mine_stone :
+    $wood_pickaxe * stone -o cobble.
+} #interactive main.
+
+context init = {
+  tree, tree,
+  stone, stone, stone
+}.
+
+#trace _ main init.

@@ -1,0 +1,100 @@
+% Example by Kamai Guillory,
+% Summer 2018
+
+ingredients : type.
+peppers : ingredients.
+onions : ingredients.
+chicken : ingredients.
+sauce : ingredients.
+
+dish : type.
+curry : dish.
+
+condition : type.
+status : condition.
+
+points : type.
+score : points.
+
+raw ingredients : pred.
+
+medium ingredients : pred.
+
+cooked ingredients : pred.
+
+burnt ingredients : pred.
+
+in_pan ingredients : pred.
+
+on_counter ingredients : pred.
+
+medium_rare ingredients : pred.
+
+gross dish : pred.
+
+delicious dish : pred.
+
+in_dish ingredients : pred.
+
+consumed ingredients : pred.
+
+win condition : pred.
+
+lose condition : pred.
+
+playing condition : pred.
+
+one points : pred.
+
+two points : pred.
+
+three points : pred.
+
+zero points : pred.
+
+thrown_out ingredients : pred.
+
+stage main = { 
+
+add_to_pan : on_counter X -o in_pan X * raw X * ().
+
+heat : raw X * in_pan X -o in_pan X * medium X * ().
+
+heatq : medium_rare X * in_pan X -o in_pan X * medium X * ().
+
+heatqq : medium X * in_pan X -o in_pan X * cooked X * ().
+
+heatqqq : cooked X * in_pan X -o in_pan X * burnt X * ().
+
+serve : in_pan peppers * in_pan onions * in_pan chicken * in_pan sauce -o in_dish peppers * in_dish onions * in_dish chicken * in_dish sauce * ().
+
+taste : in_dish X * cooked X * playing status * zero score -o consumed X * playing status * one score * ().
+
+tasteqzq : in_dish X * raw X * playing status -o consumed X * gross curry * lose status * ().
+
+tastezz : in_dish X * burnt X * playing status -o consumed X * gross curry * lose status * ().
+
+tastezzz : in_dish X * medium_rare X * playing status -o consumed X * gross curry * lose status * ().
+
+tastez : in_dish X * medium X * playing status -o consumed X * gross curry * lose status * ().
+
+ill : lose status -o thrown_out peppers * thrown_out chicken * thrown_out onions * thrown_out sauce * ().
+
+victory : win status -o delicious curry * ().
+
+tasteq : in_dish X * one score * playing status -o playing status * consumed X * two score * ().
+
+tasteqq : two score * in_dish X * playing status -o consumed X * playing status * three score * ().
+
+tasteqqq : three score * in_dish X * playing status -o win status * consumed X * ().
+
+}
+context init = { 
+on_counter peppers, 
+on_counter onions, 
+on_counter chicken, 
+on_counter sauce, 
+playing status, 
+zero score}.
+
+#trace _ main init.
