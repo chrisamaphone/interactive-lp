@@ -1,47 +1,108 @@
+% Multi-stage version
+
 city : type.
 player : type.
 card : type.
 % city cards are card-forming constants that take a city argument
 city_card city : card.
 
-adjacent city city : bwd. % Edge on the map graph
+adjacent city city : pred.  % Edge on the map graph
+res_ctr city : pred.        % Research center
+disease city : pred.        % City has disease cube
+at player city : pred.      % Player is at city
+turn player : pred.         % Player has a turn
+hand player card : pred.    % Player has card in hand
+deck card : pred.           % Card is in the deck
 
-res_ctr city : pred.       % Research center
-disease city : pred.      % City has disease cube
-at player city : pred.    % Player is at city
-turn player : pred.       % Player has a turn
-hand player card : pred.  % Player has card in hand
-discard card : pred.      % Card is in discard pile
-draw player : pred.       % Player is obliged to draw
+% For handling player turns
+active_player player : pred. % Player is currently active
+after player player : bwd.  % Player goes after other player
 
 % Player actions
 stage play = {
   drive :
-    turn P * at P C * adjacent C C'
+    turn P * at P C * $adjacent C C'
   -o
     at P C'.
 
   fly :
     turn P * at P C * hand P (city_card C')
   -o
-    at P C'.
+    at P C' * deck (city_card C').
 
   build :
     turn P * $at P C * hand P (city_card C)
   -o
-    res_ctr C.
+    res_ctr C * deck (city_card C).
 
   treat :
     turn P * $at P C * disease C
   -o
     ().
 
+  % Spend turns without doing anything
+  nothing : turn P -o ().
 
 } #interactive play.
 
-stage between_turns = {
 
+infection : pred.
+disease_add city : pred.
+
+% Select next player + add 2 infection tokens
+next_player : 
+  qui * stage play * active_player P
+  * after P P'
+-o
+  stage infect *
+  active_player P'
+  * turn P' * turn P' * turn P' * turn P'
+  * infection * infection.
+
+% Spread disease to 2 random cities and identify outbreaks
+stage infect {
+  infection * deck (city_card C) -o disease_add C.
 }.
+
+not_outbroken : pred.
+
+qui * stage infect
+  -o stage infect_process * not_outbroken.
+
+outbroken city : pred.
+restore_adjacent city city : pred.
+
+stage infect_process {
+  process : disease_add C -o disease C * deck (city_card C).
+
+  restore_map : restore_adjacent C D -o adjacent C D.
+
+  check_outbreak1 :
+    not_outbroken * disease C * $disease C * $disease C * $disease C
+  -o
+    outbroken C.
+
+
+% bug - causes inf loop
+% limit to 1 outbreak for now
+%  check_outbreak2 :
+%    $outbroken D * disease C * $disease C * $disease C * $disease C
+%  -o
+%    outbroken C.
+}.
+
+qui * stage infect_process * $outbroken C
+  -o stage outbreak.
+
+qui * stage infect_process * not_outbroken
+  -o stage play.
+
+stage outbreak {
+  spread : 
+    $outbroken C * adjacent C C' -o disease_add C' * restore_adjacent C C'.
+}.
+
+qui * stage outbreak -o stage infect_process.
 
 atlanta : city.
 los_angeles : city.
@@ -49,32 +110,52 @@ bogota : city.
 kinshasa : city.
 delhi : city.
 
-adjacent atlanta los_angeles.
-adjacent los_angeles atlanta.
-adjacent los_angeles bogota.
-adjacent bogota los_angeles.
-adjacent bogota kinshasa.
-adjacent kinshasa delhi.
-adjacent delhi kinshasa.
-adjacent delhi los_angeles.
-adjacent los_angeles delhi.
 
 player_a : player.
 player_b : player.
 player_c : player.
 player_d : player.
 
+after player_a player_b.
+after player_b player_c.
+after player_c player_d.
+after player_d player_a.
+
 context init = {
+% world map
+  adjacent atlanta los_angeles,
+  adjacent los_angeles atlanta,
+  adjacent los_angeles bogota,
+  adjacent los_angeles delhi,
+  adjacent bogota los_angeles,
+  adjacent bogota kinshasa,
+  adjacent kinshasa delhi,
+  adjacent delhi kinshasa,
+  adjacent delhi los_angeles,
+
+% game state
   res_ctr atlanta,
   at player_a atlanta,
   at player_b atlanta,
   at player_c atlanta,
   at player_d atlanta,
+  active_player player_a,
   turn player_a, turn player_a,
   turn player_a, turn player_a,
   hand player_a (city_card bogota),
   hand player_a (city_card los_angeles),
-  disease delhi
+  disease delhi,
+
+% card deck
+% 2 cards for every city, including those in player hands
+  deck (city_card bogota),
+  deck (city_card los_angeles),
+  deck (city_card atlanta),
+  deck (city_card atlanta),
+  deck (city_card delhi),
+  deck (city_card delhi),
+  deck (city_card kinshasa),
+  deck (city_card kinshasa)
 }.
 
 #trace _ play init.

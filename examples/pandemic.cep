@@ -1,6 +1,5 @@
-% Demonstration example from the paper, implementing just the player
-% actions in Pandemic as Ceptre rules (no implementation of what happens
-% between player turns)
+% Single stage version, demonstrating player actions and
+% handing off turns between players.
 
 city : type.
 player : type.
@@ -10,13 +9,15 @@ city_card city : card.
 
 adjacent city city : bwd. % Edge on the map graph
 
-res_ctr city : pred.       % Research center
+res_ctr city : pred.      % Research center
 disease city : pred.      % City has disease cube
 at player city : pred.    % Player is at city
 turn player : pred.       % Player has a turn
 hand player card : pred.  % Player has card in hand
-discard card : pred.      % Card is in discard pile
-draw player : pred.       % Player is obliged to draw
+
+% For handling player turns
+active_player player : pred. % Player is currently active
+after player player : bwd.  % Player goes after other player
 
 % Player actions
 stage play = {
@@ -40,8 +41,19 @@ stage play = {
   -o
     ().
 
+  % Spend turns without doing anything
+  nothing : turn P -o ().
 
 } #interactive play.
+
+next_player : 
+  qui * stage play * active_player P
+  * after P P'
+-o
+  stage play *
+  active_player P'
+  * turn P' * turn P' * turn P' * turn P'.
+
 
 atlanta : city.
 los_angeles : city.
@@ -64,12 +76,18 @@ player_b : player.
 player_c : player.
 player_d : player.
 
+after player_a player_b.
+after player_b player_c.
+after player_c player_d.
+after player_d player_a.
+
 context init = {
   res_ctr atlanta,
   at player_a atlanta,
   at player_b atlanta,
   at player_c atlanta,
   at player_d atlanta,
+  active_player player_a,
   turn player_a, turn player_a,
   turn player_a, turn player_a,
   hand player_a (city_card bogota),
