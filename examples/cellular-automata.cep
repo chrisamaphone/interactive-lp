@@ -1,0 +1,35 @@
+% 2022-02-16
+% Set up predicates but wrote no actual "code" yet.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+cell : type.
+pos nat nat : cell.
+
+nbr cell cell : bwd.
+nbr (pos (s X) (s Y)) (pos X (s Y)).
+nbr (pos (s X) (s Y)) (pos (s X) Y).
+nbr (pos (s X) (s Y)) (pos X Y).
+nbr (pos X (s Y)) (pos X Y).
+nbr (pos (s X) Y) (pos X Y).
+nbr (pos X Y) (pos (s X) Y).
+nbr (pos X Y) (pos X (s Y)).
+nbr (pos X Y) (pos (s X) (s Y)).
+
+stage compute_neighbor_values = {
+
+}
+
+stage main = {
+   
+}
+
+context init = {}.
+
+#trace _ main init.

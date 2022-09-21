@@ -1,0 +1,31 @@
+element : type.
+earth : element.
+water : element.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+
+quantity element nat : pred.
+
+stage main = {
+
+  catalyze_water :
+      quantity earth (s (s (s (s E))))
+    * quantity water (s W)
+  -o
+      quantity earth E
+    * quantity water (s (s (s (s W)))).
+}
+#interactive main.
+
+context init =
+{ quantity earth 10, quantity water 2}.
+
+#trace _ main init.
+

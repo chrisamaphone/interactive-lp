@@ -1,0 +1,99 @@
+% Chris Martens, July 2022
+% Based on an example by Kamai Guillory, Summer 2018
+
+ingredient : type.
+peppers : ingredient.
+onions : ingredient.
+tofu : ingredient.
+sauce : ingredient.
+
+dish : type.
+curry : dish.
+
+condition : type.
+win : condition.
+lose : condition.
+playing : condition.
+waiting : condition.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+% in_pan I N = I has been in the pan for N time steps
+in_pan ingredient nat : pred.
+on_counter ingredient : pred.
+in_dish ingredient nat : pred.
+consumed ingredient : pred.
+thrown_out ingredient : pred.
+
+gross dish : pred.
+delicious dish : pred.
+
+status condition : pred.
+score nat : pred.
+
+
+stage main = { 
+
+  add_to_pan : $status playing * on_counter X -o in_pan X 0.
+
+  wait : status playing -o status waiting.
+
+  serve : 
+      $status playing
+    * in_pan peppers P 
+    * in_pan onions O
+    * in_pan tofu C
+    * in_pan sauce S
+  -o 
+      in_dish peppers P 
+    * in_dish onions O 
+    * in_dish tofu C 
+    * in_dish sauce S.
+
+  taste_raw : in_dish X 0 * status playing -o consumed X * gross curry * status lose.
+  taste_underdone : in_dish X 1 * status playing -o consumed X * gross curry * status lose.
+  taste_underdone_still : in_dish X 2 * status playing -o consumed X * gross curry * status lose.
+  taste_burnt : in_dish X (s (s (s (s N)))) * status playing -o consumed X * gross curry * status lose.
+
+  taste_good : in_dish X 3 * $status playing * score N -o consumed X * score (s N).
+
+  taste_win : score (s (s (s N))) * in_dish X _ * status playing -o status win * consumed X.
+
+  ill : status lose -o thrown_out peppers * thrown_out tofu * thrown_out onions * thrown_out sauce.
+
+  victory : status win -o delicious curry.
+
+}
+#interactive main.
+
+do-wait : qui * stage main -o stage time_passes_pre.
+
+pre_timepass ingredient nat : pred.
+
+stage time_passes_pre = {
+  in_pan X N -o pre_timepass X N. 
+
+}
+- : qui * stage time_passes_pre -o stage time_passes.
+
+stage time_passes = {
+  pre_timepass X N -o in_pan X (s N).
+}
+
+do-play : qui * stage time_passes * status waiting -o stage main * status playing.
+
+context init = { 
+on_counter peppers, 
+on_counter onions, 
+on_counter tofu, 
+on_counter sauce, 
+status playing, 
+score 0}.
+
+#trace _ main init.

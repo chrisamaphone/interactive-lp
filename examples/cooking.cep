@@ -1,0 +1,83 @@
+% Chris Martens, July 2022
+% Based on an example by Kamai Guillory, Summer 2018
+
+ingredient : type.
+peppers : ingredient.
+onions : ingredient.
+tofu : ingredient.
+sauce : ingredient.
+
+dish : type.
+curry : dish.
+
+condition : type.
+win : condition.
+lose : condition.
+playing : condition.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+
+raw ingredient : pred.
+medium ingredient : pred.
+cooked ingredient : pred.
+burnt ingredient : pred.
+in_pan ingredient : pred.
+on_counter ingredient : pred.
+medium_rare ingredient : pred.
+in_dish ingredient : pred.
+consumed ingredient : pred.
+thrown_out ingredient : pred.
+
+gross dish : pred.
+delicious dish : pred.
+
+status condition : pred.
+score nat : pred.
+
+
+stage main = { 
+
+add_to_pan : on_counter X -o in_pan X * raw X.
+
+heat : raw X * in_pan X -o in_pan X * medium_rare X.
+
+heat_mr : medium_rare X * in_pan X -o in_pan X * medium X.
+
+heat_med : medium X * in_pan X -o in_pan X * cooked X.
+
+heat_cooked : cooked X * in_pan X -o in_pan X * burnt X.
+
+serve : in_pan peppers * in_pan onions * in_pan tofu * in_pan sauce -o in_dish peppers * in_dish onions * in_dish tofu * in_dish sauce.
+
+taste_raw : in_dish X * raw X * status playing -o consumed X * gross curry * status lose.
+taste_underdone : in_dish X * medium X * status playing -o consumed X * gross curry * status lose.
+taste_underdone_still : in_dish X * medium_rare X * status playing -o consumed X * gross curry * status lose.
+taste_burnt : in_dish X * burnt X * status playing -o consumed X * gross curry * status lose.
+
+taste_good : in_dish X * cooked X * $status playing * score N -o consumed X * score (s N).
+
+taste_win : score (s (s (s N))) * in_dish X * status playing -o status win * consumed X.
+
+ill : status lose -o thrown_out peppers * thrown_out tofu * thrown_out onions * thrown_out sauce.
+
+victory : status win -o delicious curry.
+
+}
+#interactive main.
+
+context init = { 
+on_counter peppers, 
+on_counter onions, 
+on_counter tofu, 
+on_counter sauce, 
+status playing, 
+score 0}.
+
+#trace _ main init.

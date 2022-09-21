@@ -1,0 +1,71 @@
+% Generating relation graphs
+% Not really tenable without some logic to prevent adding graph
+% edges that already exist.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+lt nat nat : bwd.
+lt z (s N).
+lt (s N) (s M)
+  <- lt N M.
+
+person : type.
+id nat : person.
+
+organization : type.
+school : organization.
+workplace : organization.
+church : organization.
+family person person : organization.
+
+npeople nat : pred.
+exists person : pred.
+born_to person person person : pred.
+member person organization : pred.
+knows_via organization person person : pred.
+open organization : pred.
+
+context init = {
+  npeople 0,
+  open school,
+  open workplace,
+  open church
+}
+
+
+stage main {
+  create_new_with_parents :
+    npeople N -o 
+      npeople (s (s (s N))) *
+      exists (id (s N)) * 
+      exists (id (s (s N))) * 
+      exists (id (s (s (s N)))) * 
+      born_to (id (s N)) (id (s (s N))) (id (s (s (s N)))) *
+      member (id (s (s (s N)))) (family (id (s (s N))) (id (s (s (s N))))) *
+      member (id (s (s N))) (family (id (s (s N))) (id (s (s (s N))))) *
+      member (id (s N)) (family (id (s (s N))) (id (s (s (s N))))).
+
+  create_new_child :
+    npeople N *
+    $born_to Kid Parent1 Parent2 -o
+      npeople (s N) *
+      exists (id (s N)) *
+      born_to (id (s N)) Parent1 Parent2 *
+      member (id (s N)) (family Parent1 Parent2).
+
+  meet_fellow_member :
+    $member Person1 Org * $member Person2 Org
+      -o !knows_via Org Person1 Person2.
+
+  join_org :
+    $open Org * $exists Person -o member Person Org. 
+}
+#interactive main.
+
+#trace _ main init.

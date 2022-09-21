@@ -1,0 +1,79 @@
+% Impl of Tearse's minimalist "five" storytelling system
+
+actor : type.
+knight : actor.
+king : actor.
+princess : actor.
+dragon : actor.
+peasant : actor.
+wizard : actor.
+
+not_in_story actor : pred.
+
+action : type.
+initial action : pred.
+normal action : pred. 
+final action : pred.
+
+stole_from : action.
+fought_with : action.
+bargained_with : action.
+talked_to : action.
+tricked : action.
+killed : action.
+fled_from : action.
+denounced : action.
+publicly_praised : action.
+
+in_story actor : pred.
+next_primary actor : pred.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+need_char : pred.
+need_init : pred.
+need_normal nat : pred.
+need_final : pred.
+
+stage main = {
+  choose_chars : need_char * not_in_story C -o in_story C.
+
+  gen_init : need_init 
+      * $in_story Primary
+      * initial Action
+      * in_story Secondary 
+    -o  
+        next_primary Secondary.
+
+  gen_normal : need_normal (s N)
+    * next_primary Primary
+    * normal Action
+    * in_story Secondary
+  -o
+      need_normal N *
+      in_story Primary * next_primary Secondary.
+
+  gen_final : need_final * need_normal z
+    * next_primary Primary
+    * final Action
+    * in_story Secondary
+  -o  ().
+}.
+
+context init = 
+{ initial stole_from, initial fought_with,
+  normal bargained_with, normal talked_to, normal tricked,
+  final killed, final fled_from, final denounced, final publicly_praised,
+  not_in_story knight,
+  not_in_story king,
+  not_in_story princess,
+  not_in_story dragon,
+  not_in_story peasant,
+  not_in_story wizard,
+  need_char, need_char, need_char,
+  need_init, need_normal (s (s (s z))), need_final
+}.
+
+#trace _ main init.

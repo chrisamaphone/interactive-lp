@@ -1,0 +1,81 @@
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+word : type.
+eat : word.
+bugs : word.
+cats : word.
+dogs : word.
+wolves : word.
+bunnies : word.
+love : word.
+sushi : word.
+
+% Nonterminals/parts of speech
+nonterm : type.
+origin : nonterm.
+noun : nonterm.
+animal : nonterm.
+verb : nonterm.
+
+% terminal or nonterminal
+token : type.
+w word : token.
+n nonterm : token. 
+
+% "seq N T" means token T is at position N in the sequence
+% e.g. to represent sequence "abc":
+% {seq 0 (w a), seq 1 (w b), seq 2 (w c)}
+seq nat token : pred.
+
+% Production rules:
+% origin: animal verb noun
+% animal: bugs, cats, dogs, wolves, bunnies
+% verb: love, eat
+% noun: animal, sushi
+
+% This only works for one "level" of multi-word expansion; assumes each
+% nonterminal takes up exactly one unit of space. Would need to extend to
+% use trees or something otherwise, or perhaps just write code to convert
+% between sequence-structured data and *-joined multisets.
+% The benefit of the latter is that we could write the production rules
+%  as bwd-chaining rules and the main code could do more general expansion.
+% (Really, ordered logic would be more appropriate here, so this *could*
+% lean on the "destination passing" embedding.)
+stage main = {
+  seq Pos (n origin) -o
+    seq Pos (n animal) * seq (s Pos) (n verb) * seq (s (s Pos)) (n noun).
+
+  seq Pos (n animal) -o
+    seq Pos (w bugs).
+  seq Pos (n animal) -o
+    seq Pos (w cats).
+  seq Pos (n animal) -o
+    seq Pos (w dogs).
+  seq Pos (n animal) -o
+    seq Pos (w wolves).
+  seq Pos (n animal) -o
+    seq Pos (w bunnies).
+
+  seq Pos (n verb) -o
+    seq Pos (w love).
+
+  seq Pos (n verb) -o
+    seq Pos (w eat).
+
+  seq Pos (n noun) -o
+    seq Pos (n animal).
+
+  seq Pos (n noun) -o
+    seq Pos (w sushi).
+
+}
+
+context init = {seq 0 (n origin)}.
+
+#trace _ main init.

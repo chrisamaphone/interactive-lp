@@ -1,0 +1,96 @@
+entity : type.
+mario : entity.
+coin : entity.
+platform : entity.
+goomba : entity.
+air : entity.
+
+nat : type.
+z : nat.
+s nat : nat.
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+grid_cell : type.
+cell nat : grid_cell.
+
+% grid cell #X contains E
+grid grid_cell entity : pred.
+
+% grid cell adjacency
+above grid_cell grid_cell : bwd.
+left grid_cell grid_cell : bwd.
+
+% coin tracking
+coins nat : pred.
+
+% 4 mechanics to model:
+ % gravity
+ % player movement (left, right, jump)
+ % collect coin
+ % die on enemy collide
+% TODO (bonus): implement enemy die if land on it from above
+stage play = {
+  gravity : 
+    above CU CD * 
+      grid CU mario * grid CD air  
+  -o  grid CU air *   grid CD mario.
+
+  move_mario_left :
+    left CL CR *
+      grid CL air   * grid CR mario
+  -o  grid CL mario * grid CR air.
+
+  move_mario_right :
+    left CL CR *
+      grid CL mario * grid CR air
+  -o  grid CL air   * grid CR mario.
+
+  mario_jump :
+    above C2 C1 * above C1 CM *
+      grid CM mario * grid C1 air * grid C2 air
+  -o
+      grid CM air * grid C1 air * grid C2 mario.
+
+  collect_coin :
+      grid C mario * grid C coin * coins Ncoins
+  -o  grid C mario * coins (s Ncoins).
+
+  collide_enemy :
+      grid C mario * grid C goomba
+  -o  grid C goomba.
+
+}. #interactive play.
+
+context init = {
+  coins 0,
+  grid (cell 0) mario,
+  grid (cell 1) coin, grid (cell 1) air,
+  grid (cell 2) goomba, grid (cell 2) air,
+  grid (cell 3) air,
+  grid (cell 4) air,
+  grid (cell 5) platform,
+  grid (cell 6) air,
+  grid (cell 7) air,
+  grid (cell 8) air
+}.
+
+%   716
+%   853
+%   240
+%
+above (cell 3) (cell 0).
+left (cell 4) (cell 0).
+above (cell 6) (cell 3).
+left (cell 5) (cell 3).
+left (cell 1) (cell 6).
+above (cell 1) (cell 5).
+above (cell 5) (cell 4).
+left (cell 2) (cell 4).
+above (cell 8) (cell 2).
+left (cell 8) (cell 5).
+above (cell 7) (cell 8).
+left (cell 7) (cell 1).
+
+#trace _ play init.
