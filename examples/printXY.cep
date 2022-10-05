@@ -1,0 +1,36 @@
+% Via Tim Sweeney:
+% Here's a neat test of programming language expressiveness: Can you write a function PrintXY taking an integer n>=0 that prints all strings of length n containing only the characters 'X' and 'Y'?
+
+char : type.
+x:char.
+y:char.
+
+string : type.
+emp : string.
+cons char string : string.
+
+nat : type.
+z : nat.
+s nat : nat.
+
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+printXY nat string : pred.
+printed string : pred.
+
+stage main = {
+
+  replicate : printXY (s N) Suff
+    -o  printXY N (cons x Suff)
+      * printXY N (cons y Suff).
+
+  final : printXY z S -o printed S.
+}
+
+context init = {printXY 4 emp}.
+
+#trace _ main init.
+
+
