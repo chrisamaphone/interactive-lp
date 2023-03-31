@@ -4,8 +4,7 @@ interactive-lp
 This is the source repository for Ceptre, a tiny logic programming language
 for prototyping rulesets that you can run, interact with, and analyze.
 
-Binaries for OS X/Win/Linux available here:
-https://drive.google.com/drive/folders/0B6BJA78gViuAN3A0WlVkdXBjMk0
+See Releases for Windows, Mac, and Linux binaries.
 
 Ceptre runs on a Unix-based command line (for now), so you will need to
 know your way around a shell to use it.
