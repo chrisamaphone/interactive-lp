@@ -18,6 +18,21 @@ deck card : pred.           % Card is in the deck
 active_player player : pred. % Player is currently active
 after player player : bwd.  % Player goes after other player
 
+% Counting outbreaks
+nat : type.
+z : nat. s nat : nat.
+#builtin NAT nat.
+#builtin NAT_ZERO z.
+#builtin NAT_SUCC s.
+
+outbreaks nat : pred.
+
+greater_equal nat nat : bwd.
+greater_equal N 0.
+greater_equal (s N) (s M)
+  <- greater_equal N M.
+
+
 % Player actions
 stage play = {
   drive :
@@ -43,7 +58,7 @@ stage play = {
   % Spend turns without doing anything
   nothing : turn P -o ().
 
-} #interactive play.
+} % #interactive play.
 
 
 infection : pred.
@@ -79,16 +94,17 @@ stage infect_process {
 
   check_outbreak1 :
     not_outbroken * disease C * $disease C * $disease C * $disease C
+    * outbreaks N
   -o
-    outbroken C.
+    outbroken C * outbreaks (s N).
 
 
-% bug - causes inf loop
-% limit to 1 outbreak for now
-%  check_outbreak2 :
-%    $outbroken D * disease C * $disease C * $disease C * $disease C
-%  -o
-%    outbroken C.
+  check_outbreak2 :
+    $outbroken D * $adjacent D C 
+    * disease C * $disease C * $disease C * $disease C 
+    * outbreaks N
+  -o
+    outbroken C * outbreaks (s N).
 }.
 
 qui * stage infect_process * $outbroken C
@@ -97,12 +113,20 @@ qui * stage infect_process * $outbroken C
 qui * stage infect_process * not_outbroken
   -o stage play.
 
+lost : pred.
+not_lost : pred.
+
 stage outbreak {
+
+  lose:
+    not_lost *
+    outbreaks N * greater_equal N 8 -o lost.
+
   spread : 
     $outbroken C * adjacent C C' -o disease_add C' * restore_adjacent C C'.
 }.
 
-qui * stage outbreak -o stage infect_process.
+qui * stage outbreak * not_lost -o stage infect_process.
 
 atlanta : city.
 los_angeles : city.
@@ -155,7 +179,11 @@ context init = {
   deck (city_card delhi),
   deck (city_card delhi),
   deck (city_card kinshasa),
-  deck (city_card kinshasa)
+  deck (city_card kinshasa),
+
+% outbreak counter at 0
+  outbreaks 0,
+  not_lost
 }.
 
 #trace _ play init.
