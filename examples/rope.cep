@@ -1,0 +1,87 @@
+% Implementation of the Rope Problem as described in
+% https://ifdb.org/viewgame?id=xmo87hjaydnz52o3
+
+rope-length : type.
+longest : rope-length.
+long : rope-length.
+short : rope-length.
+
+% half X Y = "half of X is Y"
+half rope-length rope-length : bwd.
+half longest long.
+half long short.
+
+item : type.
+rope rope-length : item.
+knife : item.
+hook : item.
+harness : item.
+
+inventory item : pred.
+inWorld item : pred.
+tieOn item : pred.
+portable item : pred.
+wearable item : pred.
+worn item : pred.
+anchored item : pred.
+
+end : type.
+end1 : end.
+end2 : end.
+
+tied-end item end item : pred.
+loose-end item end : pred.
+
+context init = {
+% rope
+  inventory (rope longest), portable (rope longest),
+% knife
+  inventory knife, portable knife,
+% hook
+  inWorld hook, tieOn hook, anchored hook,
+% harness
+  inWorld harness, tieOn harness, portable harness, wearable harness
+}
+
+stage play {
+
+  deployRope
+    : inventory (rope L) 
+    -o loose-end (rope L) end1 * loose-end (rope L) end2.
+
+  retrieveRope
+    : loose-end (rope L) end1 * loose-end (rope L) end2 
+    -o inventory (rope L).
+
+  tieToFeature 
+    : loose-end R End * $inWorld Feature * tieOn Feature
+    -o tied-end R End Feature.
+
+  tieToItem
+    : loose-end R End * $inventory Item * tieOn Item
+    -o tied-end R End Item.
+
+  untie
+    : tied-end R End Item
+        -o loose-end R End * tieOn Item.
+
+  take : inWorld Item * $portable Item -o inventory Item.
+
+  drop : inventory Item -o inWorld Item.
+
+  wear : inventory Item * $wearable Item -o worn Item.
+
+  doff : worn Item -o inventory Item.
+
+  cutRope : inventory knife * inventory (rope L) * half L L2  
+      -o inventory (rope L2) * inventory (rope L2).
+
+  jump : $worn X 
+    * $tied-end R End1 X 
+    * $tied-end R End2 Anchor
+    -o ().
+}
+#interactive play.
+
+#trace _ play init.
+
