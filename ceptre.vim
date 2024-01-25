@@ -1,7 +1,7 @@
 syn clear
 
 " Just about anything in Ceptre is a keyword character
-set iskeyword+=\",~,@,!,#-',*-45,47-57,59-90,94-122,\|,^:
+setlocal iskeyword+=\",~,@,!,#-',*-45,47-57,59-90,94-122,\|,^:
 
 syn keyword ceptrePercentKey #mode #interactive #trace #builtin
 syn keyword ceptreType type pred bwd stage context
