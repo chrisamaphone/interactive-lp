@@ -600,12 +600,26 @@ fun possible_steps stage prog =
 
 fun add_to_ctx gsubst bi ((mode, a, ps), ({next, concrete}, xs)) = 
   let
-    val atom = (mode, a, valOf (ground_terms_partial bi gsubst ps [])
-                         handle Option => raise Fail "non-ground --> ctx")
+    val terms = valOf (ground_terms_partial bi gsubst ps [])
+                handle Option => raise Fail "non-ground --> ctx"
+    val atom = (mode, a, terms)
+
+    (* Slightly different than C.termToString *)
+    fun writeTerm (C.Fn (p, args)) = "(" ^ p ^ String.concatWith " " (map writeTerm args) ^ ")"
+      | writeTerm (C.Var i) = raise Fail "Cannot write variable" (* This should never happen *)
+      | writeTerm (C.SLit s) = s (* No escaping *)
+      | writeTerm (C.ILit i) = IntInf.toString i
+
+    val sideEffect = case M.find bi a of
+        SOME C.WRITE => (print (String.concat (map writeTerm terms)); true)
+      | _ => false
   in
-    ({next = next + 1, 
-      concrete = (next, atom) :: concrete},
-    (next, atom) :: xs)
+    if sideEffect then
+      ({next = next, concrete = concrete}, xs)
+    else
+      ({next = next + 1,
+        concrete = (next, atom) :: concrete},
+      (next, atom) :: xs)
   end
 
 fun list_separate f l =

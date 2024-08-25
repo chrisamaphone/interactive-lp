@@ -5,6 +5,7 @@ terminal STAGE
 terminal CONTEXT
 terminal IDENT of string
 terminal NUM of int
+terminal STR of string
 terminal HASHDENT of string
 terminal LBRACE
 terminal RBRACE
@@ -66,6 +67,7 @@ nonterminal Atomic: syn =
    USCORE                      => Wild
    PRED                        => Pred
    1:NUM                       => Num
+   1:STR                       => Str
    
 nonterminal OpEquals: ign =    => Ign
    EQUALS                      => Ign

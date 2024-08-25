@@ -6,7 +6,8 @@ open Pos
 
 datatype token = 
    PRED | STAGE | CONTEXT 
- | IDENT of string | NUM of IntInf.int | HASHDENT of string
+ | IDENT of string | NUM of IntInf.int  | STR of string
+ | HASHDENT of string
  | LBRACE | RBRACE | LPAREN | RPAREN
  | PERIOD | COLON | COMMA | EQUALS | USCORE
  | UNIFY | DIFFER
@@ -15,7 +16,8 @@ datatype token =
 fun toString tok = 
    case tok of 
       PRED => "PRED" | STAGE => "STAGE" | CONTEXT => "CONTEXT"
-    | IDENT s => s | NUM n => IntInf.toString n | HASHDENT s => ("#"^s)
+    | IDENT s => s | NUM n => IntInf.toString n | STR s => s
+    | HASHDENT s => ("#"^s)
     | LBRACE => "{" | RBRACE => "}" | LPAREN => "(" | RPAREN => ")"
     | PERIOD => "." | COLON => ":" | COMMA => "," | EQUALS => "="
     | USCORE => "_" 
@@ -40,6 +42,7 @@ datatype syn =
  | Wild of unit              (* _ *)
  | Id of string              (* x or X *)
  | Num of IntInf.int         (* 3 *)
+ | Str of string             (* "Hello\n\"X\" is my name!" *)
  | Braces of syn             (* { t } *)   
  | EmptyBraces of unit       (* {} *)             
 
@@ -61,6 +64,7 @@ fun synToString syn =
     | Wild () => "_"
     | Id x => x
     | Num n => IntInf.toString n
+    | Str s => s
     | Braces x => "{"^synToString x^"}"
     | EmptyBraces () => "{}")
 
@@ -127,6 +131,17 @@ LexFn
          NONE => raise Fail ("Couldn't parse '"^stringrange match^"' as an int")
        | SOME n => Stream.Cons ((NUM n, posrange match),
                       Stream.lazy (fn () => #lexmain self follow)))
+
+   fun str ({self, match, follow, ...}: info) =
+   let
+     val raw = stringrange match
+     val unquoted = String.substring (raw, 1, (size raw) - 2)  (* Raw is at least 2 chars long *)
+   in
+     case String.fromCString unquoted of
+         NONE => raise Fail ("Couldn't parse " ^ raw ^ " as a string")
+       | SOME s => Stream.Cons ((STR s, posrange match),
+                      Stream.lazy (fn () => #lexmain self follow))
+   end
 
    fun hashident ({self, match, follow, ...}: info) =
       Stream.Cons ((HASHDENT (stringrange (List.tl match)), posrange match),

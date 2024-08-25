@@ -1,7 +1,7 @@
 structure Top =
 struct
 
-  fun progs fname =
+  fun progs quiet fname =
   let
     val parsed = Parse.parsefile fname
 
@@ -15,7 +15,7 @@ struct
               case decl of 
                  Signature.TypeDecl a => StringRedBlackSet.insert types a
                | _ => types 
-           val () = print (Signature.topdeclToString decl^"\n")
+           val () = if quiet then () else print (Signature.topdeclToString decl^"\n")
         in loop types (Signature.add signat decl) tops end
     val () = loop StringRedBlackSet.empty [] parsed 
 
@@ -24,23 +24,9 @@ struct
     (sg, programs)
   end 
 
-  (* runFirst : string -> Ceptre.context *)
-  (* extracts the first program from the file, then runs it to quiescence,
-  * returning the final context. *) 
-  fun runFirst fname =
-    case progs fname of
-         (_, []) => NONE
-       | (sg:Ceptre.sigma, prog::_) => 
-           let
-             val () = print "Running the following program:\n"
-             val () = print (Ceptre.programToString prog) 
-           in
-             SOME (Exec.run sg prog)
-           end
-
-   fun run fname index =
+   fun run quiet fname index =
      let
-       val (sigma, progs) = progs fname
+       val (sigma, progs) = progs quiet fname
        val (init_ctx, end_ctx, trace) = Exec.run sigma (List.nth (progs, index))
        (* convert the trace to a graph and write it to a dotfile *)
        val traceGraph = Traces.traceToGraph init_ctx trace
@@ -58,18 +44,18 @@ struct
         ^ ctx_string ^ "\n" ^
         "\nTrace: \n"
         ^ trace_string ^ "\n"
+       val () = if quiet then () else print result_string
      in
-       print result_string
-       ; SOME end_ctx (* XXX also trace? *)
+       SOME end_ctx (* XXX also trace? *)
      end
      handle Subscript => 
-       (print ((Int.toString index)^" is an invalid program index!\n")
+       (if quiet then () else print ((Int.toString index)^" is an invalid program index!\n")
        ; NONE)
 
   (* runFirst : string -> Ceptre.context *)
   (* extracts the first program from the file, then runs it to quiescence,
   * returning the final context. *) 
-  fun runFirst fname = run fname 0
+  fun runFirst quiet fname = run quiet fname 0
     (*
     case progs fname of
          (_, []) => NONE

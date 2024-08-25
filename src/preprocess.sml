@@ -51,6 +51,7 @@ struct
            end
        | Wild () => EVar ("_X"^Int.toString (wild ()))
        | Num i => EInt i
+       | Str s => EString s
        | _ => raise IllFormed
 
   (* Stuff without vars can go directly into IL syntax *)
@@ -67,6 +68,7 @@ struct
                 | _ => raise IllFormed
            end
        | Num i => ILit i
+       | Str s => SLit s
        | _ => raise IllFormed 
 
   (* XXX should look up bwd stuff in the sig *)
@@ -427,6 +429,10 @@ struct
             (predicate, NAT_ZERO)
        | ((Id "NAT_SUCC")::[Id predicate]) =>
             (predicate, NAT_SUCC)
+       | ((Id "WRITE")::[Id predicate]) =>
+            (predicate, WRITE)
+       | ((Id "STRING")::[Id predicate]) =>
+            (predicate, STRING)
        | _ => raise IllFormed
 
 

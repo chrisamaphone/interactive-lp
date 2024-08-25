@@ -15,6 +15,7 @@ functor ParseFn
           val someSyn : syn -> synopt
           val noneSyn : unit -> synopt
           val Ign : unit -> ign
+          val Str : string -> syn
           val Num : int -> syn
           val Pred : unit -> syn
           val Wild : unit -> syn
@@ -52,6 +53,7 @@ functor ParseFn
            | CONTEXT
            | IDENT of string
            | NUM of int
+           | STR of string
            | HASHDENT of string
            | LBRACE
            | RBRACE
@@ -116,33 +118,62 @@ start -> . Tops  / 0
 27 : Atomic -> . USCORE  / 3
 28 : Atomic -> . PRED  / 3
 29 : Atomic -> . NUM  / 3
+30 : Atomic -> . STR  / 3
 
 $ => reduce 4
-PRED => shift 2
-STAGE => shift 3
-CONTEXT => shift 5
-IDENT => shift 4
-NUM => shift 1
-HASHDENT => shift 6
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Tops => goto 13
-Top => goto 14
-Syn => goto 12
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 4
+CONTEXT => shift 6
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+HASHDENT => shift 7
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Tops => goto 14
+Top => goto 15
+Syn => goto 13
+Atomic => goto 16
 
 -----
 
 State 1:
+
+30 : Atomic -> STR .  / 4
+
+PRED => reduce 30
+IDENT => reduce 30
+NUM => reduce 30
+STR => reduce 30
+LBRACE => reduce 30
+RBRACE => reduce 30
+LPAREN => reduce 30
+RPAREN => reduce 30
+PERIOD => reduce 30
+COLON => reduce 30
+COMMA => reduce 30
+USCORE => reduce 30
+STAR => reduce 30
+LARROW => reduce 30
+RARROW => reduce 30
+LLOLLI => reduce 30
+RLOLLI => reduce 30
+UNIFY => reduce 30
+DIFFER => reduce 30
+
+-----
+
+State 2:
 
 29 : Atomic -> NUM .  / 4
 
 PRED => reduce 29
 IDENT => reduce 29
 NUM => reduce 29
+STR => reduce 29
 LBRACE => reduce 29
 RBRACE => reduce 29
 LPAREN => reduce 29
@@ -161,13 +192,14 @@ DIFFER => reduce 29
 
 -----
 
-State 2:
+State 3:
 
 28 : Atomic -> PRED .  / 4
 
 PRED => reduce 28
 IDENT => reduce 28
 NUM => reduce 28
+STR => reduce 28
 LBRACE => reduce 28
 RBRACE => reduce 28
 LPAREN => reduce 28
@@ -186,22 +218,23 @@ DIFFER => reduce 28
 
 -----
 
-State 3:
+State 4:
 
 1 : Top -> STAGE . IDENT OpEquals LBRACE Tops RBRACE OpPeriod  / 5
 18 : Syn -> STAGE . IDENT  / 2
 
-IDENT => shift 16
+IDENT => shift 17
 
 -----
 
-State 4:
+State 5:
 
 26 : Atomic -> IDENT .  / 4
 
 PRED => reduce 26
 IDENT => reduce 26
 NUM => reduce 26
+STR => reduce 26
 LBRACE => reduce 26
 RBRACE => reduce 26
 LPAREN => reduce 26
@@ -220,15 +253,15 @@ DIFFER => reduce 26
 
 -----
 
-State 5:
+State 6:
 
 2 : Top -> CONTEXT . IDENT OpEquals LBRACE OpSyn RBRACE OpPeriod  / 5
 
-IDENT => shift 17
+IDENT => shift 18
 
 -----
 
-State 6:
+State 7:
 
 3 : Top -> HASHDENT . Atomics PERIOD  / 5
 20 : Atomics -> .  / 6
@@ -241,26 +274,29 @@ State 6:
 27 : Atomic -> . USCORE  / 7
 28 : Atomic -> . PRED  / 7
 29 : Atomic -> . NUM  / 7
+30 : Atomic -> . STR  / 7
 
-PRED => shift 2
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
+PRED => shift 3
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
 PERIOD => reduce 20
-USCORE => shift 7
-Atomics => goto 18
-Atomic => goto 19
+USCORE => shift 8
+Atomics => goto 19
+Atomic => goto 20
 
 -----
 
-State 7:
+State 8:
 
 27 : Atomic -> USCORE .  / 4
 
 PRED => reduce 27
 IDENT => reduce 27
 NUM => reduce 27
+STR => reduce 27
 LBRACE => reduce 27
 RBRACE => reduce 27
 LPAREN => reduce 27
@@ -279,7 +315,7 @@ DIFFER => reduce 27
 
 -----
 
-State 8:
+State 9:
 
 6 : Syn -> . Syn COLON Syn  / 8
 7 : Syn -> . Syn LLOLLI Syn  / 8
@@ -305,23 +341,25 @@ State 8:
 27 : Atomic -> . USCORE  / 9
 28 : Atomic -> . PRED  / 9
 29 : Atomic -> . NUM  / 9
+30 : Atomic -> . STR  / 9
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-RBRACE => shift 21
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 22
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+RBRACE => shift 22
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 23
+Atomic => goto 16
 
 -----
 
-State 9:
+State 10:
 
 6 : Syn -> . Syn COLON Syn  / 10
 7 : Syn -> . Syn LLOLLI Syn  / 10
@@ -347,23 +385,25 @@ State 9:
 27 : Atomic -> . USCORE  / 11
 28 : Atomic -> . PRED  / 11
 29 : Atomic -> . NUM  / 11
+30 : Atomic -> . STR  / 11
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-RPAREN => shift 23
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 24
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+RPAREN => shift 24
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 25
+Atomic => goto 16
 
 -----
 
-State 10:
+State 11:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -388,22 +428,24 @@ State 10:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 25
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 26
+Atomic => goto 16
 
 -----
 
-State 11:
+State 12:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -428,22 +470,24 @@ State 11:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 26
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 27
+Atomic => goto 16
 
 -----
 
-State 12:
+State 13:
 
 0 : Top -> Syn . PERIOD  / 5
 6 : Syn -> Syn . COLON Syn  / 2
@@ -457,20 +501,20 @@ State 12:
 14 : Syn -> Syn . UNIFY Syn  / 2
 15 : Syn -> Syn . DIFFER Syn  / 2
 
-PERIOD => shift 32
-COLON => shift 31
-COMMA => shift 30
-STAR => shift 34
-LARROW => shift 33
-RARROW => shift 36
-LLOLLI => shift 35
-RLOLLI => shift 29
-UNIFY => shift 28
-DIFFER => shift 27
+PERIOD => shift 33
+COLON => shift 32
+COMMA => shift 31
+STAR => shift 35
+LARROW => shift 34
+RARROW => shift 37
+LLOLLI => shift 36
+RLOLLI => shift 30
+UNIFY => shift 29
+DIFFER => shift 28
 
 -----
 
-State 13:
+State 14:
 
 start -> Tops .  / 0
 
@@ -478,7 +522,7 @@ $ => accept
 
 -----
 
-State 14:
+State 15:
 
 0 : Top -> . Syn PERIOD  / 5
 1 : Top -> . STAGE IDENT OpEquals LBRACE Tops RBRACE OpPeriod  / 5
@@ -509,28 +553,30 @@ State 14:
 27 : Atomic -> . USCORE  / 3
 28 : Atomic -> . PRED  / 3
 29 : Atomic -> . NUM  / 3
+30 : Atomic -> . STR  / 3
 
 $ => reduce 4
-PRED => shift 2
-STAGE => shift 3
-CONTEXT => shift 5
-IDENT => shift 4
-NUM => shift 1
-HASHDENT => shift 6
-LBRACE => shift 8
+PRED => shift 3
+STAGE => shift 4
+CONTEXT => shift 6
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+HASHDENT => shift 7
+LBRACE => shift 9
 RBRACE => reduce 4
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Tops => goto 37
-Top => goto 14
-Syn => goto 12
-Atomic => goto 15
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Tops => goto 38
+Top => goto 15
+Syn => goto 13
+Atomic => goto 16
 
 -----
 
-State 15:
+State 16:
 
 19 : Syn -> Atomic . Atomics  / 12
 20 : Atomics -> .  / 12
@@ -543,18 +589,20 @@ State 15:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
+PRED => shift 3
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
 RBRACE => reduce 20
-LPAREN => shift 9
+LPAREN => shift 10
 RPAREN => reduce 20
 PERIOD => reduce 20
 COLON => reduce 20
 COMMA => reduce 20
-USCORE => shift 7
+USCORE => shift 8
 STAR => reduce 20
 LARROW => reduce 20
 RARROW => reduce 20
@@ -562,23 +610,23 @@ LLOLLI => reduce 20
 RLOLLI => reduce 20
 UNIFY => reduce 20
 DIFFER => reduce 20
-Atomics => goto 38
-Atomic => goto 19
+Atomics => goto 39
+Atomic => goto 20
 
 -----
 
-State 16:
+State 17:
 
 1 : Top -> STAGE IDENT . OpEquals LBRACE Tops RBRACE OpPeriod  / 5
 18 : Syn -> STAGE IDENT .  / 2
-30 : OpEquals -> .  / 14
-31 : OpEquals -> . EQUALS  / 14
+31 : OpEquals -> .  / 14
+32 : OpEquals -> . EQUALS  / 14
 
-LBRACE => reduce 30
+LBRACE => reduce 31
 PERIOD => reduce 18
 COLON => reduce 18
 COMMA => reduce 18
-EQUALS => shift 39
+EQUALS => shift 40
 STAR => reduce 18
 LARROW => reduce 18
 RARROW => reduce 18
@@ -586,31 +634,31 @@ LLOLLI => reduce 18
 RLOLLI => reduce 18
 UNIFY => reduce 18
 DIFFER => reduce 18
-OpEquals => goto 40
-
------
-
-State 17:
-
-2 : Top -> CONTEXT IDENT . OpEquals LBRACE OpSyn RBRACE OpPeriod  / 5
-30 : OpEquals -> .  / 14
-31 : OpEquals -> . EQUALS  / 14
-
-LBRACE => reduce 30
-EQUALS => shift 39
 OpEquals => goto 41
 
 -----
 
 State 18:
 
-3 : Top -> HASHDENT Atomics . PERIOD  / 5
+2 : Top -> CONTEXT IDENT . OpEquals LBRACE OpSyn RBRACE OpPeriod  / 5
+31 : OpEquals -> .  / 14
+32 : OpEquals -> . EQUALS  / 14
 
-PERIOD => shift 42
+LBRACE => reduce 31
+EQUALS => shift 40
+OpEquals => goto 42
 
 -----
 
 State 19:
+
+3 : Top -> HASHDENT Atomics . PERIOD  / 5
+
+PERIOD => shift 43
+
+-----
+
+State 20:
 
 20 : Atomics -> .  / 12
 21 : Atomics -> . Atomic Atomics  / 12
@@ -623,18 +671,20 @@ State 19:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
+PRED => shift 3
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
 RBRACE => reduce 20
-LPAREN => shift 9
+LPAREN => shift 10
 RPAREN => reduce 20
 PERIOD => reduce 20
 COLON => reduce 20
 COMMA => reduce 20
-USCORE => shift 7
+USCORE => shift 8
 STAR => reduce 20
 LARROW => reduce 20
 RARROW => reduce 20
@@ -642,26 +692,27 @@ LLOLLI => reduce 20
 RLOLLI => reduce 20
 UNIFY => reduce 20
 DIFFER => reduce 20
-Atomics => goto 43
-Atomic => goto 19
-
------
-
-State 20:
-
-18 : Syn -> STAGE . IDENT  / 12
-
-IDENT => shift 44
+Atomics => goto 44
+Atomic => goto 20
 
 -----
 
 State 21:
+
+18 : Syn -> STAGE . IDENT  / 12
+
+IDENT => shift 45
+
+-----
+
+State 22:
 
 25 : Atomic -> LBRACE RBRACE .  / 4
 
 PRED => reduce 25
 IDENT => reduce 25
 NUM => reduce 25
+STR => reduce 25
 LBRACE => reduce 25
 RBRACE => reduce 25
 LPAREN => reduce 25
@@ -680,7 +731,7 @@ DIFFER => reduce 25
 
 -----
 
-State 22:
+State 23:
 
 6 : Syn -> Syn . COLON Syn  / 8
 7 : Syn -> Syn . LLOLLI Syn  / 8
@@ -694,26 +745,27 @@ State 22:
 15 : Syn -> Syn . DIFFER Syn  / 8
 23 : Atomic -> LBRACE Syn . RBRACE  / 4
 
-RBRACE => shift 45
-COLON => shift 31
-COMMA => shift 30
-STAR => shift 34
-LARROW => shift 33
-RARROW => shift 36
-LLOLLI => shift 35
-RLOLLI => shift 29
-UNIFY => shift 28
-DIFFER => shift 27
+RBRACE => shift 46
+COLON => shift 32
+COMMA => shift 31
+STAR => shift 35
+LARROW => shift 34
+RARROW => shift 37
+LLOLLI => shift 36
+RLOLLI => shift 30
+UNIFY => shift 29
+DIFFER => shift 28
 
 -----
 
-State 23:
+State 24:
 
 24 : Atomic -> LPAREN RPAREN .  / 4
 
 PRED => reduce 24
 IDENT => reduce 24
 NUM => reduce 24
+STR => reduce 24
 LBRACE => reduce 24
 RBRACE => reduce 24
 LPAREN => reduce 24
@@ -732,7 +784,7 @@ DIFFER => reduce 24
 
 -----
 
-State 24:
+State 25:
 
 6 : Syn -> Syn . COLON Syn  / 10
 7 : Syn -> Syn . LLOLLI Syn  / 10
@@ -746,20 +798,20 @@ State 24:
 15 : Syn -> Syn . DIFFER Syn  / 10
 22 : Atomic -> LPAREN Syn . RPAREN  / 4
 
-RPAREN => shift 46
-COLON => shift 31
-COMMA => shift 30
-STAR => shift 34
-LARROW => shift 33
-RARROW => shift 36
-LLOLLI => shift 35
-RLOLLI => shift 29
-UNIFY => shift 28
-DIFFER => shift 27
+RPAREN => shift 47
+COLON => shift 32
+COMMA => shift 31
+STAR => shift 35
+LARROW => shift 34
+RARROW => shift 37
+LLOLLI => shift 36
+RLOLLI => shift 30
+UNIFY => shift 29
+DIFFER => shift 28
 
 -----
 
-State 25:
+State 26:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -776,19 +828,19 @@ State 25:
 RBRACE => reduce 17
 RPAREN => reduce 17
 PERIOD => reduce 17
-COLON => reduce 17, shift 31  PRECEDENCE
-COMMA => reduce 17, shift 30  PRECEDENCE
-STAR => reduce 17, shift 34  PRECEDENCE
-LARROW => reduce 17, shift 33  PRECEDENCE
-RARROW => reduce 17, shift 36  PRECEDENCE
-LLOLLI => reduce 17, shift 35  PRECEDENCE
-RLOLLI => reduce 17, shift 29  PRECEDENCE
-UNIFY => shift 28, reduce 17  PRECEDENCE
-DIFFER => shift 27, reduce 17  PRECEDENCE
+COLON => reduce 17, shift 32  PRECEDENCE
+COMMA => reduce 17, shift 31  PRECEDENCE
+STAR => reduce 17, shift 35  PRECEDENCE
+LARROW => reduce 17, shift 34  PRECEDENCE
+RARROW => reduce 17, shift 37  PRECEDENCE
+LLOLLI => reduce 17, shift 36  PRECEDENCE
+RLOLLI => reduce 17, shift 30  PRECEDENCE
+UNIFY => shift 29, reduce 17  PRECEDENCE
+DIFFER => shift 28, reduce 17  PRECEDENCE
 
 -----
 
-State 26:
+State 27:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -805,19 +857,19 @@ State 26:
 RBRACE => reduce 16
 RPAREN => reduce 16
 PERIOD => reduce 16
-COLON => reduce 16, shift 31  PRECEDENCE
-COMMA => reduce 16, shift 30  PRECEDENCE
-STAR => reduce 16, shift 34  PRECEDENCE
-LARROW => reduce 16, shift 33  PRECEDENCE
-RARROW => reduce 16, shift 36  PRECEDENCE
-LLOLLI => reduce 16, shift 35  PRECEDENCE
-RLOLLI => reduce 16, shift 29  PRECEDENCE
-UNIFY => shift 28, reduce 16  PRECEDENCE
-DIFFER => shift 27, reduce 16  PRECEDENCE
+COLON => reduce 16, shift 32  PRECEDENCE
+COMMA => reduce 16, shift 31  PRECEDENCE
+STAR => reduce 16, shift 35  PRECEDENCE
+LARROW => reduce 16, shift 34  PRECEDENCE
+RARROW => reduce 16, shift 37  PRECEDENCE
+LLOLLI => reduce 16, shift 36  PRECEDENCE
+RLOLLI => reduce 16, shift 30  PRECEDENCE
+UNIFY => shift 29, reduce 16  PRECEDENCE
+DIFFER => shift 28, reduce 16  PRECEDENCE
 
 -----
 
-State 27:
+State 28:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -842,22 +894,24 @@ State 27:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 47
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 48
+Atomic => goto 16
 
 -----
 
-State 28:
+State 29:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -882,22 +936,24 @@ State 28:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 48
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 49
+Atomic => goto 16
 
 -----
 
-State 29:
+State 30:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -923,21 +979,23 @@ State 29:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
 RBRACE => reduce 10
-LPAREN => shift 9
+LPAREN => shift 10
 RPAREN => reduce 10
 PERIOD => reduce 10
 COLON => reduce 10
 COMMA => reduce 10
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
 STAR => reduce 10
 LARROW => reduce 10
 RARROW => reduce 10
@@ -945,12 +1003,12 @@ LLOLLI => reduce 10
 RLOLLI => reduce 10
 UNIFY => reduce 10
 DIFFER => reduce 10
-Syn => goto 49
-Atomic => goto 15
+Syn => goto 50
+Atomic => goto 16
 
 -----
 
-State 30:
+State 31:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -975,22 +1033,24 @@ State 30:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 50
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 51
+Atomic => goto 16
 
 -----
 
-State 31:
+State 32:
 
 6 : Syn -> . Syn COLON Syn  / 12
 6 : Syn -> Syn COLON . Syn  / 12
@@ -1015,22 +1075,24 @@ State 31:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 51
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 52
+Atomic => goto 16
 
 -----
 
-State 32:
+State 33:
 
 0 : Top -> Syn PERIOD .  / 5
 
@@ -1040,6 +1102,7 @@ STAGE => reduce 0
 CONTEXT => reduce 0
 IDENT => reduce 0
 NUM => reduce 0
+STR => reduce 0
 HASHDENT => reduce 0
 LBRACE => reduce 0
 RBRACE => reduce 0
@@ -1050,7 +1113,7 @@ BANG => reduce 0
 
 -----
 
-State 33:
+State 34:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -1075,22 +1138,24 @@ State 33:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 52
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 53
+Atomic => goto 16
 
 -----
 
-State 34:
+State 35:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -1115,22 +1180,24 @@ State 34:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 53
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 54
+Atomic => goto 16
 
 -----
 
-State 35:
+State 36:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -1155,22 +1222,24 @@ State 35:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 54
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 55
+Atomic => goto 16
 
 -----
 
-State 36:
+State 37:
 
 6 : Syn -> . Syn COLON Syn  / 12
 7 : Syn -> . Syn LLOLLI Syn  / 12
@@ -1195,22 +1264,24 @@ State 36:
 27 : Atomic -> . USCORE  / 4
 28 : Atomic -> . PRED  / 4
 29 : Atomic -> . NUM  / 4
+30 : Atomic -> . STR  / 4
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 55
-Atomic => goto 15
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 56
+Atomic => goto 16
 
 -----
 
-State 37:
+State 38:
 
 5 : Tops -> Top Tops .  / 13
 
@@ -1219,7 +1290,7 @@ RBRACE => reduce 5
 
 -----
 
-State 38:
+State 39:
 
 19 : Syn -> Atomic Atomics .  / 12
 
@@ -1238,31 +1309,31 @@ DIFFER => reduce 19
 
 -----
 
-State 39:
-
-31 : OpEquals -> EQUALS .  / 14
-
-LBRACE => reduce 31
-
------
-
 State 40:
 
-1 : Top -> STAGE IDENT OpEquals . LBRACE Tops RBRACE OpPeriod  / 5
+32 : OpEquals -> EQUALS .  / 14
 
-LBRACE => shift 56
+LBRACE => reduce 32
 
 -----
 
 State 41:
 
-2 : Top -> CONTEXT IDENT OpEquals . LBRACE OpSyn RBRACE OpPeriod  / 5
+1 : Top -> STAGE IDENT OpEquals . LBRACE Tops RBRACE OpPeriod  / 5
 
 LBRACE => shift 57
 
 -----
 
 State 42:
+
+2 : Top -> CONTEXT IDENT OpEquals . LBRACE OpSyn RBRACE OpPeriod  / 5
+
+LBRACE => shift 58
+
+-----
+
+State 43:
 
 3 : Top -> HASHDENT Atomics PERIOD .  / 5
 
@@ -1272,6 +1343,7 @@ STAGE => reduce 3
 CONTEXT => reduce 3
 IDENT => reduce 3
 NUM => reduce 3
+STR => reduce 3
 HASHDENT => reduce 3
 LBRACE => reduce 3
 RBRACE => reduce 3
@@ -1282,7 +1354,7 @@ BANG => reduce 3
 
 -----
 
-State 43:
+State 44:
 
 21 : Atomics -> Atomic Atomics .  / 12
 
@@ -1301,7 +1373,7 @@ DIFFER => reduce 21
 
 -----
 
-State 44:
+State 45:
 
 18 : Syn -> STAGE IDENT .  / 12
 
@@ -1320,13 +1392,14 @@ DIFFER => reduce 18
 
 -----
 
-State 45:
+State 46:
 
 23 : Atomic -> LBRACE Syn RBRACE .  / 4
 
 PRED => reduce 23
 IDENT => reduce 23
 NUM => reduce 23
+STR => reduce 23
 LBRACE => reduce 23
 RBRACE => reduce 23
 LPAREN => reduce 23
@@ -1345,13 +1418,14 @@ DIFFER => reduce 23
 
 -----
 
-State 46:
+State 47:
 
 22 : Atomic -> LPAREN Syn RPAREN .  / 4
 
 PRED => reduce 22
 IDENT => reduce 22
 NUM => reduce 22
+STR => reduce 22
 LBRACE => reduce 22
 RBRACE => reduce 22
 LPAREN => reduce 22
@@ -1370,7 +1444,7 @@ DIFFER => reduce 22
 
 -----
 
-State 47:
+State 48:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1387,19 +1461,19 @@ State 47:
 RBRACE => reduce 15
 RPAREN => reduce 15
 PERIOD => reduce 15
-COLON => reduce 15, shift 31  PRECEDENCE
-COMMA => reduce 15, shift 30  PRECEDENCE
-STAR => reduce 15, shift 34  PRECEDENCE
-LARROW => reduce 15, shift 33  PRECEDENCE
-RARROW => reduce 15, shift 36  PRECEDENCE
-LLOLLI => reduce 15, shift 35  PRECEDENCE
-RLOLLI => reduce 15, shift 29  PRECEDENCE
-UNIFY => shift 28, reduce 15  PRECEDENCE
-DIFFER => shift 27, reduce 15  PRECEDENCE
+COLON => reduce 15, shift 32  PRECEDENCE
+COMMA => reduce 15, shift 31  PRECEDENCE
+STAR => reduce 15, shift 35  PRECEDENCE
+LARROW => reduce 15, shift 34  PRECEDENCE
+RARROW => reduce 15, shift 37  PRECEDENCE
+LLOLLI => reduce 15, shift 36  PRECEDENCE
+RLOLLI => reduce 15, shift 30  PRECEDENCE
+UNIFY => shift 29, reduce 15  PRECEDENCE
+DIFFER => shift 28, reduce 15  PRECEDENCE
 
 -----
 
-State 48:
+State 49:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1416,19 +1490,19 @@ State 48:
 RBRACE => reduce 14
 RPAREN => reduce 14
 PERIOD => reduce 14
-COLON => reduce 14, shift 31  PRECEDENCE
-COMMA => reduce 14, shift 30  PRECEDENCE
-STAR => reduce 14, shift 34  PRECEDENCE
-LARROW => reduce 14, shift 33  PRECEDENCE
-RARROW => reduce 14, shift 36  PRECEDENCE
-LLOLLI => reduce 14, shift 35  PRECEDENCE
-RLOLLI => reduce 14, shift 29  PRECEDENCE
-UNIFY => shift 28, reduce 14  PRECEDENCE
-DIFFER => shift 27, reduce 14  PRECEDENCE
+COLON => reduce 14, shift 32  PRECEDENCE
+COMMA => reduce 14, shift 31  PRECEDENCE
+STAR => reduce 14, shift 35  PRECEDENCE
+LARROW => reduce 14, shift 34  PRECEDENCE
+RARROW => reduce 14, shift 37  PRECEDENCE
+LLOLLI => reduce 14, shift 36  PRECEDENCE
+RLOLLI => reduce 14, shift 30  PRECEDENCE
+UNIFY => shift 29, reduce 14  PRECEDENCE
+DIFFER => shift 28, reduce 14  PRECEDENCE
 
 -----
 
-State 49:
+State 50:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1445,19 +1519,19 @@ State 49:
 RBRACE => reduce 9
 RPAREN => reduce 9
 PERIOD => reduce 9
-COLON => reduce 9, shift 31  PRECEDENCE
-COMMA => reduce 9, shift 30  PRECEDENCE
-STAR => shift 34, reduce 9  PRECEDENCE
-LARROW => reduce 9, shift 33  PRECEDENCE
-RARROW => shift 36, reduce 9  PRECEDENCE
-LLOLLI => reduce 9, shift 35  PRECEDENCE
-RLOLLI => shift 29, reduce 9  PRECEDENCE
-UNIFY => shift 28, reduce 9  PRECEDENCE
-DIFFER => shift 27, reduce 9  PRECEDENCE
+COLON => reduce 9, shift 32  PRECEDENCE
+COMMA => reduce 9, shift 31  PRECEDENCE
+STAR => shift 35, reduce 9  PRECEDENCE
+LARROW => reduce 9, shift 34  PRECEDENCE
+RARROW => shift 37, reduce 9  PRECEDENCE
+LLOLLI => reduce 9, shift 36  PRECEDENCE
+RLOLLI => shift 30, reduce 9  PRECEDENCE
+UNIFY => shift 29, reduce 9  PRECEDENCE
+DIFFER => shift 28, reduce 9  PRECEDENCE
 
 -----
 
-State 50:
+State 51:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1474,19 +1548,19 @@ State 50:
 RBRACE => reduce 13
 RPAREN => reduce 13
 PERIOD => reduce 13
-COLON => shift 31, reduce 13  PRECEDENCE
-COMMA => shift 30, reduce 13  PRECEDENCE
-STAR => shift 34, reduce 13  PRECEDENCE
-LARROW => shift 33, reduce 13  PRECEDENCE
-RARROW => shift 36, reduce 13  PRECEDENCE
-LLOLLI => shift 35, reduce 13  PRECEDENCE
-RLOLLI => shift 29, reduce 13  PRECEDENCE
-UNIFY => shift 28, reduce 13  PRECEDENCE
-DIFFER => shift 27, reduce 13  PRECEDENCE
+COLON => shift 32, reduce 13  PRECEDENCE
+COMMA => shift 31, reduce 13  PRECEDENCE
+STAR => shift 35, reduce 13  PRECEDENCE
+LARROW => shift 34, reduce 13  PRECEDENCE
+RARROW => shift 37, reduce 13  PRECEDENCE
+LLOLLI => shift 36, reduce 13  PRECEDENCE
+RLOLLI => shift 30, reduce 13  PRECEDENCE
+UNIFY => shift 29, reduce 13  PRECEDENCE
+DIFFER => shift 28, reduce 13  PRECEDENCE
 
 -----
 
-State 51:
+State 52:
 
 6 : Syn -> Syn . COLON Syn  / 12
 6 : Syn -> Syn COLON Syn .  / 12
@@ -1503,19 +1577,19 @@ State 51:
 RBRACE => reduce 6
 RPAREN => reduce 6
 PERIOD => reduce 6
-COLON => shift 31, reduce 6  PRECEDENCE
-COMMA => reduce 6, shift 30  PRECEDENCE
-STAR => shift 34, reduce 6  PRECEDENCE
-LARROW => shift 33, reduce 6  PRECEDENCE
-RARROW => shift 36, reduce 6  PRECEDENCE
-LLOLLI => shift 35, reduce 6  PRECEDENCE
-RLOLLI => shift 29, reduce 6  PRECEDENCE
-UNIFY => shift 28, reduce 6  PRECEDENCE
-DIFFER => shift 27, reduce 6  PRECEDENCE
+COLON => shift 32, reduce 6  PRECEDENCE
+COMMA => reduce 6, shift 31  PRECEDENCE
+STAR => shift 35, reduce 6  PRECEDENCE
+LARROW => shift 34, reduce 6  PRECEDENCE
+RARROW => shift 37, reduce 6  PRECEDENCE
+LLOLLI => shift 36, reduce 6  PRECEDENCE
+RLOLLI => shift 30, reduce 6  PRECEDENCE
+UNIFY => shift 29, reduce 6  PRECEDENCE
+DIFFER => shift 28, reduce 6  PRECEDENCE
 
 -----
 
-State 52:
+State 53:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1532,19 +1606,19 @@ State 52:
 RBRACE => reduce 8
 RPAREN => reduce 8
 PERIOD => reduce 8
-COLON => reduce 8, shift 31  PRECEDENCE
-COMMA => reduce 8, shift 30  PRECEDENCE
-STAR => shift 34, reduce 8  PRECEDENCE
-LARROW => reduce 8, shift 33  PRECEDENCE
-RARROW => shift 36, reduce 8  PRECEDENCE
-LLOLLI => reduce 8, shift 35  PRECEDENCE
-RLOLLI => shift 29, reduce 8  PRECEDENCE
-UNIFY => shift 28, reduce 8  PRECEDENCE
-DIFFER => shift 27, reduce 8  PRECEDENCE
+COLON => reduce 8, shift 32  PRECEDENCE
+COMMA => reduce 8, shift 31  PRECEDENCE
+STAR => shift 35, reduce 8  PRECEDENCE
+LARROW => reduce 8, shift 34  PRECEDENCE
+RARROW => shift 37, reduce 8  PRECEDENCE
+LLOLLI => reduce 8, shift 36  PRECEDENCE
+RLOLLI => shift 30, reduce 8  PRECEDENCE
+UNIFY => shift 29, reduce 8  PRECEDENCE
+DIFFER => shift 28, reduce 8  PRECEDENCE
 
 -----
 
-State 53:
+State 54:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1561,19 +1635,19 @@ State 53:
 RBRACE => reduce 12
 RPAREN => reduce 12
 PERIOD => reduce 12
-COLON => reduce 12, shift 31  PRECEDENCE
-COMMA => reduce 12, shift 30  PRECEDENCE
-STAR => shift 34, reduce 12  PRECEDENCE
-LARROW => reduce 12, shift 33  PRECEDENCE
-RARROW => reduce 12, shift 36  PRECEDENCE
-LLOLLI => reduce 12, shift 35  PRECEDENCE
-RLOLLI => reduce 12, shift 29  PRECEDENCE
-UNIFY => shift 28, reduce 12  PRECEDENCE
-DIFFER => shift 27, reduce 12  PRECEDENCE
+COLON => reduce 12, shift 32  PRECEDENCE
+COMMA => reduce 12, shift 31  PRECEDENCE
+STAR => shift 35, reduce 12  PRECEDENCE
+LARROW => reduce 12, shift 34  PRECEDENCE
+RARROW => reduce 12, shift 37  PRECEDENCE
+LLOLLI => reduce 12, shift 36  PRECEDENCE
+RLOLLI => reduce 12, shift 30  PRECEDENCE
+UNIFY => shift 29, reduce 12  PRECEDENCE
+DIFFER => shift 28, reduce 12  PRECEDENCE
 
 -----
 
-State 54:
+State 55:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1590,19 +1664,19 @@ State 54:
 RBRACE => reduce 7
 RPAREN => reduce 7
 PERIOD => reduce 7
-COLON => reduce 7, shift 31  PRECEDENCE
-COMMA => reduce 7, shift 30  PRECEDENCE
-STAR => shift 34, reduce 7  PRECEDENCE
-LARROW => reduce 7, shift 33  PRECEDENCE
-RARROW => shift 36, reduce 7  PRECEDENCE
-LLOLLI => reduce 7, shift 35  PRECEDENCE
-RLOLLI => shift 29, reduce 7  PRECEDENCE
-UNIFY => shift 28, reduce 7  PRECEDENCE
-DIFFER => shift 27, reduce 7  PRECEDENCE
+COLON => reduce 7, shift 32  PRECEDENCE
+COMMA => reduce 7, shift 31  PRECEDENCE
+STAR => shift 35, reduce 7  PRECEDENCE
+LARROW => reduce 7, shift 34  PRECEDENCE
+RARROW => shift 37, reduce 7  PRECEDENCE
+LLOLLI => reduce 7, shift 36  PRECEDENCE
+RLOLLI => shift 30, reduce 7  PRECEDENCE
+UNIFY => shift 29, reduce 7  PRECEDENCE
+DIFFER => shift 28, reduce 7  PRECEDENCE
 
 -----
 
-State 55:
+State 56:
 
 6 : Syn -> Syn . COLON Syn  / 12
 7 : Syn -> Syn . LLOLLI Syn  / 12
@@ -1619,19 +1693,19 @@ State 55:
 RBRACE => reduce 11
 RPAREN => reduce 11
 PERIOD => reduce 11
-COLON => reduce 11, shift 31  PRECEDENCE
-COMMA => reduce 11, shift 30  PRECEDENCE
-STAR => shift 34, reduce 11  PRECEDENCE
-LARROW => reduce 11, shift 33  PRECEDENCE
-RARROW => shift 36, reduce 11  PRECEDENCE
-LLOLLI => reduce 11, shift 35  PRECEDENCE
-RLOLLI => shift 29, reduce 11  PRECEDENCE
-UNIFY => shift 28, reduce 11  PRECEDENCE
-DIFFER => shift 27, reduce 11  PRECEDENCE
+COLON => reduce 11, shift 32  PRECEDENCE
+COMMA => reduce 11, shift 31  PRECEDENCE
+STAR => shift 35, reduce 11  PRECEDENCE
+LARROW => reduce 11, shift 34  PRECEDENCE
+RARROW => shift 37, reduce 11  PRECEDENCE
+LLOLLI => reduce 11, shift 36  PRECEDENCE
+RLOLLI => shift 30, reduce 11  PRECEDENCE
+UNIFY => shift 29, reduce 11  PRECEDENCE
+DIFFER => shift 28, reduce 11  PRECEDENCE
 
 -----
 
-State 56:
+State 57:
 
 0 : Top -> . Syn PERIOD  / 15
 1 : Top -> . STAGE IDENT OpEquals LBRACE Tops RBRACE OpPeriod  / 15
@@ -1662,27 +1736,29 @@ State 56:
 27 : Atomic -> . USCORE  / 3
 28 : Atomic -> . PRED  / 3
 29 : Atomic -> . NUM  / 3
+30 : Atomic -> . STR  / 3
 
-PRED => shift 2
-STAGE => shift 3
-CONTEXT => shift 5
-IDENT => shift 4
-NUM => shift 1
-HASHDENT => shift 6
-LBRACE => shift 8
+PRED => shift 3
+STAGE => shift 4
+CONTEXT => shift 6
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+HASHDENT => shift 7
+LBRACE => shift 9
 RBRACE => reduce 4
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Tops => goto 58
-Top => goto 14
-Syn => goto 12
-Atomic => goto 15
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Tops => goto 59
+Top => goto 15
+Syn => goto 13
+Atomic => goto 16
 
 -----
 
-State 57:
+State 58:
 
 2 : Top -> CONTEXT IDENT OpEquals LBRACE . OpSyn RBRACE OpPeriod  / 5
 6 : Syn -> . Syn COLON Syn  / 8
@@ -1707,34 +1783,36 @@ State 57:
 27 : Atomic -> . USCORE  / 9
 28 : Atomic -> . PRED  / 9
 29 : Atomic -> . NUM  / 9
-34 : OpSyn -> .  / 16
-35 : OpSyn -> . Syn  / 16
+30 : Atomic -> . STR  / 9
+35 : OpSyn -> .  / 16
+36 : OpSyn -> . Syn  / 16
 
-PRED => shift 2
-STAGE => shift 20
-IDENT => shift 4
-NUM => shift 1
-LBRACE => shift 8
-RBRACE => reduce 34
-LPAREN => shift 9
-USCORE => shift 7
-DOLLAR => shift 10
-BANG => shift 11
-Syn => goto 59
-OpSyn => goto 60
-Atomic => goto 15
-
------
-
-State 58:
-
-1 : Top -> STAGE IDENT OpEquals LBRACE Tops . RBRACE OpPeriod  / 5
-
-RBRACE => shift 61
+PRED => shift 3
+STAGE => shift 21
+IDENT => shift 5
+NUM => shift 2
+STR => shift 1
+LBRACE => shift 9
+RBRACE => reduce 35
+LPAREN => shift 10
+USCORE => shift 8
+DOLLAR => shift 11
+BANG => shift 12
+Syn => goto 60
+OpSyn => goto 61
+Atomic => goto 16
 
 -----
 
 State 59:
+
+1 : Top -> STAGE IDENT OpEquals LBRACE Tops . RBRACE OpPeriod  / 5
+
+RBRACE => shift 62
+
+-----
+
+State 60:
 
 6 : Syn -> Syn . COLON Syn  / 8
 7 : Syn -> Syn . LLOLLI Syn  / 8
@@ -1746,80 +1824,34 @@ State 59:
 13 : Syn -> Syn . COMMA Syn  / 8
 14 : Syn -> Syn . UNIFY Syn  / 8
 15 : Syn -> Syn . DIFFER Syn  / 8
-35 : OpSyn -> Syn .  / 16
+36 : OpSyn -> Syn .  / 16
 
-RBRACE => reduce 35
-COLON => shift 31
-COMMA => shift 30
-STAR => shift 34
-LARROW => shift 33
-RARROW => shift 36
-LLOLLI => shift 35
-RLOLLI => shift 29
-UNIFY => shift 28
-DIFFER => shift 27
-
------
-
-State 60:
-
-2 : Top -> CONTEXT IDENT OpEquals LBRACE OpSyn . RBRACE OpPeriod  / 5
-
-RBRACE => shift 62
+RBRACE => reduce 36
+COLON => shift 32
+COMMA => shift 31
+STAR => shift 35
+LARROW => shift 34
+RARROW => shift 37
+LLOLLI => shift 36
+RLOLLI => shift 30
+UNIFY => shift 29
+DIFFER => shift 28
 
 -----
 
 State 61:
 
-1 : Top -> STAGE IDENT OpEquals LBRACE Tops RBRACE . OpPeriod  / 5
-32 : OpPeriod -> .  / 5
-33 : OpPeriod -> . PERIOD  / 5
+2 : Top -> CONTEXT IDENT OpEquals LBRACE OpSyn . RBRACE OpPeriod  / 5
 
-$ => reduce 32
-PRED => reduce 32
-STAGE => reduce 32
-CONTEXT => reduce 32
-IDENT => reduce 32
-NUM => reduce 32
-HASHDENT => reduce 32
-LBRACE => reduce 32
-RBRACE => reduce 32
-LPAREN => reduce 32
-PERIOD => shift 63
-USCORE => reduce 32
-DOLLAR => reduce 32
-BANG => reduce 32
-OpPeriod => goto 64
+RBRACE => shift 63
 
 -----
 
 State 62:
 
-2 : Top -> CONTEXT IDENT OpEquals LBRACE OpSyn RBRACE . OpPeriod  / 5
-32 : OpPeriod -> .  / 5
-33 : OpPeriod -> . PERIOD  / 5
-
-$ => reduce 32
-PRED => reduce 32
-STAGE => reduce 32
-CONTEXT => reduce 32
-IDENT => reduce 32
-NUM => reduce 32
-HASHDENT => reduce 32
-LBRACE => reduce 32
-RBRACE => reduce 32
-LPAREN => reduce 32
-PERIOD => shift 63
-USCORE => reduce 32
-DOLLAR => reduce 32
-BANG => reduce 32
-OpPeriod => goto 65
-
------
-
-State 63:
-
-33 : OpPeriod -> PERIOD .  / 5
+1 : Top -> STAGE IDENT OpEquals LBRACE Tops RBRACE . OpPeriod  / 5
+33 : OpPeriod -> .  / 5
+34 : OpPeriod -> . PERIOD  / 5
 
 $ => reduce 33
 PRED => reduce 33
@@ -1827,17 +1859,66 @@ STAGE => reduce 33
 CONTEXT => reduce 33
 IDENT => reduce 33
 NUM => reduce 33
+STR => reduce 33
 HASHDENT => reduce 33
 LBRACE => reduce 33
 RBRACE => reduce 33
 LPAREN => reduce 33
+PERIOD => shift 64
 USCORE => reduce 33
 DOLLAR => reduce 33
 BANG => reduce 33
+OpPeriod => goto 65
+
+-----
+
+State 63:
+
+2 : Top -> CONTEXT IDENT OpEquals LBRACE OpSyn RBRACE . OpPeriod  / 5
+33 : OpPeriod -> .  / 5
+34 : OpPeriod -> . PERIOD  / 5
+
+$ => reduce 33
+PRED => reduce 33
+STAGE => reduce 33
+CONTEXT => reduce 33
+IDENT => reduce 33
+NUM => reduce 33
+STR => reduce 33
+HASHDENT => reduce 33
+LBRACE => reduce 33
+RBRACE => reduce 33
+LPAREN => reduce 33
+PERIOD => shift 64
+USCORE => reduce 33
+DOLLAR => reduce 33
+BANG => reduce 33
+OpPeriod => goto 66
 
 -----
 
 State 64:
+
+34 : OpPeriod -> PERIOD .  / 5
+
+$ => reduce 34
+PRED => reduce 34
+STAGE => reduce 34
+CONTEXT => reduce 34
+IDENT => reduce 34
+NUM => reduce 34
+STR => reduce 34
+HASHDENT => reduce 34
+LBRACE => reduce 34
+RBRACE => reduce 34
+LPAREN => reduce 34
+USCORE => reduce 34
+DOLLAR => reduce 34
+BANG => reduce 34
+
+-----
+
+State 65:
 
 1 : Top -> STAGE IDENT OpEquals LBRACE Tops RBRACE OpPeriod .  / 5
 
@@ -1847,6 +1928,7 @@ STAGE => reduce 1
 CONTEXT => reduce 1
 IDENT => reduce 1
 NUM => reduce 1
+STR => reduce 1
 HASHDENT => reduce 1
 LBRACE => reduce 1
 RBRACE => reduce 1
@@ -1857,7 +1939,7 @@ BANG => reduce 1
 
 -----
 
-State 65:
+State 66:
 
 2 : Top -> CONTEXT IDENT OpEquals LBRACE OpSyn RBRACE OpPeriod .  / 5
 
@@ -1867,6 +1949,7 @@ STAGE => reduce 2
 CONTEXT => reduce 2
 IDENT => reduce 2
 NUM => reduce 2
+STR => reduce 2
 HASHDENT => reduce 2
 LBRACE => reduce 2
 RBRACE => reduce 2
@@ -1878,21 +1961,21 @@ BANG => reduce 2
 -----
 
 lookahead 0 = $ 
-lookahead 1 = $ PRED STAGE CONTEXT IDENT NUM HASHDENT LBRACE LPAREN USCORE DOLLAR BANG 
+lookahead 1 = $ PRED STAGE CONTEXT IDENT NUM STR HASHDENT LBRACE LPAREN USCORE DOLLAR BANG 
 lookahead 2 = PERIOD COLON COMMA STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
-lookahead 3 = PRED IDENT NUM LBRACE LPAREN PERIOD COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
-lookahead 4 = PRED IDENT NUM LBRACE RBRACE LPAREN RPAREN PERIOD COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
-lookahead 5 = $ PRED STAGE CONTEXT IDENT NUM HASHDENT LBRACE RBRACE LPAREN USCORE DOLLAR BANG 
+lookahead 3 = PRED IDENT NUM STR LBRACE LPAREN PERIOD COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
+lookahead 4 = PRED IDENT NUM STR LBRACE RBRACE LPAREN RPAREN PERIOD COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
+lookahead 5 = $ PRED STAGE CONTEXT IDENT NUM STR HASHDENT LBRACE RBRACE LPAREN USCORE DOLLAR BANG 
 lookahead 6 = PERIOD 
-lookahead 7 = PRED IDENT NUM LBRACE LPAREN PERIOD USCORE 
+lookahead 7 = PRED IDENT NUM STR LBRACE LPAREN PERIOD USCORE 
 lookahead 8 = RBRACE COLON COMMA STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
-lookahead 9 = PRED IDENT NUM LBRACE RBRACE LPAREN COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
+lookahead 9 = PRED IDENT NUM STR LBRACE RBRACE LPAREN COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
 lookahead 10 = RPAREN COLON COMMA STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
-lookahead 11 = PRED IDENT NUM LBRACE LPAREN RPAREN COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
+lookahead 11 = PRED IDENT NUM STR LBRACE LPAREN RPAREN COLON COMMA USCORE STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
 lookahead 12 = RBRACE RPAREN PERIOD COLON COMMA STAR LARROW RARROW LLOLLI RLOLLI UNIFY DIFFER 
 lookahead 13 = $ RBRACE 
 lookahead 14 = LBRACE 
-lookahead 15 = PRED STAGE CONTEXT IDENT NUM HASHDENT LBRACE RBRACE LPAREN USCORE DOLLAR BANG 
+lookahead 15 = PRED STAGE CONTEXT IDENT NUM STR HASHDENT LBRACE RBRACE LPAREN USCORE DOLLAR BANG 
 lookahead 16 = RBRACE 
 
 *)
@@ -1922,31 +2005,32 @@ Arg.PRED => (1, Value.nonterminal)
 | Arg.CONTEXT => (3, Value.nonterminal)
 | Arg.IDENT x => (4, Value.string x)
 | Arg.NUM x => (5, Value.int x)
-| Arg.HASHDENT x => (6, Value.string x)
-| Arg.LBRACE => (7, Value.nonterminal)
-| Arg.RBRACE => (8, Value.nonterminal)
-| Arg.LPAREN => (9, Value.nonterminal)
-| Arg.RPAREN => (10, Value.nonterminal)
-| Arg.PERIOD => (11, Value.nonterminal)
-| Arg.COLON => (12, Value.nonterminal)
-| Arg.COMMA => (13, Value.nonterminal)
-| Arg.EQUALS => (14, Value.nonterminal)
-| Arg.USCORE => (15, Value.nonterminal)
-| Arg.DOLLAR => (16, Value.nonterminal)
-| Arg.BANG => (17, Value.nonterminal)
-| Arg.STAR => (18, Value.nonterminal)
-| Arg.LARROW => (19, Value.nonterminal)
-| Arg.RARROW => (20, Value.nonterminal)
-| Arg.LLOLLI => (21, Value.nonterminal)
-| Arg.RLOLLI => (22, Value.nonterminal)
-| Arg.UNIFY => (23, Value.nonterminal)
-| Arg.DIFFER => (24, Value.nonterminal)
+| Arg.STR x => (6, Value.string x)
+| Arg.HASHDENT x => (7, Value.string x)
+| Arg.LBRACE => (8, Value.nonterminal)
+| Arg.RBRACE => (9, Value.nonterminal)
+| Arg.LPAREN => (10, Value.nonterminal)
+| Arg.RPAREN => (11, Value.nonterminal)
+| Arg.PERIOD => (12, Value.nonterminal)
+| Arg.COLON => (13, Value.nonterminal)
+| Arg.COMMA => (14, Value.nonterminal)
+| Arg.EQUALS => (15, Value.nonterminal)
+| Arg.USCORE => (16, Value.nonterminal)
+| Arg.DOLLAR => (17, Value.nonterminal)
+| Arg.BANG => (18, Value.nonterminal)
+| Arg.STAR => (19, Value.nonterminal)
+| Arg.LARROW => (20, Value.nonterminal)
+| Arg.RARROW => (21, Value.nonterminal)
+| Arg.LLOLLI => (22, Value.nonterminal)
+| Arg.RLOLLI => (23, Value.nonterminal)
+| Arg.UNIFY => (24, Value.nonterminal)
+| Arg.DIFFER => (25, Value.nonterminal)
 )
 )
 in
 val parse = ParseEngine.parse (
-ParseEngine.next5x1 "z\131\132\134\133\130\135\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128a\128\128aa\128aaaaaaa\128a\128\128aaaaaaa\128\128\128\128\128\128\128\128b\128\128bb\128bbbbbbb\128b\128\128bbbbbbb\128\128\128\128\128\128\128\128\128\128\128\145\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128d\128\128dd\128ddddddd\128d\128\128ddddddd\128\128\128\128\128\128\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\128\128\133\130\128\137\128\138\128j\128\128\128\136\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128c\128\128cc\128ccccccc\128c\128\128ccccccc\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\150\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\152\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\161\160\159\128\128\128\128\163\162\165\164\158\157\156\128\128\128\128\128\128\128\127\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128z\131\132\134\133\130\135\137z\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\128\128\133\130\128\137j\138jjjj\128\136\128\128jjjjjjj\128\128\128\128\128\128\128\128\128\128\128\128\128\128`\128\128\128lll\168\128\128\128lllllll\128\128\128\128\128\128\128\128\128\128\128\128\128\128`\128\128\128\128\128\128\168\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\171\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\128\128\133\130\128\137j\138jjjj\128\136\128\128jjjjjjj\128\128\128\128\128\128\128\128\128\128\128\173\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128e\128\128ee\128eeeeeee\128e\128\128eeeeeee\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\174\128\128\128\160\159\128\128\128\128\163\162\165\164\158\157\156\128\128\128\128\128\128\128\128f\128\128ff\128fffffff\128f\128\128fffffff\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\175\128\160\159\128\128\128\128\163\162\165\164\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128m\128mmmm\128\128\128\128mmmmm\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128n\128nnnn\128\128\128\128nnnnn\157\156\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137t\138tttt\128\136\139\140ttttttt\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128~~~~~~~~~~\128\128\128\128\128~~~\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\128\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128y\128\128\128\128\128\128\128y\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128k\128kkkk\128\128\128\128kkkkkkk\128\128\128\128\128\128\128\128\128\128\128\128\128\128_\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\185\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\186\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128{{{{{{{{{{\128\128\128\128\128{{{\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128i\128iiii\128\128\128\128iiiiiii\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128l\128llll\128\128\128\128lllllll\128\128\128\128\128\128\128\128g\128\128gg\128ggggggg\128g\128\128ggggggg\128\128\128\128\128\128\128\128h\128\128hh\128hhhhhhh\128h\128\128hhhhhhh\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128o\128oooo\128\128\128\128ooooo\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128p\128pppp\128\128\128\128ppppp\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128u\128uuuu\128\128\128\128\163u\165u\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128q\128qq\160\159\128\128\128\128\163\162\165\164\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128x\128xx\160x\128\128\128\128\163\162\165\164\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128v\128vvvv\128\128\128\128\163v\165v\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128r\128rrrr\128\128\128\128\163rrrr\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128w\128wwww\128\128\128\128\163w\165w\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128s\128ssss\128\128\128\128\163s\165s\158\157\156\128\128\128\128\128\128\128\128\131\132\134\133\130\135\137z\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\149\128\133\130\128\137\\\138\128\128\128\128\128\136\139\140\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\190\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128[\128\128\128\160\159\128\128\128\128\163\162\165\164\158\157\156\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\191\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128^^^^^^^^^^\128\192\128\128\128^^^\128\128\128\128\128\128\128\128\128\128\128\128\128\128^^^^^^^^^^\128\192\128\128\128^^^\128\128\128\128\128\128\128\128\128\128\128\128\128\128]]]]]]]]]]\128\128\128\128\128]]]\128\128\128\128\128\128\128\128\128\128\128\128\128\128}}}}}}}}}}\128\128\128\128\128}}}\128\128\128\128\128\128\128\128\128\128\128\128\128\128||||||||||\128\128\128\128\128|||\128\128\128\128\128\128\128\128\128\128\128\128\128\128",
-ParseEngine.next5x1 "\141\142\140\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\146\147\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\150\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\152\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\153\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\154\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\165\142\140\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\166\147\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\168\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\169\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\171\147\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\175\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\176\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\177\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\178\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\179\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\180\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\181\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\182\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\183\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\186\142\140\128\128\128\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\187\128\128\188\128\143\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\192\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\193\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128",
+ParseEngine.next5x1 "z\132\133\135\134\131\130\136\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128`\128\128```\128```````\128`\128\128```````\128\128\128\128\128\128\128a\128\128aaa\128aaaaaaa\128a\128\128aaaaaaa\128\128\128\128\128\128\128b\128\128bbb\128bbbbbbb\128b\128\128bbbbbbb\128\128\128\128\128\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128d\128\128ddd\128ddddddd\128d\128\128ddddddd\128\128\128\128\128\128\128\128\128\128\147\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\128\128\134\131\130\128\138\128\139\128j\128\128\128\137\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128c\128\128ccc\128ccccccc\128c\128\128ccccccc\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\151\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\153\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\162\161\160\128\128\128\128\164\163\166\165\159\158\157\128\128\128\128\128\128\127\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128z\132\133\135\134\131\130\136\138z\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\128\128\134\131\130\128\138j\139jjjj\128\137\128\128jjjjjjj\128\128\128\128\128\128\128\128\128\128\128\128\128\128_\128\128\128lll\169\128\128\128lllllll\128\128\128\128\128\128\128\128\128\128\128\128\128\128_\128\128\128\128\128\128\169\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\172\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\128\128\134\131\130\128\138j\139jjjj\128\137\128\128jjjjjjj\128\128\128\128\128\128\128\128\128\128\174\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128e\128\128eee\128eeeeeee\128e\128\128eeeeeee\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\175\128\128\128\161\160\128\128\128\128\164\163\166\165\159\158\157\128\128\128\128\128\128\128f\128\128fff\128fffffff\128f\128\128fffffff\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\176\128\161\160\128\128\128\128\164\163\166\165\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128m\128mmmm\128\128\128\128mmmmm\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128n\128nnnn\128\128\128\128nnnnn\158\157\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138t\139tttt\128\137\140\141ttttttt\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128~~~~~~~~~~~\128\128\128\128\128~~~\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138\128\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128y\128\128\128\128\128\128\128\128y\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128k\128kkkk\128\128\128\128kkkkkkk\128\128\128\128\128\128\128\128\128\128\128\128\128\128^\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\186\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\187\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128{{{{{{{{{{{\128\128\128\128\128{{{\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128i\128iiii\128\128\128\128iiiiiii\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128l\128llll\128\128\128\128lllllll\128\128\128\128\128\128\128g\128\128ggg\128ggggggg\128g\128\128ggggggg\128\128\128\128\128\128\128h\128\128hhh\128hhhhhhh\128h\128\128hhhhhhh\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128o\128oooo\128\128\128\128ooooo\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128p\128pppp\128\128\128\128ppppp\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128u\128uuuu\128\128\128\128\164u\166u\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128q\128qq\161\160\128\128\128\128\164\163\166\165\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128x\128xx\161x\128\128\128\128\164\163\166\165\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128v\128vvvv\128\128\128\128\164v\166v\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128r\128rrrr\128\128\128\128\164rrrr\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128w\128wwww\128\128\128\128\164w\166w\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128s\128ssss\128\128\128\128\164s\166s\159\158\157\128\128\128\128\128\128\128\132\133\135\134\131\130\136\138z\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\132\150\128\134\131\130\128\138[\139\128\128\128\128\128\137\140\141\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\191\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128Z\128\128\128\161\160\128\128\128\128\164\163\166\165\159\158\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\192\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128]]]]]]]]]]]\128\193\128\128\128]]]\128\128\128\128\128\128\128\128\128\128\128\128\128]]]]]]]]]]]\128\193\128\128\128]]]\128\128\128\128\128\128\128\128\128\128\128\128\128\\\\\\\\\\\\\\\\\\\\\\\128\128\128\128\128\\\\\\\128\128\128\128\128\128\128\128\128\128\128\128\128}}}}}}}}}}}\128\128\128\128\128}}}\128\128\128\128\128\128\128\128\128\128\128\128\128|||||||||||\128\128\128\128\128|||\128\128\128\128\128\128\128\128\128\128\128\128\128",
+ParseEngine.next5x1 "\142\143\141\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\147\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\151\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\153\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\154\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\155\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\166\143\141\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\167\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\169\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\170\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\172\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\176\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\177\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\178\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\179\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\180\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\181\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\182\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\183\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\184\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\187\143\141\128\128\128\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\188\128\128\189\128\144\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\193\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\194\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128",
 Vector.fromList [(1,2,(fn _::Value.syn(arg0)::rest => Value.top(Arg.Decl arg0)::rest|_=>raise (Fail "bad parser"))),
 (1,7,(fn _::_::Value.tops(arg0)::_::_::Value.string(arg1)::_::rest => Value.top(Arg.Stage {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (1,7,(fn _::_::Value.synopt(arg0)::_::_::Value.string(arg1)::_::rest => Value.top(Arg.Context {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
@@ -1977,6 +2061,7 @@ Vector.fromList [(1,2,(fn _::Value.syn(arg0)::rest => Value.top(Arg.Decl arg0)::
 (7,1,(fn _::rest => Value.syn(Arg.Wild {})::rest|_=>raise (Fail "bad parser"))),
 (7,1,(fn _::rest => Value.syn(Arg.Pred {})::rest|_=>raise (Fail "bad parser"))),
 (7,1,(fn Value.int(arg0)::rest => Value.syn(Arg.Num arg0)::rest|_=>raise (Fail "bad parser"))),
+(7,1,(fn Value.string(arg0)::rest => Value.syn(Arg.Str arg0)::rest|_=>raise (Fail "bad parser"))),
 (3,0,(fn rest => Value.ign(Arg.Ign {})::rest)),
 (3,1,(fn _::rest => Value.ign(Arg.Ign {})::rest|_=>raise (Fail "bad parser"))),
 (4,0,(fn rest => Value.ign(Arg.Ign {})::rest)),

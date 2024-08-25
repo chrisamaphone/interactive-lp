@@ -42,7 +42,7 @@ structure Ceptre = struct
      head : pred * term list, subgoals : prem}
 
   type tp_header = decl list
-  datatype builtin = NAT | NAT_ZERO | NAT_SUCC
+  datatype builtin = NAT | NAT_ZERO | NAT_SUCC | WRITE | STRING
   type sigma = {header:tp_header, 
                 builtin: (string * builtin) list,
                 rules:bwd_rule list}

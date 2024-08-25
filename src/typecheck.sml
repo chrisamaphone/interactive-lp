@@ -77,10 +77,15 @@ struct
 
    fun getNatType signat = 
       case S.find signat (S.BUILTIN, "NAT") of 
-         NONE => raise Fail ("Integer literal used, but builtin NAT "^
-                             "is not defiend.")
+         NONE => raise Fail ("Integer literal used, but builtin NAT is not defiend.")
        | SOME (S.BuiltinDecl (tp, Ceptre.NAT)) => tp
        | _ => raise Fail ("Ill-formed signatre (internal error: NAT)")
+
+   fun getStringType signat = 
+      case S.find signat (S.BUILTIN, "STRING") of 
+         NONE => raise Fail ("String literal used, but builtin STRING is not defiend.")
+       | SOME (S.BuiltinDecl (tp, Ceptre.STRING)) => tp
+       | _ => raise Fail ("Ill-formed signatre (internal error: STRING)")
 
    (* Just checks the outer layer of a term for the purported type.
     * NOT FULL TYPE SYNTHESIS *)
@@ -92,7 +97,7 @@ struct
              | decl => expectedNot f "constant" decl)
        | CS.Var id => Option.mapPartial (synthVar vartp) id
        | CS.ILit i => SOME (getNatType signat)
-       | CS.SLit s => raise Fail ("No type for string literals") 
+       | CS.SLit i => SOME (getStringType signat)
 
    fun checkTerm signat vartp (tm, tp) = 
       case tm of 
@@ -112,7 +117,11 @@ struct
                 then Ceptre.ILit i
              else raise Fail ("Integer literals have type "^getNatType signat^
                               ", but we expected a "^tp^" here"))
-        | CS.SLit s => raise Fail ("No type for string literals")
+        | CS.SLit s => 
+            (if getStringType signat = tp
+                then Ceptre.SLit s
+             else raise Fail ("String literals have type "^getStringType signat^
+                              ", but we expected a "^tp^" here"))
 
 
 
@@ -303,7 +312,7 @@ struct
                   S.find signat (S.BUILTIN, "NAT_SUCC"),
                   S.find signat (S.BUILTIN, "NAT")) of
                (_, _, NONE) => raise Fail "NAT builtin not yet defined"
-             | (_, SOME _, _) => raise Fail "NAT_ZERO builtin already defined"
+             | (_, SOME _, _) => raise Fail "NAT_SUCC builtin already defined"
              | (SOME (S.ConstDecl (_, [nat1], nat2)), NONE,
                 SOME (S.BuiltinDecl (declared_nat, Ceptre.NAT))) => 
                  (if nat1 = declared_nat andalso nat1 = nat2
@@ -312,6 +321,17 @@ struct
              | (SOME (S.ConstDecl _), NONE, _) =>
                   raise Fail "NAT_SUCC builtin must have one argument"
              | (decl, NONE, _) => expectedNot c "constant" decl)
+       | CS.CBuiltin (c, Ceptre.WRITE) =>
+           (case S.find signat (S.PRED, c) of
+             SOME (S.PredDecl (_, [], _)) => raise Fail "WRITE builtin must have at least one argument"
+           | SOME (S.PredDecl (_, _, Ceptre.Act)) => S.BuiltinDecl (c, Ceptre.WRITE)
+           | decl => expectedNot c "action predicate" decl)
+       | CS.CBuiltin (a, Ceptre.STRING) =>
+           (case (S.find signat (S.FIRST, a),
+                  S.find signat (S.BUILTIN, "STRING")) of
+               (_, SOME _) => raise Fail "STRING builtin already defined"
+             | (SOME (S.TypeDecl _), NONE) => S.BuiltinDecl (a, Ceptre.STRING)
+             | (decl, NONE) => expectedNot a "type" decl)
        | CS.CStageMode (stage, nondet_mode) => 
            (case S.find signat (S.STAGE, stage) of
                SOME (S.StageDecl _) => S.StageModeDecl (stage, nondet_mode)

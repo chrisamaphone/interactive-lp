@@ -12,6 +12,10 @@ regexp ident = (seq id_start (* id_cont))
 regexp ws = (+ white)
 regexp number = (| '0 (seq posdigit (* digit)))
 
+set nonesc = (~ (| '\ '"))
+regexp esc = (seq '\ notnewln)
+regexp string = (seq '" (* (| nonesc esc)) '")
+
 function lexmain: t = 
    eos => eof 
    "pred" => pred
@@ -39,6 +43,7 @@ function lexmain: t =
    "o-" => llolli
    "-o" => rlolli
    number => num
+   string => str
    ident => ident
    any => error
    epsilon => error
